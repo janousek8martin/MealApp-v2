@@ -1,12 +1,13 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
+import { DbGate } from '@/db/provider';
 import '@/i18n';
 import { colors } from '@/theme/tokens';
 
 export default function RootLayout() {
   return (
-    <>
+    <DbGate>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -15,6 +16,6 @@ export default function RootLayout() {
         }}>
         <Stack.Screen name="(tabs)" />
       </Stack>
-    </>
+    </DbGate>
   );
 }
