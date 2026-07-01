@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { ColorValue } from 'react-native';
 
+import { useHousehold } from '@/hooks/data';
 import { colors } from '@/theme/tokens';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -15,6 +16,14 @@ function tabIcon(name: IconName) {
 
 export default function TabsLayout() {
   const { t } = useTranslation();
+  const { household, loaded } = useHousehold();
+
+  if (!loaded) {
+    return null;
+  }
+  if (!household) {
+    return <Redirect href="/onboarding" />;
+  }
 
   return (
     <Tabs

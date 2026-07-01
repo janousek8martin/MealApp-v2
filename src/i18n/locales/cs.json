@@ -1,6 +1,10 @@
 {
   "common": {
-    "appName": "MealApp"
+    "appName": "MealApp",
+    "continue": "Pokračovat",
+    "cancel": "Zrušit",
+    "save": "Uložit",
+    "done": "Hotovo"
   },
   "tabs": {
     "today": "Dnes",
@@ -10,6 +14,9 @@
     "progress": "Pokrok"
   },
   "today": {
+    "title": "Dnes",
+    "mealsComingTitle": "Jídla dneška",
+    "mealsComingText": "Vygenerovaný jídelníček se objeví tady, jakmile bude hotový plánovač (fáze 6).",
     "placeholderTitle": "Dnešní přehled",
     "placeholderSubtitle": "Kalorie a jídla dneška se objeví tady."
   },
@@ -28,5 +35,104 @@
   "progress": {
     "placeholderTitle": "Pokrok",
     "placeholderSubtitle": "Váha, složení těla a kalorické cíle v čase."
+  },
+  "onboarding": {
+    "welcomeTitle": "Vítejte v MealApp",
+    "welcomeSubtitle": "Jídelníček pro celou domácnost podle vašich kalorických potřeb – bez tabulek a počítání.",
+    "start": "Začít",
+    "householdTitle": "Vaše domácnost",
+    "householdSubtitle": "Domácnost sdílí jeden jídelníček, jednu spíž a jeden nákupní seznam.",
+    "householdName": "Název domácnosti",
+    "householdPlaceholder": "např. Novákovi",
+    "firstProfileTitle": "První člen domácnosti",
+    "nextProfileTitle": "Další člen domácnosti",
+    "profileSubtitle": "Z těchto údajů spočítáme denní kalorickou potřebu (TDCI) a makroživiny.",
+    "computeTdci": "Spočítat kalorickou potřebu",
+    "resultTitle": "Denní cíl je na světě",
+    "resultSubtitle": "TDCI se přepočítává automaticky při každé změně údajů – váhy, aktivity i cíle.",
+    "addAnother": "Přidat dalšího člena",
+    "finish": "Vstoupit do appky"
+  },
+  "form": {
+    "name": "Jméno",
+    "profileType": "Typ profilu",
+    "adult": "Dospělý",
+    "child": "Dítě",
+    "sex": "Pohlaví",
+    "male": "Muž",
+    "female": "Žena",
+    "birthDate": "Datum narození (RRRR-MM-DD)",
+    "height": "Výška",
+    "weight": "Aktuální váha",
+    "bodyFat": "Tělesný tuk (volitelné)",
+    "activity": "Úroveň aktivity",
+    "goal": "Cíl",
+    "goalWeight": "Cílová váha",
+    "goalBodyFat": "Cílový tělesný tuk",
+    "fitnessExperience": "Zkušenost s tréninkem",
+    "allergens": "Alergie",
+    "diets": "Stravovací režim",
+    "sharesMainMeals": "Sdílí hlavní jídla",
+    "sharesMainMealsHint": "Vypněte, pokud má mít člen vlastní, nezávisle generovaný jídelníček.",
+    "required": "Povinné pole",
+    "birthDateFormat": "Zadejte datum ve formátu RRRR-MM-DD",
+    "heightRange": "Zadejte výšku 60–230 cm",
+    "weightRange": "Zadejte váhu 10–300 kg",
+    "bodyFatRange": "Zadejte hodnotu 2–70 %",
+    "goalWeightConflict": "Při nižším cílovém % tuku nemůže být cílová váha vyšší než aktuální."
+  },
+  "activity": {
+    "sedentary": "Sedavý",
+    "light": "Lehká (1–3× týdně)",
+    "moderate": "Střední (3–5× týdně)",
+    "active": "Vysoká (6–7× týdně)",
+    "very_active": "Velmi vysoká"
+  },
+  "goal": {
+    "lose": "Zhubnout",
+    "maintain": "Udržovat",
+    "gain": "Nabrat svaly"
+  },
+  "fitness": {
+    "beginner": "Začátečník",
+    "intermediate": "Pokročilý",
+    "advanced": "Velmi pokročilý"
+  },
+  "allergens": {
+    "gluten": "Lepek",
+    "lactose": "Laktóza",
+    "eggs": "Vejce",
+    "nuts": "Ořechy",
+    "peanuts": "Arašídy",
+    "fish": "Ryby",
+    "shellfish": "Korýši",
+    "soy": "Sója"
+  },
+  "diets": {
+    "vegetarian": "Vegetarián",
+    "vegan": "Vegan",
+    "pescatarian": "Pescetarián"
+  },
+  "navy": {
+    "title": "Kalkulačka tělesného tuku",
+    "subtitle": "Navy tape metoda (obvody těla, přesnost ±3–4 %). Přesnější hodnotu z DEXA nebo kaliperace můžete zadat ručně.",
+    "waist": "Obvod pasu",
+    "neck": "Obvod krku",
+    "hip": "Obvod boků",
+    "result": "Odhad tělesného tuku",
+    "use": "Použít hodnotu",
+    "open": "Spočítat z obvodů těla (Navy metoda)"
+  },
+  "tdciMode": {
+    "maintenance": "Udržovací kalorie",
+    "deficit": "Kalorický deficit",
+    "surplus": "Kalorický přebytek",
+    "recomposition": "Rekompozice – udržovací kalorie"
+  },
+  "macros": {
+    "protein": "Bílkoviny",
+    "carbs": "Sacharidy",
+    "fat": "Tuky",
+    "fiber": "Vláknina"
   }
 }

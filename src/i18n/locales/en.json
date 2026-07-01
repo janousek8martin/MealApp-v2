@@ -1,6 +1,10 @@
 {
   "common": {
-    "appName": "MealApp"
+    "appName": "MealApp",
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "save": "Save",
+    "done": "Done"
   },
   "tabs": {
     "today": "Today",
@@ -10,6 +14,9 @@
     "progress": "Progress"
   },
   "today": {
+    "title": "Today",
+    "mealsComingTitle": "Today's meals",
+    "mealsComingText": "The generated meal plan will appear here once the planner is built (phase 6).",
     "placeholderTitle": "Today's overview",
     "placeholderSubtitle": "Today's calories and meals will appear here."
   },
@@ -28,5 +35,104 @@
   "progress": {
     "placeholderTitle": "Progress",
     "placeholderSubtitle": "Weight, body composition and calorie targets over time."
+  },
+  "onboarding": {
+    "welcomeTitle": "Welcome to MealApp",
+    "welcomeSubtitle": "A meal plan for the whole household, built around your calorie needs – no spreadsheets, no counting.",
+    "start": "Get started",
+    "householdTitle": "Your household",
+    "householdSubtitle": "A household shares one meal plan, one pantry and one shopping list.",
+    "householdName": "Household name",
+    "householdPlaceholder": "e.g. The Smiths",
+    "firstProfileTitle": "First household member",
+    "nextProfileTitle": "Another household member",
+    "profileSubtitle": "We use these details to compute the daily calorie target (TDCI) and macros.",
+    "computeTdci": "Compute calorie target",
+    "resultTitle": "Your daily target is ready",
+    "resultSubtitle": "The TDCI recalculates automatically whenever any input changes – weight, activity or goal.",
+    "addAnother": "Add another member",
+    "finish": "Enter the app"
+  },
+  "form": {
+    "name": "Name",
+    "profileType": "Profile type",
+    "adult": "Adult",
+    "child": "Child",
+    "sex": "Sex",
+    "male": "Male",
+    "female": "Female",
+    "birthDate": "Birth date (YYYY-MM-DD)",
+    "height": "Height",
+    "weight": "Current weight",
+    "bodyFat": "Body fat (optional)",
+    "activity": "Activity level",
+    "goal": "Goal",
+    "goalWeight": "Goal weight",
+    "goalBodyFat": "Goal body fat",
+    "fitnessExperience": "Training experience",
+    "allergens": "Allergies",
+    "diets": "Diet",
+    "sharesMainMeals": "Shares main meals",
+    "sharesMainMealsHint": "Turn off to give this member an independently generated plan.",
+    "required": "Required",
+    "birthDateFormat": "Use the YYYY-MM-DD format",
+    "heightRange": "Enter a height of 60–230 cm",
+    "weightRange": "Enter a weight of 10–300 kg",
+    "bodyFatRange": "Enter a value of 2–70 %",
+    "goalWeightConflict": "With a lower target body fat, the goal weight cannot exceed the current weight."
+  },
+  "activity": {
+    "sedentary": "Sedentary",
+    "light": "Light (1–3× a week)",
+    "moderate": "Moderate (3–5× a week)",
+    "active": "High (6–7× a week)",
+    "very_active": "Very high"
+  },
+  "goal": {
+    "lose": "Lose fat",
+    "maintain": "Maintain",
+    "gain": "Build muscle"
+  },
+  "fitness": {
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  },
+  "allergens": {
+    "gluten": "Gluten",
+    "lactose": "Lactose",
+    "eggs": "Eggs",
+    "nuts": "Tree nuts",
+    "peanuts": "Peanuts",
+    "fish": "Fish",
+    "shellfish": "Shellfish",
+    "soy": "Soy"
+  },
+  "diets": {
+    "vegetarian": "Vegetarian",
+    "vegan": "Vegan",
+    "pescatarian": "Pescatarian"
+  },
+  "navy": {
+    "title": "Body fat calculator",
+    "subtitle": "Navy tape method (body circumferences, ±3–4 % accuracy). A more precise DEXA or caliper value can be entered manually.",
+    "waist": "Waist circumference",
+    "neck": "Neck circumference",
+    "hip": "Hip circumference",
+    "result": "Estimated body fat",
+    "use": "Use value",
+    "open": "Calculate from tape measurements (Navy method)"
+  },
+  "tdciMode": {
+    "maintenance": "Maintenance calories",
+    "deficit": "Calorie deficit",
+    "surplus": "Calorie surplus",
+    "recomposition": "Recomposition – maintenance calories"
+  },
+  "macros": {
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat",
+    "fiber": "Fiber"
   }
 }
