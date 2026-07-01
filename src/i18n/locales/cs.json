@@ -1,0 +1,32 @@
+{
+  "common": {
+    "appName": "MealApp"
+  },
+  "tabs": {
+    "today": "Dnes",
+    "plan": "Plán",
+    "library": "Knihovna",
+    "shopping": "Nákup",
+    "progress": "Pokrok"
+  },
+  "today": {
+    "placeholderTitle": "Dnešní přehled",
+    "placeholderSubtitle": "Kalorie a jídla dneška se objeví tady."
+  },
+  "plan": {
+    "placeholderTitle": "Týdenní plán",
+    "placeholderSubtitle": "Jídelníček celé domácnosti na týden dopředu."
+  },
+  "library": {
+    "placeholderTitle": "Recepty a potraviny",
+    "placeholderSubtitle": "Databáze receptů a surovin s nutričními hodnotami."
+  },
+  "shopping": {
+    "placeholderTitle": "Nákup a spíž",
+    "placeholderSubtitle": "Nákupní seznam z plánu a přehled zásob."
+  },
+  "progress": {
+    "placeholderTitle": "Pokrok",
+    "placeholderSubtitle": "Váha, složení těla a kalorické cíle v čase."
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "common": {
+    "appName": "MealApp"
+  },
+  "tabs": {
+    "today": "Today",
+    "plan": "Plan",
+    "library": "Library",
+    "shopping": "Shopping",
+    "progress": "Progress"
+  },
+  "today": {
+    "placeholderTitle": "Today's overview",
+    "placeholderSubtitle": "Today's calories and meals will appear here."
+  },
+  "plan": {
+    "placeholderTitle": "Weekly plan",
+    "placeholderSubtitle": "The whole household's meal plan, a week ahead."
+  },
+  "library": {
+    "placeholderTitle": "Recipes & foods",
+    "placeholderSubtitle": "Recipe and ingredient database with nutrition data."
+  },
+  "shopping": {
+    "placeholderTitle": "Shopping & pantry",
+    "placeholderSubtitle": "Shopping list built from the plan, plus what's at home."
+  },
+  "progress": {
+    "placeholderTitle": "Progress",
+    "placeholderSubtitle": "Weight, body composition and calorie targets over time."
+  }
+}

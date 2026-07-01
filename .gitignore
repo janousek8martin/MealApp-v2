@@ -36,3 +36,11 @@ Thumbs.db
 
 # local tooling
 .claude/settings.local.json
+
+# Native (from Expo template)
+.kotlin/
+*.orig.*
+*.pem
+
+# typescript
+*.tsbuildinfo
