@@ -2,7 +2,9 @@ import { newId } from '../id';
 import { foodRestrictions, foods, recipeIngredients, recipes } from '../schema';
 import { nowIso } from '../time';
 import type { AppDb } from '../types';
-import { sampleFoods, sampleRecipes, type FoodSeed, type RecipeSeed } from './sampleData';
+import { seedFoods } from './foods';
+import { seedRecipes } from './recipes';
+import type { FoodSeed, RecipeSeed } from './types';
 
 /**
  * Populates the foods/recipes library on first launch. Idempotent: runs only
@@ -10,8 +12,8 @@ import { sampleFoods, sampleRecipes, type FoodSeed, type RecipeSeed } from './sa
  */
 export async function seedIfEmpty(
   db: AppDb,
-  foodSeeds: FoodSeed[] = sampleFoods,
-  recipeSeeds: RecipeSeed[] = sampleRecipes,
+  foodSeeds: FoodSeed[] = seedFoods,
+  recipeSeeds: RecipeSeed[] = seedRecipes,
 ): Promise<boolean> {
   const existing = await db.select().from(foods).limit(1);
   if (existing.length > 0) {
@@ -39,12 +41,13 @@ export async function seedIfEmpty(
       carbsPer100: seed.carbsPer100,
       fatPer100: seed.fatPer100,
       fiberPer100: seed.fiberPer100,
+      micronutrientsJson: seed.micronutrients ? JSON.stringify(seed.micronutrients) : null,
       dietFlagsJson: seed.dietFlags ? JSON.stringify(seed.dietFlags) : null,
       budget: seed.budget ?? 'average',
       shelfLifeDays: seed.shelfLifeDays,
       storage: seed.storage,
       snackSuitable: seed.snackSuitable ?? false,
-      source: 'seed-draft',
+      source: seed.source ?? 'seed-draft',
     });
 
     if (seed.allergens?.length) {
@@ -75,7 +78,8 @@ export async function seedIfEmpty(
       isSide: seed.isSide ?? false,
       budget: seed.budget ?? 'average',
       prepTimeMinutes: seed.prepTimeMinutes,
-      source: 'seed-draft',
+      tagsJson: seed.tags ? JSON.stringify(seed.tags) : null,
+      source: 'seed',
     });
 
     await db.insert(recipeIngredients).values(
