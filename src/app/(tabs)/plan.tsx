@@ -126,7 +126,11 @@ export default function PlanScreen() {
         })}
       </View>
 
-      {household ? <ProfileSwitcher householdId={household.id} /> : null}
+      {household ? (
+        <View style={styles.profileSwitcherRow}>
+          <ProfileSwitcher householdId={household.id} />
+        </View>
+      ) : null}
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.actionsRow}>
@@ -223,6 +227,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginTop: spacing.sm,
     gap: spacing.xs,
+  },
+  profileSwitcherRow: {
+    paddingHorizontal: spacing.md,
   },
   dayChip: {
     flex: 1,

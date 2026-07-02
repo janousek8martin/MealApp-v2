@@ -6,10 +6,18 @@ import { bodyMetrics, householdSettings, households, profiles } from '@/db/schem
 import { targetsForProfile, type ProfileRow } from '@/hooks/dataMapping';
 import { useAppStore } from '@/stores/appStore';
 
-/** V1 is single-household; the first (only) active household row. */
+/**
+ * V1 is single-household; the first (only) active household row.
+ *
+ * `useLiveQuery` seeds `data` with `[]` synchronously on the very first
+ * render (not `undefined`) and only overwrites it once the query's promise
+ * resolves. `updatedAt` is what actually distinguishes "resolved at least
+ * once" from "not queried yet" – gating on `data !== undefined` would make
+ * `loaded` true immediately, before real data arrives.
+ */
 export function useHousehold() {
-  const { data } = useLiveQuery(db.select().from(households).where(isNull(households.deletedAt)));
-  return { household: data?.[0] ?? null, loaded: data !== undefined };
+  const { data, updatedAt } = useLiveQuery(db.select().from(households).where(isNull(households.deletedAt)));
+  return { household: data?.[0] ?? null, loaded: updatedAt !== undefined };
 }
 
 export function useHouseholdSettings(householdId: string | undefined) {

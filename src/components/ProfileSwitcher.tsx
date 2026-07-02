@@ -19,7 +19,11 @@ export function ProfileSwitcher({ householdId }: Props) {
     : memberList[0]?.id;
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.container}
+      contentContainerStyle={styles.row}>
       {memberList.map((profile) => {
         const selected = profile.id === effectiveActiveId;
         return (
@@ -41,6 +45,14 @@ export function ProfileSwitcher({ householdId }: Props) {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    // A horizontal ScrollView with no height constraint will stretch to
+    // fill any leftover cross-axis space in a flex-column parent (visible
+    // when this sits directly in a screen body rather than nested inside
+    // another scroll view's content).
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   row: {
     gap: spacing.sm,
     paddingVertical: spacing.sm,
