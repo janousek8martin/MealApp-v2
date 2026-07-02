@@ -1,6 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
@@ -9,9 +11,7 @@ import { SwitchRow } from '@/components/ui/SwitchRow';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
 import { updateHouseholdSettings, updateMealSlotSetting } from '@/db/repositories/households';
-import { updateProfileMacroOverrides, type MacroOverrides } from '@/db/repositories/profiles';
 import { defaultNotificationSettings, type NotificationSettings } from '@/db/types';
-import { PROTEIN_PER_KG_LBM, FAT_SHARE_DEFAULT, SURPLUS_KCAL_DEFAULT } from '@/domain/constants';
 import { useHousehold, useHouseholdSettings, useProfiles, useProfileTargets } from '@/hooks/data';
 import type { ProfileRow } from '@/hooks/dataMapping';
 import { useAllMealSlots, type SlotRow } from '@/hooks/plan';
@@ -50,26 +50,23 @@ function parseNotifications(json: string | null): NotificationSettings {
   }
 }
 
-function parseMacroOverrides(json: string | null): MacroOverrides {
-  if (!json) return {};
-  try {
-    return JSON.parse(json) as MacroOverrides;
-  } catch {
-    return {};
-  }
-}
-
 function ProfileSummaryRow({ profile }: { profile: ProfileRow }) {
   const { t } = useTranslation();
   const targets = useProfileTargets(profile);
   return (
-    <View style={styles.summaryRow}>
-      <Text style={styles.summaryName}>{profile.name}</Text>
-      <Text style={styles.summaryMeta}>
-        {t(`goal.${profile.goal}`)}
-        {targets ? ` · ${Math.round(targets.adjustedTdciKcal)} kcal` : ''}
-      </Text>
-    </View>
+    <Pressable
+      accessibilityRole="button"
+      style={styles.summaryRow}
+      onPress={() => router.push({ pathname: '/profile/[id]', params: { id: profile.id } })}>
+      <View style={styles.summaryText}>
+        <Text style={styles.summaryName}>{profile.name}</Text>
+        <Text style={styles.summaryMeta}>
+          {t(`goal.${profile.goal}`)}
+          {targets ? ` · ${Math.round(targets.adjustedTdciKcal)} kcal` : ''}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+    </Pressable>
   );
 }
 
@@ -165,68 +162,6 @@ function MealSlotsCard({ householdId }: { householdId: string }) {
         {t('settings.slotsSumWarning', { sum: Math.round(enabledSum) })}
       </Text>
       <Button label={t('settings.saveSlots')} onPress={save} disabled={!canSave} />
-    </View>
-  );
-}
-
-function MacroOverridesCard({ profile }: { profile: ProfileRow }) {
-  const { t } = useTranslation();
-  const overrides = parseMacroOverrides(profile.macroOverridesJson);
-  const [protein, setProtein] = useState(overrides.proteinPerKgLbm !== undefined ? String(overrides.proteinPerKgLbm) : '');
-  const [fatShare, setFatShare] = useState(
-    overrides.fatShareOfTdci !== undefined ? String(Math.round(overrides.fatShareOfTdci * 100)) : '',
-  );
-  const [surplus, setSurplus] = useState(overrides.surplusKcal !== undefined ? String(overrides.surplusKcal) : '');
-
-  const save = async () => {
-    const next: MacroOverrides = {};
-    const proteinNum = num(protein);
-    const fatShareNum = num(fatShare);
-    const surplusNum = num(surplus);
-    if (proteinNum !== null) next.proteinPerKgLbm = proteinNum;
-    if (fatShareNum !== null) next.fatShareOfTdci = fatShareNum / 100;
-    if (surplusNum !== null) next.surplusKcal = surplusNum;
-    await updateProfileMacroOverrides(db, profile.id, Object.keys(next).length > 0 ? next : null);
-  };
-
-  const reset = async () => {
-    setProtein('');
-    setFatShare('');
-    setSurplus('');
-    await updateProfileMacroOverrides(db, profile.id, null);
-  };
-
-  return (
-    <View style={styles.subCard}>
-      <Text style={styles.subCardTitle}>{profile.name}</Text>
-      <TextField
-        label={t('settings.proteinPerKgLbm')}
-        value={protein}
-        onChangeText={setProtein}
-        keyboardType="decimal-pad"
-        placeholder={String(PROTEIN_PER_KG_LBM.normalDefault)}
-        suffix="g/kg"
-      />
-      <TextField
-        label={t('settings.fatShare')}
-        value={fatShare}
-        onChangeText={setFatShare}
-        keyboardType="numeric"
-        placeholder={String(Math.round(FAT_SHARE_DEFAULT * 100))}
-        suffix="%"
-      />
-      <TextField
-        label={t('settings.surplusKcal')}
-        value={surplus}
-        onChangeText={setSurplus}
-        keyboardType="numeric"
-        placeholder={String(SURPLUS_KCAL_DEFAULT)}
-        suffix="kcal"
-      />
-      <View style={styles.macroActions}>
-        <Button label={t('settings.resetToDefault')} variant="secondary" onPress={reset} style={styles.actionButton} />
-        <Button label={t('common.save')} onPress={save} style={styles.actionButton} />
-      </View>
     </View>
   );
 }
@@ -390,14 +325,6 @@ export default function SettingsScreen() {
         <MealSlotsCard householdId={household.id} />
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('settings.macroOverrides')}</Text>
-          <Text style={styles.cardHint}>{t('settings.macroOverridesHint')}</Text>
-          {members.map((profile) => (
-            <MacroOverridesCard key={profile.id} profile={profile} />
-          ))}
-        </View>
-
-        <View style={styles.card}>
           <Text style={styles.cardTitle}>{t('settings.notifications')}</Text>
           <SwitchRow
             label={t('settings.mealReminders')}
@@ -473,9 +400,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: spacing.xs,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  summaryText: {
+    flex: 1,
   },
   summaryName: {
     color: colors.text,
@@ -519,25 +452,6 @@ const styles = StyleSheet.create({
   sumTextWarning: {
     color: colors.danger,
     fontWeight: '600',
-  },
-  subCard: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  subCardTitle: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-  },
-  macroActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  actionButton: {
-    flex: 1,
   },
   stepperRow: {
     flexDirection: 'row',

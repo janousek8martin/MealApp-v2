@@ -26,7 +26,10 @@
     "fitTitle": "Jak dnešek sedí na cíl",
     "fitSummary": "Naplánováno {{consumed}} / {{target}} kcal",
     "generateWeek": "Vygenerovat tento týden",
-    "generating": "Generuji…"
+    "generating": "Generuji…",
+    "editProfile": "Upravit profil",
+    "shoppingRemaining": "položek k nákupu",
+    "logWeight": "Zaznamenat váhu"
   },
   "planScreen": {
     "generateWeek": "Vygenerovat týden",
@@ -153,7 +156,9 @@
     "heightRange": "Zadejte výšku 60–230 cm",
     "weightRange": "Zadejte váhu 10–300 kg",
     "bodyFatRange": "Zadejte hodnotu 2–70 %",
-    "goalWeightConflict": "Při nižším cílovém % tuku nemůže být cílová váha vyšší než aktuální."
+    "goalWeightConflict": "Při nižším cílovém % tuku nemůže být cílová váha vyšší než aktuální.",
+    "showActivityInfo": "Zobrazit vysvětlivky",
+    "hideActivityInfo": "Skrýt vysvětlivky"
   },
   "activity": {
     "sedentary": "Sedavý",
@@ -161,6 +166,25 @@
     "moderate": "Střední (3–5× týdně)",
     "active": "Vysoká (6–7× týdně)",
     "very_active": "Velmi vysoká"
+  },
+  "activityInfo": {
+    "sedentary": "Kancelářská práce, minimum pohybu, 0–1× cvičení týdně.",
+    "light": "Lehká aktivita nebo cvičení 1–3× týdně.",
+    "moderate": "Středně náročná aktivita nebo cvičení 3–5× týdně.",
+    "active": "Fyzicky náročnější práce nebo cvičení 6–7× týdně.",
+    "very_active": "Fyzicky náročná práce a zároveň intenzivní denní trénink."
+  },
+  "bodyFatChart": {
+    "open": "Referenční rozmezí",
+    "title": "Rozmezí tělesného tuku",
+    "male": "Muži",
+    "female": "Ženy",
+    "band": {
+      "ideal": "Ideální",
+      "average": "Průměrné",
+      "overweight": "Nadprůměrné"
+    },
+    "hint": "Orientační rozmezí (klasifikace ACE). Přesnější hodnotu získáte kaliperem nebo DEXA měřením."
   },
   "goal": {
     "lose": "Zhubnout",
@@ -200,6 +224,14 @@
     "quick": "Rychlé",
     "protein": "Proteinové",
     "fat": "Tučné"
+  },
+  "profile": {
+    "weightComposition": "Váha a složení",
+    "bodyFat": "tuku",
+    "viewProgress": "Zobrazit pokrok",
+    "manualAdjustment": "Manuální korekce TDCI",
+    "manualAdjustmentHint": "Ruční úprava vypočtených kalorií po krocích 100 kcal, nahoru i dolů.",
+    "personalAndGoals": "Osobní údaje a cíle"
   },
   "navy": {
     "title": "Kalkulačka tělesného tuku",

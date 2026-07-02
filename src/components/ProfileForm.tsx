@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { BodyFatCarousel } from '@/components/BodyFatCarousel';
+import { BodyFatChartModal } from '@/components/BodyFatChartModal';
 import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
@@ -12,10 +14,14 @@ import { colors, spacing, typography } from '@/theme/tokens';
 
 export type ProfileFormValue = Omit<CreateProfileInput, 'householdId'>;
 
+const ACTIVITY_LEVELS = ['sedentary', 'light', 'moderate', 'active', 'very_active'] as const;
+
 type Props = {
   submitLabel: string;
   onSubmit: (value: ProfileFormValue) => void;
   initialProfileType?: 'adult' | 'child';
+  /** Prefills the form for editing an existing profile; omitted when creating a new one. */
+  initialValue?: ProfileFormValue;
 };
 
 const ALLERGEN_KEYS = ['gluten', 'lactose', 'eggs', 'nuts', 'peanuts', 'fish', 'shellfish', 'soy'];
@@ -28,25 +34,33 @@ function parseNumber(value: string): number | null {
 
 const BIRTH_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-export function ProfileForm({ submitLabel, onSubmit, initialProfileType }: Props) {
+export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initialValue }: Props) {
   const { t } = useTranslation();
 
-  const [name, setName] = useState('');
-  const [profileType, setProfileType] = useState<'adult' | 'child'>(initialProfileType ?? 'adult');
-  const [sex, setSex] = useState<'male' | 'female' | null>(null);
-  const [birthDate, setBirthDate] = useState('');
-  const [height, setHeight] = useState('');
-  const [weight, setWeight] = useState('');
-  const [bodyFat, setBodyFat] = useState('');
-  const [activityLevel, setActivityLevel] = useState<string | null>(null);
-  const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>('maintain');
-  const [goalWeight, setGoalWeight] = useState('');
-  const [goalBodyFat, setGoalBodyFat] = useState('');
-  const [fitnessExperience, setFitnessExperience] = useState<string | null>(null);
-  const [sharesMainMeals, setSharesMainMeals] = useState(true);
-  const [allergens, setAllergens] = useState<string[]>([]);
-  const [diets, setDiets] = useState<string[]>([]);
+  const [name, setName] = useState(initialValue?.name ?? '');
+  const [profileType, setProfileType] = useState<'adult' | 'child'>(
+    initialValue?.profileType ?? initialProfileType ?? 'adult',
+  );
+  const [sex, setSex] = useState<'male' | 'female' | null>(initialValue?.sex ?? null);
+  const [birthDate, setBirthDate] = useState(initialValue?.birthDate ?? '');
+  const [height, setHeight] = useState(initialValue ? String(initialValue.heightCm) : '');
+  const [weight, setWeight] = useState(initialValue ? String(initialValue.weightKg) : '');
+  const [bodyFat, setBodyFat] = useState(initialValue?.bodyFatPct !== undefined ? String(initialValue.bodyFatPct) : '');
+  const [activityLevel, setActivityLevel] = useState<string | null>(initialValue?.activityLevel ?? null);
+  const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>(initialValue?.goal ?? 'maintain');
+  const [goalWeight, setGoalWeight] = useState(
+    initialValue?.goalWeightKg !== undefined ? String(initialValue.goalWeightKg) : '',
+  );
+  const [goalBodyFat, setGoalBodyFat] = useState(
+    initialValue?.goalBodyFatPct !== undefined ? String(initialValue.goalBodyFatPct) : '',
+  );
+  const [fitnessExperience, setFitnessExperience] = useState<string | null>(initialValue?.fitnessExperience ?? null);
+  const [sharesMainMeals, setSharesMainMeals] = useState(initialValue?.sharesMainMeals ?? true);
+  const [allergens, setAllergens] = useState<string[]>(initialValue?.allergens ?? []);
+  const [diets, setDiets] = useState<string[]>(initialValue?.diets ?? []);
   const [navyVisible, setNavyVisible] = useState(false);
+  const [bodyFatChartVisible, setBodyFatChartVisible] = useState(false);
+  const [activityInfoVisible, setActivityInfoVisible] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const isChild = profileType === 'child';
@@ -168,12 +182,27 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType }: Props
             suffix="%"
             error={fieldError('bodyFat')}
           />
-          <Button
-            label={t('navy.open')}
-            variant="secondary"
-            onPress={() => setNavyVisible(true)}
-            style={styles.navyButton}
-          />
+          {sex ? (
+            <BodyFatCarousel
+              sex={sex}
+              value={bodyFatPct}
+              onSelect={(value) => setBodyFat(String(value))}
+            />
+          ) : null}
+          <View style={styles.bodyFatActions}>
+            <Button
+              label={t('navy.open')}
+              variant="secondary"
+              onPress={() => setNavyVisible(true)}
+              style={styles.bodyFatActionButton}
+            />
+            <Button
+              label={t('bodyFatChart.open')}
+              variant="secondary"
+              onPress={() => setBodyFatChartVisible(true)}
+              style={styles.bodyFatActionButton}
+            />
+          </View>
         </>
       ) : null}
 
@@ -191,6 +220,24 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType }: Props
       />
       {submitted && activityLevel === null ? (
         <Text style={styles.error}>{t('form.required')}</Text>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => setActivityInfoVisible((prev) => !prev)}
+        style={styles.infoToggle}>
+        <Text style={styles.infoToggleLabel}>
+          {activityInfoVisible ? t('form.hideActivityInfo') : t('form.showActivityInfo')}
+        </Text>
+      </Pressable>
+      {activityInfoVisible ? (
+        <View style={styles.infoCard}>
+          {ACTIVITY_LEVELS.map((level) => (
+            <Text key={level} style={styles.infoLine}>
+              <Text style={styles.infoLineLabel}>{t(`activity.${level}`)}: </Text>
+              {t(`activityInfo.${level}`)}
+            </Text>
+          ))}
+        </View>
       ) : null}
 
       {!isChild ? (
@@ -277,6 +324,11 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType }: Props
           setNavyVisible(false);
         }}
       />
+      <BodyFatChartModal
+        visible={bodyFatChartVisible}
+        sex={sex ?? 'male'}
+        onClose={() => setBodyFatChartVisible(false)}
+      />
     </View>
   );
 }
@@ -288,8 +340,40 @@ const styles = StyleSheet.create({
     marginTop: -spacing.sm,
     marginBottom: spacing.sm,
   },
-  navyButton: {
+  bodyFatActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
     marginBottom: spacing.md,
+  },
+  bodyFatActionButton: {
+    flex: 1,
+  },
+  infoToggle: {
+    alignSelf: 'flex-start',
+    marginBottom: spacing.sm,
+  },
+  infoToggleLabel: {
+    color: colors.primary,
+    fontSize: typography.small,
+    fontWeight: '600',
+  },
+  infoCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm + 2,
+    marginBottom: spacing.md,
+  },
+  infoLine: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+    lineHeight: 18,
+    marginBottom: spacing.xs,
+  },
+  infoLineLabel: {
+    color: colors.text,
+    fontWeight: '700',
   },
   switchRow: {
     flexDirection: 'row',

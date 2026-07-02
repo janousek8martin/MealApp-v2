@@ -83,6 +83,69 @@ export async function createProfile(db: AppDb, input: CreateProfileInput): Promi
   return profileId;
 }
 
+export type UpdateProfileInput = {
+  name: string;
+  sex: 'male' | 'female';
+  birthDate: string;
+  heightCm: number;
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  goal: 'lose' | 'maintain' | 'gain';
+  goalWeightKg?: number;
+  goalBodyFatPct?: number;
+  fitnessExperience?: 'beginner' | 'intermediate' | 'advanced';
+  sharesMainMeals: boolean;
+  allergens: string[];
+  diets: string[];
+};
+
+/** Updates a profile's editable fields and replaces its allergen/diet restrictions. */
+export async function updateProfile(db: AppDb, profileId: string, input: UpdateProfileInput): Promise<void> {
+  const now = nowIso();
+
+  await db
+    .update(profiles)
+    .set({
+      name: input.name,
+      sex: input.sex,
+      birthDate: input.birthDate,
+      heightCm: input.heightCm,
+      activityLevel: input.activityLevel,
+      goal: input.goal,
+      goalWeightKg: input.goalWeightKg ?? null,
+      goalBodyFatPct: input.goalBodyFatPct ?? null,
+      fitnessExperience: input.fitnessExperience ?? null,
+      sharesMainMeals: input.sharesMainMeals,
+      updatedAt: now,
+    })
+    .where(eq(profiles.id, profileId));
+
+  await db
+    .update(profileRestrictions)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(and(eq(profileRestrictions.profileId, profileId), isNull(profileRestrictions.deletedAt)));
+
+  const restrictionRows = [
+    ...input.allergens.map((value) => ({ kind: 'allergen' as const, value })),
+    ...input.diets.map((value) => ({ kind: 'diet' as const, value })),
+  ];
+  if (restrictionRows.length > 0) {
+    await db.insert(profileRestrictions).values(
+      restrictionRows.map((row) => ({
+        id: newId(),
+        createdAt: now,
+        updatedAt: now,
+        profileId,
+        ...row,
+      })),
+    );
+  }
+}
+
+/** Manual ±kcal correction applied on top of the computed TDCI, adjusted in steps of 100. */
+export async function updateTdciManualAdjustment(db: AppDb, profileId: string, kcal: number): Promise<void> {
+  await db.update(profiles).set({ tdciManualAdjustmentKcal: kcal, updatedAt: nowIso() }).where(eq(profiles.id, profileId));
+}
+
 export async function listActiveProfiles(db: AppDb, householdId: string) {
   return db
     .select()

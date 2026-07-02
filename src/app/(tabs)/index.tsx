@@ -1,6 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal } from '@/components/FoodPickerModal';
@@ -35,6 +37,7 @@ import {
   useRecipeNutritionMap,
   type SlotRow,
 } from '@/hooks/plan';
+import { useShoppingItems } from '@/hooks/shopping';
 import { confirmDeleteMeal } from '@/utils/mealActions';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
@@ -56,6 +59,8 @@ export default function TodayScreen() {
   const foodRows = useFoods();
   const foodById = new Map(foodRows.map((f) => [f.id, f]));
   const portionsForDate = usePortionsForDate(household?.id, today);
+  const shoppingItems = useShoppingItems(household?.id);
+  const shoppingRemaining = shoppingItems.filter((item) => !item.checked).length;
 
   const [pickerSlot, setPickerSlot] = useState<SlotRow | null>(null);
   const [extraMealId, setExtraMealId] = useState<string | null>(null);
@@ -99,7 +104,36 @@ export default function TodayScreen() {
 
         {household ? <ProfileSwitcher householdId={household.id} /> : null}
 
-        {activeProfile && targets ? <TdciCard name={activeProfile.name} targets={targets} /> : null}
+        {activeProfile && targets ? (
+          <View>
+            <TdciCard name={activeProfile.name} targets={targets} />
+            <Pressable
+              accessibilityRole="button"
+              style={styles.profileLink}
+              onPress={() => router.push({ pathname: '/profile/[id]', params: { id: activeProfile.id } })}>
+              <Ionicons name="settings-outline" size={14} color={colors.primary} />
+              <Text style={styles.profileLinkLabel}>{t('today.editProfile')}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <View style={styles.quickRow}>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.quickCard}
+            onPress={() => router.push('/shopping')}>
+            <Ionicons name="cart-outline" size={20} color={colors.primary} />
+            <Text style={styles.quickValue}>{shoppingRemaining}</Text>
+            <Text style={styles.quickLabel}>{t('today.shoppingRemaining')}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.quickCard}
+            onPress={() => router.push('/progress')}>
+            <Ionicons name="trending-up-outline" size={20} color={colors.primary} />
+            <Text style={styles.quickValueSmall}>{t('today.logWeight')}</Text>
+          </Pressable>
+        </View>
 
         {activeProfile && targets && consumed ? (
           <View style={styles.fitCard}>
@@ -213,6 +247,48 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   fitLine: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+  },
+  profileLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  profileLinkLabel: {
+    color: colors.primary,
+    fontSize: typography.small,
+    fontWeight: '600',
+  },
+  quickRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  quickCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    alignItems: 'flex-start',
+    gap: 2,
+  },
+  quickValue: {
+    color: colors.text,
+    fontSize: typography.subtitle,
+    fontWeight: '800',
+  },
+  quickValueSmall: {
+    color: colors.text,
+    fontSize: typography.body,
+    fontWeight: '700',
+    marginTop: spacing.xs,
+  },
+  quickLabel: {
     color: colors.textSecondary,
     fontSize: typography.small,
   },

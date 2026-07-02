@@ -2,7 +2,7 @@ import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 
 import { db } from '@/db/client';
-import { bodyMetrics, householdSettings, households, profiles } from '@/db/schema';
+import { bodyMetrics, householdSettings, households, profileRestrictions, profiles } from '@/db/schema';
 import { targetsForProfile, type ProfileRow } from '@/hooks/dataMapping';
 import { useAppStore } from '@/stores/appStore';
 
@@ -47,11 +47,38 @@ export function useProfiles(householdId: string | undefined) {
   return data ?? [];
 }
 
+export function useProfile(profileId: string | undefined) {
+  const { data } = useLiveQuery(
+    db
+      .select()
+      .from(profiles)
+      .where(and(eq(profiles.id, profileId ?? ''), isNull(profiles.deletedAt))),
+    [profileId],
+  );
+  return data?.[0] ?? null;
+}
+
 /** Active profile = user selection, falling back to the first member. */
 export function useActiveProfile(householdId: string | undefined) {
   const memberList = useProfiles(householdId);
   const activeProfileId = useAppStore((state) => state.activeProfileId);
   return memberList.find((p) => p.id === activeProfileId) ?? memberList[0] ?? null;
+}
+
+/** A profile's own allergen/diet restrictions, split by kind – for prefilling the edit form. */
+export function useProfileRestrictions(profileId: string | undefined) {
+  const { data } = useLiveQuery(
+    db
+      .select()
+      .from(profileRestrictions)
+      .where(and(eq(profileRestrictions.profileId, profileId ?? ''), isNull(profileRestrictions.deletedAt))),
+    [profileId],
+  );
+  const rows = data ?? [];
+  return {
+    allergens: rows.filter((row) => row.kind === 'allergen').map((row) => row.value),
+    diets: rows.filter((row) => row.kind === 'diet').map((row) => row.value),
+  };
 }
 
 /** Latest weight/body-fat entry – the single source of truth for "current". */
