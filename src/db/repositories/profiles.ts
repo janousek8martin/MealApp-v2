@@ -20,6 +20,8 @@ export type CreateProfileInput = {
   fitnessExperience?: 'beginner' | 'intermediate' | 'advanced';
   sharesMainMeals?: boolean;
   snackPositions?: string[];
+  /** ISO weekday numbers (1 = Monday .. 7 = Sunday) this profile trains on. */
+  workoutDays?: number[];
   /** Initial measurement – stored as the first body_metrics row. */
   weightKg: number;
   bodyFatPct?: number;
@@ -51,6 +53,7 @@ export async function createProfile(db: AppDb, input: CreateProfileInput): Promi
     fitnessExperience: input.fitnessExperience,
     sharesMainMeals: input.sharesMainMeals ?? true,
     snackPositionsJson: JSON.stringify(input.snackPositions ?? ['snack_morning', 'snack_afternoon']),
+    workoutDaysJson: JSON.stringify(input.workoutDays ?? []),
   });
 
   await db.insert(bodyMetrics).values({
@@ -94,6 +97,7 @@ export type UpdateProfileInput = {
   goalBodyFatPct?: number;
   fitnessExperience?: 'beginner' | 'intermediate' | 'advanced';
   sharesMainMeals: boolean;
+  workoutDays: number[];
   allergens: string[];
   diets: string[];
 };
@@ -115,6 +119,7 @@ export async function updateProfile(db: AppDb, profileId: string, input: UpdateP
       goalBodyFatPct: input.goalBodyFatPct ?? null,
       fitnessExperience: input.fitnessExperience ?? null,
       sharesMainMeals: input.sharesMainMeals,
+      workoutDaysJson: JSON.stringify(input.workoutDays),
       updatedAt: now,
     })
     .where(eq(profiles.id, profileId));

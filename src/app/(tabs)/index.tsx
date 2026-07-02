@@ -24,6 +24,7 @@ import { todayIsoDate } from '@/db/time';
 import { startOfWeek } from '@/domain/week';
 import {
   useActiveProfile,
+  useDailyProfileTargets,
   useHousehold,
   useProfileTargets,
 } from '@/hooks/data';
@@ -52,6 +53,7 @@ export default function TodayScreen() {
   const activeProfile = useActiveProfile(household?.id);
   const targets = useProfileTargets(activeProfile);
   const today = todayIsoDate();
+  const dailyTargets = useDailyProfileTargets(activeProfile, today);
 
   const slots = useMealSlots(household?.id);
   const meals = useMealsForDate(household?.id, today);
@@ -135,13 +137,13 @@ export default function TodayScreen() {
           </Pressable>
         </View>
 
-        {activeProfile && targets && consumed ? (
+        {activeProfile && dailyTargets && consumed ? (
           <View style={styles.fitCard}>
             <Text style={styles.fitTitle}>{t('today.fitTitle')}</Text>
             <Text style={styles.fitLine}>
               {t('today.fitSummary', {
                 consumed: Math.round(consumed.kcal),
-                target: Math.round(targets.adjustedTdciKcal),
+                target: Math.round(dailyTargets.kcal),
               })}
             </Text>
           </View>

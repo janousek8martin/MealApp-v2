@@ -13,6 +13,7 @@ import {
 import type { DietRestrictions, RecipeCandidate, RepetitionContext } from '@/domain/generator/types';
 import { computeTargets } from '@/domain/targets';
 import { addDays, previousDay, startOfWeek, weekDates } from '@/domain/week';
+import { applyWorkoutDayCycling } from '@/domain/workoutDays';
 
 import { newId } from '../id';
 import {
@@ -68,7 +69,7 @@ type GeneratorContext = {
 // Loading the generator context
 // ---------------------------------------------------------------------------
 
-async function loadGeneratorContext(db: AppDb, householdId: string): Promise<GeneratorContext> {
+async function loadGeneratorContext(db: AppDb, householdId: string, date: string): Promise<GeneratorContext> {
   const [settingsRow] = await db
     .select()
     .from(householdSettings)
@@ -147,15 +148,21 @@ async function loadGeneratorContext(db: AppDb, householdId: string): Promise<Gen
             activityLevel: profile.activityLevel,
             goal: profile.goal,
             goalBodyFatPct: profile.goalBodyFatPct ?? undefined,
+            fitnessExperience: profile.fitnessExperience ?? undefined,
             manualAdjustmentKcal: profile.tdciManualAdjustmentKcal,
             fiberMode: settingsRow?.fiberMode ?? 'efsa_min',
           });
-          return {
-            kcal: targets.adjustedTdciKcal,
-            proteinG: targets.macros.proteinG,
-            carbsG: targets.macros.carbsG,
-            fatG: targets.macros.fatG,
-          };
+          const workoutDays: number[] = profile.workoutDaysJson ? JSON.parse(profile.workoutDaysJson) : [];
+          return applyWorkoutDayCycling(
+            {
+              kcal: targets.adjustedTdciKcal,
+              proteinG: targets.macros.proteinG,
+              carbsG: targets.macros.carbsG,
+              fatG: targets.macros.fatG,
+            },
+            workoutDays,
+            date,
+          );
         })()
       : null;
 
@@ -489,7 +496,7 @@ async function insertPlannedMeal(
 async function generateDay(db: AppDb, householdId: string, date: string, rng: Rng): Promise<void> {
   if (date < todayIsoDate()) return; // past days are read-only, per the approved plan
 
-  const ctx = await loadGeneratorContext(db, householdId);
+  const ctx = await loadGeneratorContext(db, householdId, date);
   const lockedKeys = await loadLockedTrackKeys(db, householdId, date);
   await clearUnlockedMealsForDate(db, householdId, date, lockedKeys);
 
@@ -653,7 +660,7 @@ export async function regenerateSlot(
     .where(and(eq(plannedMealPortions.plannedMealId, meal.id), isNull(plannedMealPortions.deletedAt)));
   if (portions.some((p) => p.status === 'eaten')) return;
 
-  const ctx = await loadGeneratorContext(db, householdId);
+  const ctx = await loadGeneratorContext(db, householdId, date);
   const slot = ctx.slots.find((s) => s.slotKey === slotKey);
   if (!slot) return;
 
@@ -751,7 +758,7 @@ export async function assignManualMeal(
 ): Promise<void> {
   if (date < todayIsoDate()) return;
 
-  const ctx = await loadGeneratorContext(db, householdId);
+  const ctx = await loadGeneratorContext(db, householdId, date);
   const slot = ctx.slots.find((s) => s.slotKey === slotKey);
   if (!slot) return;
 

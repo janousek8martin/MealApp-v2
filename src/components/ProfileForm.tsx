@@ -34,8 +34,19 @@ function parseNumber(value: string): number | null {
 
 const BIRTH_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** ISO weekday (1 = Monday .. 7 = Sunday) short labels, localized via a stable reference week. */
+function weekdayOptions(language: string): { value: string; label: string }[] {
+  const monday = new Date(2026, 6, 6);
+  const formatter = new Intl.DateTimeFormat(language === 'cs' ? 'cs-CZ' : 'en-US', { weekday: 'short' });
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + i);
+    return { value: String(i + 1), label: formatter.format(day) };
+  });
+}
+
 export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initialValue }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [name, setName] = useState(initialValue?.name ?? '');
   const [profileType, setProfileType] = useState<'adult' | 'child'>(
@@ -56,6 +67,9 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
   );
   const [fitnessExperience, setFitnessExperience] = useState<string | null>(initialValue?.fitnessExperience ?? null);
   const [sharesMainMeals, setSharesMainMeals] = useState(initialValue?.sharesMainMeals ?? true);
+  const [workoutDays, setWorkoutDays] = useState<string[]>(
+    (initialValue?.workoutDays ?? []).map(String),
+  );
   const [allergens, setAllergens] = useState<string[]>(initialValue?.allergens ?? []);
   const [diets, setDiets] = useState<string[]>(initialValue?.diets ?? []);
   const [navyVisible, setNavyVisible] = useState(false);
@@ -116,6 +130,7 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
       goalBodyFatPct: isChild ? undefined : (goalBodyFatPct ?? undefined),
       fitnessExperience: (fitnessExperience ?? undefined) as ProfileFormValue['fitnessExperience'],
       sharesMainMeals,
+      workoutDays: isChild ? [] : workoutDays.map(Number),
       allergens,
       diets,
     });
@@ -281,6 +296,14 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
             value={fitnessExperience}
             onChange={setFitnessExperience}
           />
+          <ChipSelect
+            label={t('form.workoutDays')}
+            multi
+            options={weekdayOptions(i18n.language)}
+            value={workoutDays}
+            onChange={setWorkoutDays}
+          />
+          <Text style={styles.workoutDaysHint}>{t('form.workoutDaysHint')}</Text>
         </>
       ) : null}
 
@@ -374,6 +397,12 @@ const styles = StyleSheet.create({
   infoLineLabel: {
     color: colors.text,
     fontWeight: '700',
+  },
+  workoutDaysHint: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
   },
   switchRow: {
     flexDirection: 'row',

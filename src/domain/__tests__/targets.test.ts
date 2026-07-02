@@ -49,10 +49,47 @@ describe('computeTargets – adults', () => {
     expect(result.macros.proteinG).toBeCloseTo(1.8 * 64, 1);
   });
 
-  it('muscle gain adds the default surplus', () => {
+  it('muscle gain adds the flat default surplus when fitness experience is unknown', () => {
     const result = computeTargets({ ...adultBase, goal: 'gain', goalBodyFatPct: 22 });
     expect(result.baseTdciKcal).toBeCloseTo(2759 + 250, 5);
     expect(result.mode).toBe('surplus');
+  });
+
+  it('muscle gain surplus scales with fitness experience when set', () => {
+    const beginner = computeTargets({
+      ...adultBase,
+      goal: 'gain',
+      goalBodyFatPct: 22,
+      fitnessExperience: 'beginner',
+    });
+    expect(beginner.baseTdciKcal).toBeCloseTo(2759 * 1.1, 5);
+
+    const intermediate = computeTargets({
+      ...adultBase,
+      goal: 'gain',
+      goalBodyFatPct: 22,
+      fitnessExperience: 'intermediate',
+    });
+    expect(intermediate.baseTdciKcal).toBeCloseTo(2759 * 1.07, 5);
+
+    const advanced = computeTargets({
+      ...adultBase,
+      goal: 'gain',
+      goalBodyFatPct: 22,
+      fitnessExperience: 'advanced',
+    });
+    expect(advanced.baseTdciKcal).toBeCloseTo(2759 * 1.05, 5);
+  });
+
+  it('an explicit surplusKcal override takes priority over fitness experience', () => {
+    const result = computeTargets({
+      ...adultBase,
+      goal: 'gain',
+      goalBodyFatPct: 22,
+      fitnessExperience: 'beginner',
+      surplusKcal: 300,
+    });
+    expect(result.baseTdciKcal).toBeCloseTo(2759 + 300, 5);
   });
 
   it('recomposition: gain + lower target body fat → maintenance calories', () => {

@@ -151,6 +151,8 @@
     "diets": "Diet",
     "sharesMainMeals": "Shares main meals",
     "sharesMainMealsHint": "Turn off to give this member an independently generated plan.",
+    "workoutDays": "Workout days",
+    "workoutDaysHint": "On training days the app adds a bit more calories (as carbs); on rest days it trims them back so the weekly average matches your target.",
     "required": "Required",
     "birthDateFormat": "Use the YYYY-MM-DD format",
     "heightRange": "Enter a height of 60–230 cm",

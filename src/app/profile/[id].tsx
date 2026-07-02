@@ -148,6 +148,7 @@ export default function ProfileOverviewScreen() {
     goalBodyFatPct: profile.goalBodyFatPct ?? undefined,
     fitnessExperience: profile.fitnessExperience ?? undefined,
     sharesMainMeals: profile.sharesMainMeals,
+    workoutDays: profile.workoutDaysJson ? (JSON.parse(profile.workoutDaysJson) as number[]) : [],
     allergens: restrictions.allergens,
     diets: restrictions.diets,
   };
@@ -163,6 +164,7 @@ export default function ProfileOverviewScreen() {
       goalWeightKg: value.goalWeightKg,
       goalBodyFatPct: value.goalBodyFatPct,
       fitnessExperience: value.fitnessExperience,
+      workoutDays: value.workoutDays ?? [],
       sharesMainMeals: value.sharesMainMeals ?? true,
       allergens: value.allergens ?? [],
       diets: value.diets ?? [],

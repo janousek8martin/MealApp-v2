@@ -12,10 +12,16 @@ function formatIsoDate(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+/** ISO weekday of `dateIso`: 1 = Monday .. 7 = Sunday. */
+export function isoWeekday(dateIso: string): number {
+  const day = parseIsoDate(dateIso).getDay();
+  return day === 0 ? 7 : day;
+}
+
 /** The Monday ('YYYY-MM-DD') of the week containing `dateIso`. */
 export function startOfWeek(dateIso: string): string {
   const date = parseIsoDate(dateIso);
-  const isoDay = date.getDay() === 0 ? 7 : date.getDay(); // 1 = Monday .. 7 = Sunday
+  const isoDay = isoWeekday(dateIso);
   date.setDate(date.getDate() - (isoDay - 1));
   return formatIsoDate(date);
 }

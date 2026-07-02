@@ -3,6 +3,7 @@ import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 
 import { db } from '@/db/client';
 import { bodyMetrics, householdSettings, households, profileRestrictions, profiles } from '@/db/schema';
+import { applyWorkoutDayCycling } from '@/domain/workoutDays';
 import { targetsForProfile, type ProfileRow } from '@/hooks/dataMapping';
 import { useAppStore } from '@/stores/appStore';
 
@@ -118,4 +119,25 @@ export function useProfileTargets(profile: ProfileRow | null) {
   const settings = useHouseholdSettings(profile?.householdId);
   if (!profile) return null;
   return targetsForProfile(profile, latestMetric, settings?.fiberMode ?? 'efsa_min');
+}
+
+/**
+ * A profile's target for a specific date, applying workout-day carb cycling
+ * on top of the weekly-average TDCI (training days get more, rest days less,
+ * so the weekly average always matches `useProfileTargets`).
+ */
+export function useDailyProfileTargets(profile: ProfileRow | null, dateIso: string) {
+  const targets = useProfileTargets(profile);
+  if (!targets || !profile) return null;
+  const workoutDays: number[] = profile.workoutDaysJson ? JSON.parse(profile.workoutDaysJson) : [];
+  return applyWorkoutDayCycling(
+    {
+      kcal: targets.adjustedTdciKcal,
+      proteinG: targets.macros.proteinG,
+      carbsG: targets.macros.carbsG,
+      fatG: targets.macros.fatG,
+    },
+    workoutDays,
+    dateIso,
+  );
 }

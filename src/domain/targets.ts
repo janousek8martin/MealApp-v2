@@ -9,6 +9,7 @@ import {
   KCAL_PER_KG_FAT,
   PROTEIN_PER_KG_LBM,
   SURPLUS_KCAL_DEFAULT,
+  SURPLUS_PCT_BY_EXPERIENCE,
   WEEKLY_LOSS_PCT_MAX,
   WEEKLY_LOSS_PCT_MIN,
   type ActivityLevel,
@@ -26,6 +27,8 @@ export type TargetsInput = {
   activityLevel: ActivityLevel;
   goal: 'lose' | 'maintain' | 'gain';
   goalBodyFatPct?: number;
+  /** Drives the muscle-gain surplus %, when `surplusKcal` isn't explicitly overridden. */
+  fitnessExperience?: 'beginner' | 'intermediate' | 'advanced';
   /** User's manual ±kcal correction on top of the computed TDCI. */
   manualAdjustmentKcal?: number;
   /** Daily deficit in kcal; defaults to the 0.5 % BW/week equivalent, clamped to the safe band. */
@@ -119,7 +122,12 @@ export function computeTargets(input: TargetsInput): TargetsResult {
       baseTdci = tdeeKcal;
     } else {
       mode = 'surplus';
-      baseTdci = tdeeKcal + (input.surplusKcal ?? SURPLUS_KCAL_DEFAULT);
+      const surplusKcal =
+        input.surplusKcal ??
+        (input.fitnessExperience
+          ? tdeeKcal * SURPLUS_PCT_BY_EXPERIENCE[input.fitnessExperience]
+          : SURPLUS_KCAL_DEFAULT);
+      baseTdci = tdeeKcal + surplusKcal;
     }
   }
 

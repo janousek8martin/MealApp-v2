@@ -42,6 +42,16 @@ export const DEFICIT_STEP_KCAL_MAX = 250;
 /** Default surplus for muscle gain (not specified by the brief; user-editable). */
 export const SURPLUS_KCAL_DEFAULT = 250;
 
+/** Muscle-gain surplus as a % of TDEE, tied to fitness experience (approved user decision). */
+export const SURPLUS_PCT_BY_EXPERIENCE: Record<'beginner' | 'intermediate' | 'advanced', number> = {
+  beginner: 0.1,
+  intermediate: 0.07,
+  advanced: 0.05,
+};
+
+/** Training-day kcal bonus for workout-day carb cycling; added entirely to carbs. */
+export const WORKOUT_DAY_KCAL_BONUS_PCT = 0.12;
+
 /** EFSA minimum and the optional gender-specific defaults (g/day). */
 export const FIBER_G_DEFAULT = 25;
 export const FIBER_G_MALE = 32;

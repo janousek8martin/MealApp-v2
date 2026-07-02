@@ -151,6 +151,8 @@
     "diets": "Stravovací režim",
     "sharesMainMeals": "Sdílí hlavní jídla",
     "sharesMainMealsHint": "Vypněte, pokud má mít člen vlastní, nezávisle generovaný jídelníček.",
+    "workoutDays": "Tréninkové dny",
+    "workoutDaysHint": "V tréninkové dny appka mírně navýší kalorie (do sacharidů), ve volných dnech je přiměřeně sníží tak, aby týdenní průměr odpovídal cíli.",
     "required": "Povinné pole",
     "birthDateFormat": "Zadejte datum ve formátu RRRR-MM-DD",
     "heightRange": "Zadejte výšku 60–230 cm",
