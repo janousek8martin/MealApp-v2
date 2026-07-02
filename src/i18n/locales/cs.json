@@ -9,11 +9,13 @@
     "delete": "Smazat"
   },
   "tabs": {
-    "today": "Dnes",
+    "home": "Domů",
     "plan": "Plán",
-    "library": "Knihovna",
+    "library": "Recepty",
     "shopping": "Nákup",
-    "progress": "Pokrok"
+    "pantry": "Spíž",
+    "progress": "Pokrok",
+    "settings": "Nastavení"
   },
   "today": {
     "title": "Dnes",
@@ -325,6 +327,8 @@
     "weighInTime": "Čas vážení",
     "planningTime": "Čas plánování",
     "saveTimes": "Uložit časy",
-    "invalidTime": "Použijte formát HH:MM"
+    "invalidTime": "Použijte formát HH:MM",
+    "navigation": "Navigační lišta",
+    "navigationHint": "Vyberte, které sekce budou v hlavním panelu (max {{max}}) – zbytek se přesune do rozbalovacího panelu."
   }
 }

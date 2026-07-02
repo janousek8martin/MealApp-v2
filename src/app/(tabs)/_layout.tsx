@@ -1,20 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ColorValue } from 'react-native';
 
+import { AppTabBar } from '@/components/AppTabBar';
 import { useHousehold, useHouseholdSettings } from '@/hooks/data';
 import { syncHouseholdNotifications } from '@/services/notifications';
 import { colors } from '@/theme/tokens';
-
-type IconName = keyof typeof Ionicons.glyphMap;
-
-function tabIcon(name: IconName) {
-  return function TabIcon({ color, size }: { color: ColorValue; size: number }) {
-    return <Ionicons name={name} size={size} color={color} />;
-  };
-}
 
 export default function TabsLayout() {
   const { t, i18n } = useTranslation();
@@ -47,36 +38,18 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <AppTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
-        },
         sceneStyle: { backgroundColor: colors.background },
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{ title: t('tabs.today'), tabBarIcon: tabIcon('sunny') }}
-      />
-      <Tabs.Screen
-        name="plan"
-        options={{ title: t('tabs.plan'), tabBarIcon: tabIcon('calendar') }}
-      />
-      <Tabs.Screen
-        name="library"
-        options={{ title: t('tabs.library'), tabBarIcon: tabIcon('restaurant') }}
-      />
-      <Tabs.Screen
-        name="shopping"
-        options={{ title: t('tabs.shopping'), tabBarIcon: tabIcon('cart') }}
-      />
-      <Tabs.Screen
-        name="progress"
-        options={{ title: t('tabs.progress'), tabBarIcon: tabIcon('trending-up') }}
-      />
+      <Tabs.Screen name="index" options={{ title: t('tabs.home') }} />
+      <Tabs.Screen name="plan" options={{ title: t('tabs.plan') }} />
+      <Tabs.Screen name="library" options={{ title: t('tabs.library') }} />
+      <Tabs.Screen name="shopping" options={{ title: t('tabs.shopping') }} />
+      <Tabs.Screen name="pantry" options={{ title: t('tabs.pantry') }} />
+      <Tabs.Screen name="progress" options={{ title: t('tabs.progress') }} />
+      <Tabs.Screen name="settings" options={{ title: t('tabs.settings') }} />
     </Tabs>
   );
 }

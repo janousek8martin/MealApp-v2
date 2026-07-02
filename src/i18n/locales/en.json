@@ -9,11 +9,13 @@
     "delete": "Delete"
   },
   "tabs": {
-    "today": "Today",
+    "home": "Home",
     "plan": "Plan",
-    "library": "Library",
+    "library": "Recipes",
     "shopping": "Shopping",
-    "progress": "Progress"
+    "pantry": "Pantry",
+    "progress": "Progress",
+    "settings": "Settings"
   },
   "today": {
     "title": "Today",
@@ -325,6 +327,8 @@
     "weighInTime": "Weigh-in time",
     "planningTime": "Planning time",
     "saveTimes": "Save times",
-    "invalidTime": "Use the HH:MM format"
+    "invalidTime": "Use the HH:MM format",
+    "navigation": "Navigation bar",
+    "navigationHint": "Choose which sections sit in the main bar (max {{max}}) – the rest move into the expand panel."
   }
 }

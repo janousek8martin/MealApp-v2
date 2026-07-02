@@ -1,81 +1,54 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
-import {
-  addManualShoppingItem,
-  generateShoppingList,
-  removeShoppingItem,
-  setShoppingItemChecked,
-} from '@/db/repositories/shopping';
+import { addPantryItem, removePantryItem } from '@/db/repositories/shopping';
+import { todayIsoDate } from '@/db/time';
 import { useHousehold } from '@/hooks/data';
 import { useFood } from '@/hooks/library';
-import { useShoppingItems, type ShoppingItemRow } from '@/hooks/shopping';
+import { usePantryItems, type PantryItemRow } from '@/hooks/shopping';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
 
-function ShoppingRow({ item, onToggle, onRemove }: { item: ShoppingItemRow; onToggle: () => void; onRemove: () => void }) {
-  const food = useFood(item.foodId ?? undefined);
-  const name = food ? localizedName(food) : (item.customName ?? '');
+function PantryRow({ item, onRemove }: { item: PantryItemRow; onRemove: () => void }) {
+  const { t } = useTranslation();
+  const food = useFood(item.foodId);
+  const name = food ? localizedName(food) : '';
+  const today = todayIsoDate();
+  const expiringSoon = item.expiresAt !== null && item.expiresAt <= today;
 
   return (
-    <Pressable accessibilityRole="button" style={styles.row} onPress={onToggle}>
-      <Ionicons
-        name={item.checked ? 'checkbox' : 'square-outline'}
-        size={22}
-        color={item.checked ? colors.success : colors.textSecondary}
-      />
+    <View style={styles.row}>
       <View style={styles.rowText}>
-        <Text style={[styles.rowName, item.checked && styles.rowNameChecked]} numberOfLines={1}>
+        <Text style={styles.rowName} numberOfLines={1}>
           {name}
         </Text>
-        {item.quantity !== null ? (
-          <Text style={styles.rowMeta}>
-            {Math.round(item.quantity * 10) / 10} {item.unit}
-          </Text>
-        ) : null}
+        <Text style={[styles.rowMeta, expiringSoon && styles.rowMetaWarning]}>
+          {Math.round(item.quantity * 10) / 10} {food?.baseUnit === 'piece' ? t('units.pcs') : food?.baseUnit}
+          {item.expiresAt ? ` · ${t('shopping.expiresOn', { date: item.expiresAt })}` : ''}
+        </Text>
       </View>
       <Pressable accessibilityRole="button" onPress={onRemove} hitSlop={8}>
         <Ionicons name="close" size={18} color={colors.textSecondary} />
       </Pressable>
-    </Pressable>
+    </View>
   );
 }
 
-export default function ShoppingScreen() {
+export default function PantryScreen() {
   const { t } = useTranslation();
   const { household } = useHousehold();
-  const [generating, setGenerating] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pendingFood, setPendingFood] = useState<FoodRow | null>(null);
   const [quantity, setQuantity] = useState('');
 
-  const shoppingItems = useShoppingItems(household?.id);
-
-  const weeklyItems = useMemo(
-    () => shoppingItems.filter((i) => i.horizon === 'weekly').sort((a, b) => Number(a.checked) - Number(b.checked)),
-    [shoppingItems],
-  );
-  const monthlyItems = useMemo(
-    () => shoppingItems.filter((i) => i.horizon === 'monthly').sort((a, b) => Number(a.checked) - Number(b.checked)),
-    [shoppingItems],
-  );
-
-  const generateList = async () => {
-    if (!household) return;
-    setGenerating(true);
-    try {
-      await generateShoppingList(db, household.id);
-    } finally {
-      setGenerating(false);
-    }
-  };
+  const pantryItems = usePantryItems(household?.id);
 
   const closeAddFlow = () => {
     setPickerVisible(false);
@@ -87,56 +60,26 @@ export default function ShoppingScreen() {
     if (!household || !pendingFood) return;
     const qty = Number(quantity.replace(',', '.'));
     if (!Number.isFinite(qty) || qty <= 0) return;
-    await addManualShoppingItem(db, household.id, {
-      foodId: pendingFood.id,
-      quantity: qty,
-      unit: pendingFood.baseUnit === 'piece' ? undefined : pendingFood.baseUnit,
-      horizon: 'weekly',
-    });
+    await addPantryItem(db, household.id, { foodId: pendingFood.id, quantity: qty });
     closeAddFlow();
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.heading}>{t('tabs.shopping')}</Text>
+        <Text style={styles.heading}>{t('tabs.pantry')}</Text>
       </View>
 
       <View style={styles.actionsRow}>
-        <Button
-          label={generating ? t('today.generating') : t('shopping.generateList')}
-          variant="secondary"
-          onPress={generateList}
-          disabled={generating || !household}
-          style={styles.actionButton}
-        />
         <Button label={t('shopping.addItem')} onPress={() => setPickerVisible(true)} style={styles.actionButton} />
       </View>
-      {generating ? <ActivityIndicator color={colors.primary} style={styles.spinner} /> : null}
 
       <FlatList
         contentContainerStyle={styles.list}
-        data={[
-          { key: 'weekly', title: t('shopping.weekly'), items: weeklyItems },
-          { key: 'monthly', title: t('shopping.monthly'), items: monthlyItems },
-        ]}
-        keyExtractor={(section) => section.key}
-        renderItem={({ item: section }) =>
-          section.items.length > 0 ? (
-            <View>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              {section.items.map((item) => (
-                <ShoppingRow
-                  key={item.id}
-                  item={item}
-                  onToggle={() => void setShoppingItemChecked(db, item.id, !item.checked)}
-                  onRemove={() => void removeShoppingItem(db, item.id)}
-                />
-              ))}
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={<Text style={styles.emptyText}>{t('shopping.emptyList')}</Text>}
+        data={pantryItems}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <PantryRow item={item} onRemove={() => void removePantryItem(db, item.id)} />}
+        ListEmptyComponent={<Text style={styles.emptyText}>{t('shopping.emptyPantry')}</Text>}
       />
 
       <FoodPickerModal
@@ -196,19 +139,9 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
   },
-  spinner: {
-    marginTop: spacing.sm,
-  },
   list: {
     padding: spacing.md,
     paddingBottom: spacing.xl,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
   },
   row: {
     flexDirection: 'row',
@@ -230,14 +163,14 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: '600',
   },
-  rowNameChecked: {
-    color: colors.textSecondary,
-    textDecorationLine: 'line-through',
-  },
   rowMeta: {
     color: colors.textSecondary,
     fontSize: typography.small,
     marginTop: 2,
+  },
+  rowMetaWarning: {
+    color: colors.danger,
+    fontWeight: '600',
   },
   emptyText: {
     color: colors.textSecondary,

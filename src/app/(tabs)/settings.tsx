@@ -1,8 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
@@ -18,9 +16,25 @@ import { useHousehold, useHouseholdSettings, useProfiles, useProfileTargets } fr
 import type { ProfileRow } from '@/hooks/dataMapping';
 import { useAllMealSlots, type SlotRow } from '@/hooks/plan';
 import { syncHouseholdNotifications } from '@/services/notifications';
+import {
+  ALL_NAV_KEYS,
+  MAX_MAIN_NAV_ITEMS,
+  useAppStore,
+  type NavKey,
+} from '@/stores/appStore';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+const NAV_LABEL_KEYS: Record<NavKey, string> = {
+  index: 'tabs.home',
+  plan: 'tabs.plan',
+  library: 'tabs.library',
+  shopping: 'tabs.shopping',
+  pantry: 'tabs.pantry',
+  progress: 'tabs.progress',
+  settings: 'tabs.settings',
+};
 
 function num(value: string): number | null {
   const parsed = Number(value.replace(',', '.'));
@@ -217,6 +231,43 @@ function MacroOverridesCard({ profile }: { profile: ProfileRow }) {
   );
 }
 
+function NavigationCard() {
+  const { t } = useTranslation();
+  const mainNavKeys = useAppStore((s) => s.mainNavKeys);
+  const setMainNavKeys = useAppStore((s) => s.setMainNavKeys);
+
+  const toggle = (key: NavKey, inMain: boolean) => {
+    if (inMain) {
+      setMainNavKeys(mainNavKeys.filter((k) => k !== key));
+    } else if (mainNavKeys.length < MAX_MAIN_NAV_ITEMS) {
+      setMainNavKeys(ALL_NAV_KEYS.filter((k) => mainNavKeys.includes(k) || k === key));
+    }
+  };
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>{t('settings.navigation')}</Text>
+      <Text style={styles.cardHint}>{t('settings.navigationHint', { max: MAX_MAIN_NAV_ITEMS })}</Text>
+      {ALL_NAV_KEYS.map((key) => {
+        const inMain = mainNavKeys.includes(key);
+        const disable = !inMain && mainNavKeys.length >= MAX_MAIN_NAV_ITEMS;
+        return (
+          <View key={key} style={styles.navRow}>
+            <Text style={styles.slotLabel}>{t(NAV_LABEL_KEYS[key])}</Text>
+            <Switch
+              value={inMain}
+              onValueChange={() => toggle(key, inMain)}
+              disabled={disable}
+              trackColor={{ false: colors.border, true: colors.primaryLight }}
+              thumbColor={colors.surface}
+            />
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const { household } = useHousehold();
@@ -254,13 +305,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.headerRow}>
-          <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={26} color={colors.text} />
-          </Pressable>
-          <Text style={styles.heading}>{t('settings.title')}</Text>
-          <View style={{ width: 26 }} />
-        </View>
+        <Text style={styles.heading}>{t('settings.title')}</Text>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{household.name}</Text>
@@ -309,27 +354,27 @@ export default function SettingsScreen() {
           <View style={styles.stepperRow}>
             <Text style={styles.slotLabel}>{t('settings.maxRepetitionsPerWeek')}</Text>
             <View style={styles.stepper}>
-              <Pressable
-                accessibilityRole="button"
+              <Button
+                variant="secondary"
+                label="–"
                 style={styles.stepperButton}
                 onPress={() =>
                   updateHouseholdSettings(db, household.id, {
                     defaultMaxRepetitionsPerWeek: Math.max(1, settings.defaultMaxRepetitionsPerWeek - 1),
                   })
-                }>
-                <Ionicons name="remove" size={18} color={colors.primary} />
-              </Pressable>
+                }
+              />
               <Text style={styles.stepperValue}>{settings.defaultMaxRepetitionsPerWeek}</Text>
-              <Pressable
-                accessibilityRole="button"
+              <Button
+                variant="secondary"
+                label="+"
                 style={styles.stepperButton}
                 onPress={() =>
                   updateHouseholdSettings(db, household.id, {
                     defaultMaxRepetitionsPerWeek: Math.min(7, settings.defaultMaxRepetitionsPerWeek + 1),
                   })
-                }>
-                <Ionicons name="add" size={18} color={colors.primary} />
-              </Pressable>
+                }
+              />
             </View>
           </View>
           <Text style={styles.cardHint}>{t('settings.maxRepetitionsHint')}</Text>
@@ -385,6 +430,8 @@ export default function SettingsScreen() {
           {!timesValid ? <Text style={styles.sumTextWarning}>{t('settings.invalidTime')}</Text> : null}
           <Button label={t('settings.saveTimes')} onPress={saveTimes} disabled={!timesValid} />
         </View>
+
+        <NavigationCard />
       </ScrollView>
     </SafeAreaView>
   );
@@ -399,16 +446,11 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingBottom: spacing.xl,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
   heading: {
     color: colors.text,
     fontSize: typography.title,
     fontWeight: '800',
+    marginBottom: spacing.sm,
   },
   card: {
     backgroundColor: colors.surface,
@@ -509,13 +551,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   stepperButton: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.chip,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 44,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: 0,
   },
   stepperValue: {
     color: colors.text,
@@ -523,5 +561,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     minWidth: 20,
     textAlign: 'center',
+  },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
 });
