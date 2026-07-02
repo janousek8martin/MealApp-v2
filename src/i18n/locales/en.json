@@ -18,13 +18,18 @@
   "today": {
     "title": "Today",
     "mealsComingTitle": "Today's meals",
-    "mealsComingText": "The generated meal plan will appear here once the planner is built (phase 6).",
+    "mealsComingText": "No plan yet. Generate this week and the app will suggest meals for your calorie targets.",
     "placeholderTitle": "Today's overview",
-    "placeholderSubtitle": "Today's calories and meals will appear here."
+    "placeholderSubtitle": "Today's calories and meals will appear here.",
+    "fitTitle": "How today matches your target",
+    "fitSummary": "Planned {{consumed}} / {{target}} kcal",
+    "generateWeek": "Generate this week",
+    "generating": "Generating…"
   },
-  "plan": {
-    "placeholderTitle": "Weekly plan",
-    "placeholderSubtitle": "The whole household's meal plan, a week ahead."
+  "planScreen": {
+    "generateWeek": "Generate week",
+    "generateDay": "Generate day",
+    "pastNotice": "Past days can't be edited – you can only mark retroactively whether a meal was eaten."
   },
   "library": {
     "placeholderTitle": "Recipes & foods",
@@ -244,5 +249,21 @@
   "photo": {
     "take": "Take photo",
     "gallery": "From gallery"
+  },
+  "slots": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snack_morning": "Morning snack",
+    "snack_afternoon": "Afternoon snack"
+  },
+  "todayMeal": {
+    "noMeal": "No meal planned",
+    "addMeal": "+ Add meal",
+    "viewRecipe": "View recipe",
+    "swap": "Swap",
+    "eaten": "Eaten",
+    "notEaten": "Not eaten",
+    "pickMeal": "Pick a meal"
   }
 }

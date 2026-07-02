@@ -1,0 +1,157 @@
+import {
+  deriveRecipeTags,
+  isRecipeAllowedForProfiles,
+  passesRepetitionRules,
+} from '../filters';
+import type { DietRestrictions, RecipeCandidate, RepetitionContext } from '../types';
+
+function candidate(overrides: Partial<RecipeCandidate> = {}): RecipeCandidate {
+  return {
+    id: 'r1',
+    category: 'lunch_dinner',
+    isSide: false,
+    budget: 'average',
+    nutritionPerPortion: { kcal: 600, proteinG: 40, carbsG: 60, fatG: 20, fiberG: 8 },
+    ingredients: [
+      { foodId: 'chicken', allergens: [], dietFlags: [] },
+      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] },
+    ],
+    maxRepetitionsPerWeek: null,
+    allowConsecutiveDays: null,
+    ...overrides,
+  };
+}
+
+describe('deriveRecipeTags', () => {
+  it('unions allergens across ingredients', () => {
+    const tags = deriveRecipeTags([
+      { foodId: 'a', allergens: ['gluten'], dietFlags: [] },
+      { foodId: 'b', allergens: ['lactose'], dietFlags: [] },
+    ]);
+    expect(tags.allergens.sort()).toEqual(['gluten', 'lactose']);
+  });
+
+  it('only keeps a diet flag every ingredient supports', () => {
+    const tags = deriveRecipeTags([
+      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] },
+      { foodId: 'egg', allergens: ['eggs'], dietFlags: ['vegetarian'] },
+    ]);
+    expect(tags.dietFlags).toEqual(['vegetarian']);
+  });
+
+  it('a recipe with a non-flagged ingredient (e.g. meat) supports no diets', () => {
+    const tags = deriveRecipeTags([
+      { foodId: 'chicken', allergens: [], dietFlags: [] },
+      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] },
+    ]);
+    expect(tags.dietFlags).toEqual([]);
+  });
+});
+
+describe('isRecipeAllowedForProfiles', () => {
+  const noRestrictions: DietRestrictions = {
+    allergens: [],
+    diets: [],
+    avoidedRecipeIds: [],
+    avoidedFoodIds: [],
+  };
+
+  it('allows a recipe with no conflicts', () => {
+    expect(isRecipeAllowedForProfiles(candidate(), [noRestrictions])).toBe(true);
+  });
+
+  it('rejects a recipe touching an allergen any sharing profile must avoid', () => {
+    const withGluten = candidate({
+      ingredients: [{ foodId: 'bread', allergens: ['gluten'], dietFlags: ['vegetarian'] }],
+    });
+    expect(
+      isRecipeAllowedForProfiles(withGluten, [{ ...noRestrictions, allergens: ['gluten'] }]),
+    ).toBe(false);
+  });
+
+  it('rejects a recipe that does not satisfy a required diet', () => {
+    // chicken ingredient carries no diet flags, so the recipe is not vegetarian.
+    expect(
+      isRecipeAllowedForProfiles(candidate(), [{ ...noRestrictions, diets: ['vegetarian'] }]),
+    ).toBe(false);
+  });
+
+  it('must satisfy every sharing profile simultaneously', () => {
+    const meatFree = candidate({
+      ingredients: [{ foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] }],
+    });
+    expect(
+      isRecipeAllowedForProfiles(meatFree, [
+        noRestrictions,
+        { ...noRestrictions, diets: ['vegetarian'] },
+      ]),
+    ).toBe(true);
+    expect(
+      isRecipeAllowedForProfiles(candidate(), [
+        noRestrictions,
+        { ...noRestrictions, diets: ['vegetarian'] },
+      ]),
+    ).toBe(false);
+  });
+
+  it('rejects an explicitly avoided recipe', () => {
+    expect(
+      isRecipeAllowedForProfiles(candidate(), [{ ...noRestrictions, avoidedRecipeIds: ['r1'] }]),
+    ).toBe(false);
+  });
+
+  it('rejects a recipe containing an explicitly avoided food', () => {
+    expect(
+      isRecipeAllowedForProfiles(candidate(), [{ ...noRestrictions, avoidedFoodIds: ['chicken'] }]),
+    ).toBe(false);
+  });
+});
+
+describe('passesRepetitionRules', () => {
+  function ctx(overrides: Partial<RepetitionContext> = {}): RepetitionContext {
+    return {
+      weekCounts: new Map(),
+      previousDayRecipeIds: new Set(),
+      household: { defaultMaxRepetitionsPerWeek: 2, defaultAllowConsecutiveDays: false },
+      ...overrides,
+    };
+  }
+
+  it('allows a recipe under its weekly limit', () => {
+    expect(passesRepetitionRules(candidate(), ctx({ weekCounts: new Map([['r1', 1]]) }))).toBe(true);
+  });
+
+  it('blocks a recipe that reached its effective weekly limit', () => {
+    expect(passesRepetitionRules(candidate(), ctx({ weekCounts: new Map([['r1', 2]]) }))).toBe(false);
+  });
+
+  it('respects a per-recipe override over the household default', () => {
+    const oftenAllowed = candidate({ maxRepetitionsPerWeek: 4 });
+    expect(passesRepetitionRules(oftenAllowed, ctx({ weekCounts: new Map([['r1', 3]]) }))).toBe(true);
+  });
+
+  it('blocks a recipe used yesterday when consecutive days are not allowed', () => {
+    expect(
+      passesRepetitionRules(candidate(), ctx({ previousDayRecipeIds: new Set(['r1']) })),
+    ).toBe(false);
+  });
+
+  it('allows a recipe used yesterday when its override permits consecutive days', () => {
+    const batchCookable = candidate({ allowConsecutiveDays: true });
+    expect(
+      passesRepetitionRules(batchCookable, ctx({ previousDayRecipeIds: new Set(['r1']) })),
+    ).toBe(true);
+  });
+
+  it('allows a recipe used yesterday when the household default permits it', () => {
+    expect(
+      passesRepetitionRules(
+        candidate(),
+        ctx({
+          previousDayRecipeIds: new Set(['r1']),
+          household: { defaultMaxRepetitionsPerWeek: 2, defaultAllowConsecutiveDays: true },
+        }),
+      ),
+    ).toBe(true);
+  });
+});

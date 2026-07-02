@@ -18,13 +18,18 @@
   "today": {
     "title": "Dnes",
     "mealsComingTitle": "Jídla dneška",
-    "mealsComingText": "Vygenerovaný jídelníček se objeví tady, jakmile bude hotový plánovač (fáze 6).",
+    "mealsComingText": "Zatím tu není žádný plán. Vygenerujte tento týden a appka navrhne jídla podle vašich kalorických cílů.",
     "placeholderTitle": "Dnešní přehled",
-    "placeholderSubtitle": "Kalorie a jídla dneška se objeví tady."
+    "placeholderSubtitle": "Kalorie a jídla dneška se objeví tady.",
+    "fitTitle": "Jak dnešek sedí na cíl",
+    "fitSummary": "Naplánováno {{consumed}} / {{target}} kcal",
+    "generateWeek": "Vygenerovat tento týden",
+    "generating": "Generuji…"
   },
-  "plan": {
-    "placeholderTitle": "Týdenní plán",
-    "placeholderSubtitle": "Jídelníček celé domácnosti na týden dopředu."
+  "planScreen": {
+    "generateWeek": "Vygenerovat týden",
+    "generateDay": "Vygenerovat den",
+    "pastNotice": "Minulé dny jsou needitovatelné – lze zpětně jen označit, zda bylo jídlo snědené."
   },
   "library": {
     "placeholderTitle": "Recepty a potraviny",
@@ -244,5 +249,21 @@
   "photo": {
     "take": "Vyfotit",
     "gallery": "Z galerie"
+  },
+  "slots": {
+    "breakfast": "Snídaně",
+    "lunch": "Oběd",
+    "dinner": "Večeře",
+    "snack_morning": "Dopolední svačina",
+    "snack_afternoon": "Odpolední svačina"
+  },
+  "todayMeal": {
+    "noMeal": "Žádné jídlo naplánováno",
+    "addMeal": "+ Přidat jídlo",
+    "viewRecipe": "Zobrazit recept",
+    "swap": "Vyměnit",
+    "eaten": "Snědeno",
+    "notEaten": "Nesnědeno",
+    "pickMeal": "Vybrat jídlo"
   }
 }

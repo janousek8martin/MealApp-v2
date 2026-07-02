@@ -1,0 +1,156 @@
+import { createSeededRng } from '../rng';
+import { pickMealForSlot, pickSnackForSlot, recordPick, type GeneratorItem } from '../select';
+import type { DietRestrictions, RecipeCandidate, RepetitionContext } from '../types';
+
+function item(id: string, overrides: Partial<RecipeCandidate> = {}): GeneratorItem {
+  const candidate: RecipeCandidate = {
+    id,
+    category: 'lunch_dinner',
+    isSide: false,
+    budget: 'average',
+    nutritionPerPortion: { kcal: 600, proteinG: 40, carbsG: 60, fatG: 20, fiberG: 4 },
+    ingredients: [],
+    maxRepetitionsPerWeek: null,
+    allowConsecutiveDays: null,
+    ...overrides,
+  };
+  return { itemType: 'recipe', candidate };
+}
+
+const noRestrictions: DietRestrictions = {
+  allergens: [],
+  diets: [],
+  avoidedRecipeIds: [],
+  avoidedFoodIds: [],
+};
+
+function repetitionCtx(overrides: Partial<RepetitionContext> = {}): RepetitionContext {
+  return {
+    weekCounts: new Map(),
+    previousDayRecipeIds: new Set(),
+    household: { defaultMaxRepetitionsPerWeek: 2, defaultAllowConsecutiveDays: false },
+    ...overrides,
+  };
+}
+
+describe('pickMealForSlot', () => {
+  it('returns null when every candidate is filtered out', () => {
+    const glutenItem = item('bread', {
+      ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [] }],
+    });
+    const result = pickMealForSlot(
+      [glutenItem],
+      [{ ...noRestrictions, allergens: ['gluten'] }],
+      repetitionCtx(),
+      { favoriteRecipeIds: new Set(), expiringFoodIds: new Set() },
+      createSeededRng(1),
+    );
+    expect(result).toBeNull();
+  });
+
+  it('never returns a candidate that violates a hard filter', () => {
+    const candidates = [
+      item('a', { ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [] }] }),
+      item('b'),
+      item('c'),
+    ];
+    const rng = createSeededRng(5);
+    for (let i = 0; i < 30; i += 1) {
+      const result = pickMealForSlot(
+        candidates,
+        [{ ...noRestrictions, allergens: ['gluten'] }],
+        repetitionCtx(),
+        { favoriteRecipeIds: new Set(), expiringFoodIds: new Set() },
+        rng,
+      );
+      expect(result?.candidate.id).not.toBe('a');
+    }
+  });
+
+  it('is deterministic for a fixed seed', () => {
+    const candidates = [item('a'), item('b'), item('c')];
+    const pick = () =>
+      pickMealForSlot(
+        candidates,
+        [noRestrictions],
+        repetitionCtx(),
+        { favoriteRecipeIds: new Set(), expiringFoodIds: new Set() },
+        createSeededRng(77),
+      )?.candidate.id;
+    expect(pick()).toBe(pick());
+  });
+});
+
+describe('pickSnackForSlot', () => {
+  it('picks the candidate closest to the remaining target, not the highest scored', () => {
+    const candidates = [
+      item('big', { nutritionPerPortion: { kcal: 550, proteinG: 15, carbsG: 15, fatG: 45, fiberG: 8 } }),
+      item('closest', { nutritionPerPortion: { kcal: 210, proteinG: 22, carbsG: 20, fatG: 6, fiberG: 0 } }),
+    ];
+    const result = pickSnackForSlot(candidates, noRestrictions, repetitionCtx(), {
+      kcal: 200,
+      proteinG: 20,
+      carbsG: 20,
+      fatG: 6,
+    });
+    expect(result?.candidate.id).toBe('closest');
+  });
+
+  it('excludes a candidate that fails the diet/allergy hard filter even if it is closest', () => {
+    const candidates = [
+      item('gluten_closest', {
+        nutritionPerPortion: { kcal: 200, proteinG: 20, carbsG: 20, fatG: 6, fiberG: 0 },
+        ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [] }],
+      }),
+      item('safe_further', { nutritionPerPortion: { kcal: 400, proteinG: 10, carbsG: 10, fatG: 20, fiberG: 2 } }),
+    ];
+    const result = pickSnackForSlot(
+      candidates,
+      { ...noRestrictions, allergens: ['gluten'] },
+      repetitionCtx(),
+      { kcal: 200, proteinG: 20, carbsG: 20, fatG: 6 },
+    );
+    expect(result?.candidate.id).toBe('safe_further');
+  });
+
+  it('excludes a candidate that already hit its repetition limit', () => {
+    const candidates = [
+      item('maxed', { nutritionPerPortion: { kcal: 200, proteinG: 20, carbsG: 20, fatG: 6, fiberG: 0 } }),
+      item('available', { nutritionPerPortion: { kcal: 400, proteinG: 10, carbsG: 10, fatG: 20, fiberG: 2 } }),
+    ];
+    const result = pickSnackForSlot(
+      candidates,
+      noRestrictions,
+      repetitionCtx({ weekCounts: new Map([['maxed', 2]]) }),
+      { kcal: 200, proteinG: 20, carbsG: 20, fatG: 6 },
+    );
+    expect(result?.candidate.id).toBe('available');
+  });
+
+  it('returns null when everything is filtered out', () => {
+    const candidates = [item('gluten', { ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [] }] })];
+    const result = pickSnackForSlot(
+      candidates,
+      { ...noRestrictions, allergens: ['gluten'] },
+      repetitionCtx(),
+      { kcal: 200, proteinG: 20, carbsG: 20, fatG: 6 },
+    );
+    expect(result).toBeNull();
+  });
+});
+
+describe('recordPick', () => {
+  it('increments the count for the picked recipe without mutating the original', () => {
+    const original = repetitionCtx();
+    const updated = recordPick(original, 'r1');
+    expect(original.weekCounts.get('r1')).toBeUndefined();
+    expect(updated.weekCounts.get('r1')).toBe(1);
+  });
+
+  it('accumulates across repeated picks of the same recipe', () => {
+    let ctx = repetitionCtx();
+    ctx = recordPick(ctx, 'r1');
+    ctx = recordPick(ctx, 'r1');
+    expect(ctx.weekCounts.get('r1')).toBe(2);
+  });
+});

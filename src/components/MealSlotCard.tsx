@@ -1,0 +1,306 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { useFood, usePhoto, useRecipe } from '@/hooks/library';
+import { type MealRow, usePortionsForMeal } from '@/hooks/plan';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
+import type { RecipeNutrition } from '@/domain/recipeNutrition';
+import { localizedName } from '@/utils/localized';
+
+type Props = {
+  slotLabel: string;
+  meal: MealRow | undefined;
+  activeProfileId: string;
+  recipeNutritionMap: Map<string, RecipeNutrition>;
+  onSwap: () => void;
+  onAddMeal: () => void;
+  onSetStatus: (portionId: string, status: 'planned' | 'eaten' | 'skipped') => void;
+  /** Disables regeneration (swap/add) for past dates; eaten/not-eaten can still be set retroactively. */
+  disabled?: boolean;
+};
+
+export function MealSlotCard({
+  slotLabel,
+  meal,
+  activeProfileId,
+  recipeNutritionMap,
+  onSwap,
+  onAddMeal,
+  onSetStatus,
+  disabled,
+}: Props) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+
+  const recipe = useRecipe(meal?.itemType === 'recipe' ? meal.itemId : undefined);
+  const food = useFood(meal?.itemType === 'food' ? meal.itemId : undefined);
+  const photo = usePhoto(meal?.itemType ?? 'recipe', meal?.itemId);
+  const portions = usePortionsForMeal(meal?.id);
+  const myPortion = portions.find((p) => p.profileId === activeProfileId);
+
+  if (!meal) {
+    return (
+      <View style={[styles.card, styles.emptyCard]}>
+        <Text style={styles.slotLabel}>{slotLabel}</Text>
+        {disabled ? (
+          <Text style={styles.emptyText}>{t('todayMeal.noMeal')}</Text>
+        ) : (
+          <Pressable accessibilityRole="button" style={styles.addButton} onPress={onAddMeal}>
+            <Ionicons name="add" size={18} color={colors.primary} />
+            <Text style={styles.addButtonLabel}>{t('todayMeal.addMeal')}</Text>
+          </Pressable>
+        )}
+      </View>
+    );
+  }
+
+  const name = recipe ? localizedName(recipe) : food ? localizedName(food) : '';
+  const baseNutrition = meal.itemType === 'recipe' ? recipeNutritionMap.get(meal.itemId) : food
+    ? { kcal: food.kcalPer100, proteinG: food.proteinPer100, carbsG: food.carbsPer100, fatG: food.fatPer100, fiberG: food.fiberPer100 }
+    : undefined;
+  const multiplier = myPortion?.multiplier ?? 1;
+  const scaled = baseNutrition
+    ? {
+        kcal: Math.round(baseNutrition.kcal * multiplier),
+        proteinG: Math.round(baseNutrition.proteinG * multiplier),
+        carbsG: Math.round(baseNutrition.carbsG * multiplier),
+        fatG: Math.round(baseNutrition.fatG * multiplier),
+      }
+    : null;
+
+  const isEaten = myPortion?.status === 'eaten';
+  const isSkipped = myPortion?.status === 'skipped';
+
+  const openDetail = () => {
+    if (meal.itemType === 'recipe') router.push({ pathname: '/recipe/[id]', params: { id: meal.itemId } });
+    else router.push({ pathname: '/food/[id]', params: { id: meal.itemId } });
+  };
+
+  return (
+    <View style={styles.card}>
+      <Pressable
+        accessibilityRole="button"
+        style={styles.header}
+        onPress={() => setExpanded((prev) => !prev)}>
+        {photo ? (
+          <Image source={{ uri: photo.uri }} style={styles.thumb} contentFit="cover" />
+        ) : (
+          <View style={[styles.thumb, styles.thumbPlaceholder]} />
+        )}
+        <View style={styles.headerText}>
+          <Text style={styles.slotLabel}>{slotLabel}</Text>
+          <Text style={styles.name} numberOfLines={1}>
+            {name}
+          </Text>
+          {scaled ? <Text style={styles.kcal}>{scaled.kcal} kcal</Text> : null}
+        </View>
+        <Ionicons
+          name={expanded ? 'chevron-up' : 'chevron-down'}
+          size={20}
+          color={colors.textSecondary}
+        />
+      </Pressable>
+
+      {expanded ? (
+        <View style={styles.expandedArea}>
+          {scaled ? (
+            <View style={styles.macroRow}>
+              <MacroBadge label={t('macros.protein')} value={scaled.proteinG} />
+              <MacroBadge label={t('macros.carbs')} value={scaled.carbsG} />
+              <MacroBadge label={t('macros.fat')} value={scaled.fatG} />
+            </View>
+          ) : null}
+
+          <View style={styles.actionsRow}>
+            <Pressable accessibilityRole="button" style={styles.actionButton} onPress={openDetail}>
+              <Ionicons name="restaurant-outline" size={16} color={colors.primary} />
+              <Text style={styles.actionLabel}>{t('todayMeal.viewRecipe')}</Text>
+            </Pressable>
+            {!disabled ? (
+              <Pressable accessibilityRole="button" style={styles.actionButton} onPress={onSwap}>
+                <Ionicons name="shuffle-outline" size={16} color={colors.primary} />
+                <Text style={styles.actionLabel}>{t('todayMeal.swap')}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+
+          {myPortion ? (
+            <View style={styles.statusRow}>
+              <Pressable
+                accessibilityRole="button"
+                style={[styles.statusButton, isEaten && styles.statusButtonActiveEaten]}
+                onPress={() => onSetStatus(myPortion.id, isEaten ? 'planned' : 'eaten')}>
+                <Ionicons name="checkmark" size={16} color={isEaten ? colors.onPrimary : colors.success} />
+                <Text style={[styles.statusLabel, isEaten && styles.statusLabelActive]}>
+                  {t('todayMeal.eaten')}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                style={[styles.statusButton, isSkipped && styles.statusButtonActiveSkipped]}
+                onPress={() => onSetStatus(myPortion.id, isSkipped ? 'planned' : 'skipped')}>
+                <Ionicons name="close" size={16} color={isSkipped ? colors.onPrimary : '#B3541E'} />
+                <Text style={[styles.statusLabel, isSkipped && styles.statusLabelActive]}>
+                  {t('todayMeal.notEaten')}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function MacroBadge({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.macroBadge}>
+      <Text style={styles.macroValue}>{value} g</Text>
+      <Text style={styles.macroLabel}>{label}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.sm,
+    overflow: 'hidden',
+  },
+  emptyCard: {
+    padding: spacing.md,
+    borderStyle: 'dashed',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.sm,
+    gap: spacing.sm,
+  },
+  thumb: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.card - 8,
+  },
+  thumbPlaceholder: {
+    backgroundColor: colors.olive,
+  },
+  headerText: {
+    flex: 1,
+  },
+  slotLabel: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+    fontWeight: '600',
+  },
+  name: {
+    color: colors.text,
+    fontSize: typography.body,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  kcal: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+    marginTop: 2,
+  },
+  emptyText: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+    marginTop: spacing.xs,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
+  },
+  addButtonLabel: {
+    color: colors.primary,
+    fontSize: typography.body,
+    fontWeight: '600',
+  },
+  expandedArea: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
+  },
+  macroRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: spacing.sm,
+  },
+  macroBadge: {
+    alignItems: 'center',
+  },
+  macroValue: {
+    color: colors.text,
+    fontSize: typography.body,
+    fontWeight: '700',
+  },
+  macroLabel: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.chip,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm + 2,
+  },
+  actionLabel: {
+    color: colors.primary,
+    fontSize: typography.small,
+    fontWeight: '600',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  statusButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.chip,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm + 2,
+  },
+  statusButtonActiveEaten: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  statusButtonActiveSkipped: {
+    backgroundColor: '#B3541E',
+    borderColor: '#B3541E',
+  },
+  statusLabel: {
+    color: colors.text,
+    fontSize: typography.small,
+    fontWeight: '600',
+  },
+  statusLabelActive: {
+    color: colors.onPrimary,
+  },
+});
