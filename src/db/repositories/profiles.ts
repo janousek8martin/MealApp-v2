@@ -89,3 +89,46 @@ export async function listActiveProfiles(db: AppDb, householdId: string) {
     .from(profiles)
     .where(and(eq(profiles.householdId, householdId), isNull(profiles.deletedAt)));
 }
+
+export type AddBodyMetricInput = {
+  date?: string;
+  weightKg: number;
+  bodyFatPct?: number | null;
+  method?: 'navy' | 'manual' | 'bia' | 'dexa' | null;
+  neckCm?: number | null;
+  waistCm?: number | null;
+  hipCm?: number | null;
+  note?: string | null;
+};
+
+/**
+ * Logs a weight/body-composition entry. Upserts by date – re-logging the
+ * same day (e.g. correcting a mistake) replaces that day's row rather than
+ * creating a second one, keeping the progress graph one point per day.
+ */
+export async function addBodyMetric(db: AppDb, profileId: string, input: AddBodyMetricInput): Promise<void> {
+  const date = input.date ?? todayIsoDate();
+  const now = nowIso();
+
+  const [existing] = await db
+    .select()
+    .from(bodyMetrics)
+    .where(and(eq(bodyMetrics.profileId, profileId), eq(bodyMetrics.date, date), isNull(bodyMetrics.deletedAt)));
+
+  const values = {
+    weightKg: input.weightKg,
+    bodyFatPct: input.bodyFatPct ?? null,
+    method: input.method ?? null,
+    neckCm: input.neckCm ?? null,
+    waistCm: input.waistCm ?? null,
+    hipCm: input.hipCm ?? null,
+    note: input.note ?? null,
+    updatedAt: now,
+  };
+
+  if (existing) {
+    await db.update(bodyMetrics).set(values).where(eq(bodyMetrics.id, existing.id));
+  } else {
+    await db.insert(bodyMetrics).values({ id: newId(), createdAt: now, profileId, date, ...values });
+  }
+}

@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 
 import { db } from '@/db/client';
@@ -66,6 +66,19 @@ export function useLatestBodyMetric(profileId: string | undefined) {
     [profileId],
   );
   return data?.[0] ?? null;
+}
+
+/** Full weight/body-fat history, oldest first – the basis for the progress graph. */
+export function useBodyMetricHistory(profileId: string | undefined) {
+  const { data } = useLiveQuery(
+    db
+      .select()
+      .from(bodyMetrics)
+      .where(and(eq(bodyMetrics.profileId, profileId ?? ''), isNull(bodyMetrics.deletedAt)))
+      .orderBy(asc(bodyMetrics.date)),
+    [profileId],
+  );
+  return data ?? [];
 }
 
 /**

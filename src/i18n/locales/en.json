@@ -58,8 +58,14 @@
     "expiresOn": "use by {{date}}"
   },
   "progress": {
-    "placeholderTitle": "Progress",
-    "placeholderSubtitle": "Weight, body composition and calorie targets over time."
+    "logWeight": "Log weight",
+    "weight": "Weight",
+    "bodyFat": "Body fat (optional)",
+    "chartTitle": "Weight trend",
+    "currentGoal": "Current goal",
+    "goalWeightLabel": "Goal weight",
+    "goalBodyFatLabel": "Goal body fat",
+    "dietCycleBanner": "You've lost a good amount of body fat since you started – consider switching to maintenance calories for 1–2 months before continuing the deficit."
   },
   "onboarding": {
     "welcomeTitle": "Welcome to MealApp",
@@ -273,5 +279,14 @@
     "eaten": "Eaten",
     "notEaten": "Not eaten",
     "pickMeal": "Pick a meal"
+  },
+  "notifications": {
+    "mealTitle": "Time to eat",
+    "weighInTitle": "Monday weigh-in",
+    "weighInBody": "Don't forget to log your weight this morning.",
+    "planningTitle": "Plan next week",
+    "planningBody": "Generate next week's meal plan and top up the shopping list.",
+    "shoppingTitle": "Shopping list",
+    "shoppingBody": "Check the shopping list before you head out."
   }
 }

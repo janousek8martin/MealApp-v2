@@ -58,8 +58,14 @@
     "expiresOn": "spotřebovat do {{date}}"
   },
   "progress": {
-    "placeholderTitle": "Pokrok",
-    "placeholderSubtitle": "Váha, složení těla a kalorické cíle v čase."
+    "logWeight": "Zapsat váhu",
+    "weight": "Váha",
+    "bodyFat": "Tělesný tuk (volitelné)",
+    "chartTitle": "Vývoj váhy",
+    "currentGoal": "Aktuální cíl",
+    "goalWeightLabel": "Cílová váha",
+    "goalBodyFatLabel": "Cílový tělesný tuk",
+    "dietCycleBanner": "Od začátku jste ubrali dost tělesného tuku – zvažte přechod na udržovací kalorie na 1–2 měsíce, než budete pokračovat v deficitu."
   },
   "onboarding": {
     "welcomeTitle": "Vítejte v MealApp",
@@ -273,5 +279,14 @@
     "eaten": "Snědeno",
     "notEaten": "Nesnědeno",
     "pickMeal": "Vybrat jídlo"
+  },
+  "notifications": {
+    "mealTitle": "Čas na jídlo",
+    "weighInTitle": "Pondělní vážení",
+    "weighInBody": "Nezapomeňte si dnes ráno zapsat váhu.",
+    "planningTitle": "Naplánujte další týden",
+    "planningBody": "Vygenerujte jídelníček na příští týden a doplňte nákupní seznam.",
+    "shoppingTitle": "Nákupní seznam",
+    "shoppingBody": "Zkontrolujte nákupní seznam, než vyrazíte nakupovat."
   }
 }

@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ColorValue } from 'react-native';
 
 import { useHousehold } from '@/hooks/data';
+import { syncHouseholdNotifications } from '@/services/notifications';
 import { colors } from '@/theme/tokens';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -17,6 +19,16 @@ function tabIcon(name: IconName) {
 export default function TabsLayout() {
   const { t } = useTranslation();
   const { household, loaded } = useHousehold();
+
+  // Reconciles scheduled reminders with current settings/meal-slot times on
+  // every app open – cheap, and the only sync point until Settings (phase 9)
+  // lets the user change these without restarting.
+  useEffect(() => {
+    if (!household) return;
+    syncHouseholdNotifications(household.id).catch((error) => {
+      console.error('Failed to sync notifications', error);
+    });
+  }, [household?.id]);
 
   if (!loaded) {
     return null;
