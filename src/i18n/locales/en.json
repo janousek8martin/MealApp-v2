@@ -4,7 +4,9 @@
     "continue": "Continue",
     "cancel": "Cancel",
     "save": "Save",
-    "done": "Done"
+    "done": "Done",
+    "edit": "Edit",
+    "delete": "Delete"
   },
   "tabs": {
     "today": "Today",
@@ -26,7 +28,17 @@
   },
   "library": {
     "placeholderTitle": "Recipes & foods",
-    "placeholderSubtitle": "Recipe and ingredient database with nutrition data."
+    "placeholderSubtitle": "Recipe and ingredient database with nutrition data.",
+    "recipes": "Recipes",
+    "foods": "Foods",
+    "search": "Search",
+    "filter": {
+      "all": "All",
+      "breakfast": "Breakfast",
+      "lunch_dinner": "Lunch/dinner",
+      "snack": "Snack",
+      "side": "Side"
+    }
   },
   "shopping": {
     "placeholderTitle": "Shopping & pantry",
@@ -134,5 +146,103 @@
     "carbs": "Carbs",
     "fat": "Fat",
     "fiber": "Fiber"
+  },
+  "budget": {
+    "cheap": "Cheap",
+    "average": "Average",
+    "expensive": "Expensive"
+  },
+  "storage": {
+    "pantry": "Pantry",
+    "fridge": "Fridge",
+    "freezer": "Freezer"
+  },
+  "units": {
+    "pcs": "pcs",
+    "days": "days"
+  },
+  "micros": {
+    "ironMg": "Iron (mg)",
+    "vitaminDUg": "Vitamin D (µg)",
+    "b12Ug": "B12 (µg)",
+    "calciumMg": "Calcium (mg)",
+    "omega3G": "Omega-3 (g)"
+  },
+  "foodCategory": {
+    "meat": "Meat",
+    "fish": "Fish",
+    "eggs": "Eggs",
+    "dairy": "Dairy",
+    "grains": "Grains",
+    "legumes": "Legumes",
+    "bakery": "Bakery",
+    "vegetables": "Vegetables",
+    "fruit": "Fruit",
+    "nuts": "Nuts",
+    "seeds": "Seeds",
+    "fats": "Fats & oils",
+    "sweets": "Sweets",
+    "sweeteners": "Sweeteners",
+    "supplements": "Supplements",
+    "other": "Other"
+  },
+  "foodEdit": {
+    "newTitle": "New food",
+    "editTitle": "Edit food",
+    "nameCs": "Name (Czech)",
+    "nameEn": "Name (English)",
+    "category": "Category",
+    "baseUnit": "Base unit",
+    "gramsPerPiece": "Weight per piece",
+    "budget": "Budget",
+    "shelfLife": "Shelf life",
+    "storage": "Storage",
+    "snackSuitable": "Suitable as a snack",
+    "dietFlags": "Suitable for diet"
+  },
+  "foodDetail": {
+    "deleteTitle": "Delete this food?",
+    "deleteMessage": "This food will be removed from the library.",
+    "nutritionPer100": "Nutrition per 100 {{unit}}",
+    "pieceWeight": "Weight per piece",
+    "micronutrients": "Micronutrients",
+    "tags": "Tags",
+    "shelfLife": "shelf life {{count}} days"
+  },
+  "recipeDetail": {
+    "deleteTitle": "Delete this recipe?",
+    "deleteMessage": "This recipe will be removed from the library.",
+    "nutritionPerPortion": "Nutrition per portion",
+    "ingredients": "Ingredients",
+    "instructions": "Instructions",
+    "repetition": "Repetition in the plan",
+    "maxRepetitions": "max {{count}}× a week",
+    "maxRepetitionsDefault": "household default limit",
+    "consecutiveYes": "may repeat on consecutive days",
+    "consecutiveNo": "may not repeat on consecutive days",
+    "consecutiveDefault": "follows the household default"
+  },
+  "recipeEdit": {
+    "newTitle": "New recipe",
+    "editTitle": "Edit recipe",
+    "nameCs": "Name (Czech)",
+    "nameEn": "Name (English)",
+    "category": "Category",
+    "isSide": "This is a side dish",
+    "budget": "Budget",
+    "servingsBase": "Reference portions",
+    "prepTime": "Prep time",
+    "ingredients": "Ingredients",
+    "addIngredient": "Add ingredient",
+    "pickFood": "Pick a food",
+    "instructionsCs": "Instructions (Czech)",
+    "instructionsEn": "Instructions (English)",
+    "repetitionSection": "Repetition in the plan",
+    "maxRepetitionsOverride": "Max repetitions per week (optional)",
+    "consecutiveDays": "Repeat on consecutive days"
+  },
+  "photo": {
+    "take": "Take photo",
+    "gallery": "From gallery"
   }
 }

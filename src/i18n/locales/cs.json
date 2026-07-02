@@ -4,7 +4,9 @@
     "continue": "Pokračovat",
     "cancel": "Zrušit",
     "save": "Uložit",
-    "done": "Hotovo"
+    "done": "Hotovo",
+    "edit": "Upravit",
+    "delete": "Smazat"
   },
   "tabs": {
     "today": "Dnes",
@@ -26,7 +28,17 @@
   },
   "library": {
     "placeholderTitle": "Recepty a potraviny",
-    "placeholderSubtitle": "Databáze receptů a surovin s nutričními hodnotami."
+    "placeholderSubtitle": "Databáze receptů a surovin s nutričními hodnotami.",
+    "recipes": "Recepty",
+    "foods": "Potraviny",
+    "search": "Hledat",
+    "filter": {
+      "all": "Vše",
+      "breakfast": "Snídaně",
+      "lunch_dinner": "Oběd/večeře",
+      "snack": "Svačina",
+      "side": "Příloha"
+    }
   },
   "shopping": {
     "placeholderTitle": "Nákup a spíž",
@@ -134,5 +146,103 @@
     "carbs": "Sacharidy",
     "fat": "Tuky",
     "fiber": "Vláknina"
+  },
+  "budget": {
+    "cheap": "Levné",
+    "average": "Střední",
+    "expensive": "Dražší"
+  },
+  "storage": {
+    "pantry": "Spíž",
+    "fridge": "Lednice",
+    "freezer": "Mraznička"
+  },
+  "units": {
+    "pcs": "ks",
+    "days": "dní"
+  },
+  "micros": {
+    "ironMg": "Železo (mg)",
+    "vitaminDUg": "Vitamín D (µg)",
+    "b12Ug": "B12 (µg)",
+    "calciumMg": "Vápník (mg)",
+    "omega3G": "Omega-3 (g)"
+  },
+  "foodCategory": {
+    "meat": "Maso",
+    "fish": "Ryby",
+    "eggs": "Vejce",
+    "dairy": "Mléčné výrobky",
+    "grains": "Obiloviny",
+    "legumes": "Luštěniny",
+    "bakery": "Pečivo",
+    "vegetables": "Zelenina",
+    "fruit": "Ovoce",
+    "nuts": "Ořechy",
+    "seeds": "Semínka",
+    "fats": "Tuky a oleje",
+    "sweets": "Sladkosti",
+    "sweeteners": "Sladidla",
+    "supplements": "Doplňky stravy",
+    "other": "Ostatní"
+  },
+  "foodEdit": {
+    "newTitle": "Nová potravina",
+    "editTitle": "Upravit potravinu",
+    "nameCs": "Název (česky)",
+    "nameEn": "Název (anglicky)",
+    "category": "Kategorie",
+    "baseUnit": "Základní jednotka",
+    "gramsPerPiece": "Hmotnost 1 kusu",
+    "budget": "Cenová kategorie",
+    "shelfLife": "Trvanlivost",
+    "storage": "Skladování",
+    "snackSuitable": "Vhodné jako svačina",
+    "dietFlags": "Vhodné pro dietu"
+  },
+  "foodDetail": {
+    "deleteTitle": "Smazat potravinu?",
+    "deleteMessage": "Tato potravina bude odstraněna z knihovny.",
+    "nutritionPer100": "Nutriční hodnoty na 100 {{unit}}",
+    "pieceWeight": "Hmotnost 1 kusu",
+    "micronutrients": "Mikroživiny",
+    "tags": "Štítky",
+    "shelfLife": "trvanlivost {{count}} dní"
+  },
+  "recipeDetail": {
+    "deleteTitle": "Smazat recept?",
+    "deleteMessage": "Tento recept bude odstraněn z knihovny.",
+    "nutritionPerPortion": "Nutriční hodnoty na porci",
+    "ingredients": "Suroviny",
+    "instructions": "Postup",
+    "repetition": "Opakování v jídelníčku",
+    "maxRepetitions": "max {{count}}× týdně",
+    "maxRepetitionsDefault": "výchozí limit domácnosti",
+    "consecutiveYes": "smí se opakovat i po sobě jdoucí dny",
+    "consecutiveNo": "nesmí se opakovat po sobě jdoucí dny",
+    "consecutiveDefault": "podle výchozího nastavení domácnosti"
+  },
+  "recipeEdit": {
+    "newTitle": "Nový recept",
+    "editTitle": "Upravit recept",
+    "nameCs": "Název (česky)",
+    "nameEn": "Název (anglicky)",
+    "category": "Kategorie",
+    "isSide": "Jde o přílohu",
+    "budget": "Cenová kategorie",
+    "servingsBase": "Počet referenčních porcí",
+    "prepTime": "Doba přípravy",
+    "ingredients": "Suroviny",
+    "addIngredient": "Přidat surovinu",
+    "pickFood": "Vybrat potravinu",
+    "instructionsCs": "Postup (česky)",
+    "instructionsEn": "Postup (anglicky)",
+    "repetitionSection": "Opakování v jídelníčku",
+    "maxRepetitionsOverride": "Max. opakování za týden (nepovinné)",
+    "consecutiveDays": "Opakování po sobě jdoucí dny"
+  },
+  "photo": {
+    "take": "Vyfotit",
+    "gallery": "Z galerie"
   }
 }

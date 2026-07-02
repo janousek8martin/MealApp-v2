@@ -35,10 +35,9 @@ export default function LibraryScreen() {
     () =>
       recipeRows
         .filter((recipe) => {
+          if (recipeFilter === 'all') return true;
           if (recipeFilter === 'side') return recipe.isSide;
-          if (recipeFilter !== 'all' && recipe.category !== recipeFilter) return false;
-          if (recipeFilter !== 'side' && recipe.isSide && recipeFilter === 'all') return true;
-          return true;
+          return recipe.category === recipeFilter;
         })
         .filter(
           (recipe) =>

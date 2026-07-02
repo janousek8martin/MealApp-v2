@@ -10,20 +10,31 @@ type Props = {
   keyboardType?: KeyboardTypeOptions;
   error?: string;
   suffix?: string;
+  multiline?: boolean;
 };
 
-export function TextField({ label, value, onChangeText, placeholder, keyboardType, error, suffix }: Props) {
+export function TextField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType,
+  error,
+  suffix,
+  multiline,
+}: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <View style={[styles.inputRow, !!error && styles.inputError]}>
+      <View style={[styles.inputRow, multiline && styles.inputRowMultiline, !!error && styles.inputError]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, multiline && styles.inputMultiline]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={colors.textSecondary}
           keyboardType={keyboardType}
+          multiline={multiline}
         />
         {suffix ? <Text style={styles.suffix}>{suffix}</Text> : null}
       </View>
@@ -54,11 +65,18 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: '#B3541E',
   },
+  inputRowMultiline: {
+    alignItems: 'flex-start',
+  },
   input: {
     flex: 1,
     paddingVertical: spacing.sm + 4,
     color: colors.text,
     fontSize: typography.body,
+  },
+  inputMultiline: {
+    minHeight: 90,
+    textAlignVertical: 'top',
   },
   suffix: {
     color: colors.textSecondary,

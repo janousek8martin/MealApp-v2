@@ -62,7 +62,7 @@ export default function FoodDetailScreen() {
 
         <Text style={styles.title}>{localizedName(food)}</Text>
         <Text style={styles.meta}>
-          {food.category} · {t(`budget.${food.budget}`)}
+          {t(`foodCategory.${food.category}`)} · {t(`budget.${food.budget}`)}
           {food.shelfLifeDays ? ` · ${t('foodDetail.shelfLife', { count: food.shelfLifeDays })}` : ''}
         </Text>
 
