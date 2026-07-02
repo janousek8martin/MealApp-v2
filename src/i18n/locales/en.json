@@ -46,8 +46,16 @@
     }
   },
   "shopping": {
-    "placeholderTitle": "Shopping & pantry",
-    "placeholderSubtitle": "Shopping list built from the plan, plus what's at home."
+    "list": "List",
+    "pantry": "Pantry",
+    "generateList": "Generate list",
+    "addItem": "+ Add item",
+    "weekly": "This week (fresh)",
+    "monthly": "Stock up (monthly batch)",
+    "emptyList": "The shopping list is empty for now.",
+    "emptyPantry": "The pantry is empty for now.",
+    "quantity": "Quantity ({{unit}})",
+    "expiresOn": "use by {{date}}"
   },
   "progress": {
     "placeholderTitle": "Progress",

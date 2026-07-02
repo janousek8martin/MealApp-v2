@@ -1,0 +1,74 @@
+/**
+ * Aggregates a week's planned meals into the food quantities a household
+ * needs to buy, split into a weekly (fresh) and monthly (batch/long-life)
+ * horizon, netted against what's already in the pantry.
+ */
+
+/** Foods with a shelf life at or above this are suggested as a monthly batch buy. */
+export const MONTHLY_SHELF_LIFE_THRESHOLD_DAYS = 21;
+/** How many weeks of recurring use a monthly batch purchase should cover. */
+const MONTHLY_BATCH_WEEKS = 4;
+
+export type PlannedMealIngredientNeed = {
+  foodId: string;
+  /** Amount in the food's base unit, already scaled by the portion multiplier. */
+  amount: number;
+};
+
+export type FoodShelfInfo = {
+  id: string;
+  shelfLifeDays: number | null;
+  baseUnit: string;
+};
+
+export type ShoppingNeed = {
+  foodId: string;
+  horizon: 'weekly' | 'monthly';
+  /** Quantity still needed to buy, in the food's base unit (never negative; 0 = fully covered by pantry). */
+  quantity: number;
+  unit: string;
+};
+
+function horizonFor(food: FoodShelfInfo): 'weekly' | 'monthly' {
+  return food.shelfLifeDays !== null && food.shelfLifeDays >= MONTHLY_SHELF_LIFE_THRESHOLD_DAYS
+    ? 'monthly'
+    : 'weekly';
+}
+
+/**
+ * Sums raw per-week ingredient needs into one quantity per food. Callers
+ * assemble `needs` from every planned recipe's ingredients (amount ×
+ * portion multiplier) and every standalone-food meal (100 × multiplier, the
+ * same "one portion ≈ 100 base units" approximation the generator uses).
+ */
+export function sumWeeklyNeeds(needs: PlannedMealIngredientNeed[]): Map<string, number> {
+  const totals = new Map<string, number>();
+  for (const need of needs) {
+    totals.set(need.foodId, (totals.get(need.foodId) ?? 0) + need.amount);
+  }
+  return totals;
+}
+
+/**
+ * Nets weekly needs against pantry stock and projects long-shelf-life items
+ * to a monthly batch quantity. Foods that are fully covered by pantry stock
+ * are omitted (nothing left to buy).
+ */
+export function computeShoppingNeeds(
+  weeklyNeeds: Map<string, number>,
+  foodsById: Map<string, FoodShelfInfo>,
+  pantryQuantityByFood: Map<string, number>,
+): ShoppingNeed[] {
+  const result: ShoppingNeed[] = [];
+  for (const [foodId, weeklyQty] of weeklyNeeds) {
+    const food = foodsById.get(foodId);
+    if (!food) continue;
+    const horizon = horizonFor(food);
+    const targetQty = horizon === 'monthly' ? weeklyQty * MONTHLY_BATCH_WEEKS : weeklyQty;
+    const pantryQty = pantryQuantityByFood.get(foodId) ?? 0;
+    const quantity = Math.max(targetQty - pantryQty, 0);
+    if (quantity <= 0) continue;
+    result.push({ foodId, horizon, quantity, unit: food.baseUnit });
+  }
+  return result;
+}

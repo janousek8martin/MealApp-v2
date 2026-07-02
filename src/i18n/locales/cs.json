@@ -46,8 +46,16 @@
     }
   },
   "shopping": {
-    "placeholderTitle": "Nákup a spíž",
-    "placeholderSubtitle": "Nákupní seznam z plánu a přehled zásob."
+    "list": "Seznam",
+    "pantry": "Spíž",
+    "generateList": "Vygenerovat seznam",
+    "addItem": "+ Přidat položku",
+    "weekly": "Tento týden (čerstvé)",
+    "monthly": "Zásoby (nákup na měsíc)",
+    "emptyList": "Nákupní seznam je zatím prázdný.",
+    "emptyPantry": "Spíž je zatím prázdná.",
+    "quantity": "Množství ({{unit}})",
+    "expiresOn": "spotřebovat do {{date}}"
   },
   "progress": {
     "placeholderTitle": "Pokrok",
