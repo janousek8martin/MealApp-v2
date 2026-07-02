@@ -15,6 +15,7 @@ export type ProfileFormValue = Omit<CreateProfileInput, 'householdId'>;
 type Props = {
   submitLabel: string;
   onSubmit: (value: ProfileFormValue) => void;
+  initialProfileType?: 'adult' | 'child';
 };
 
 const ALLERGEN_KEYS = ['gluten', 'lactose', 'eggs', 'nuts', 'peanuts', 'fish', 'shellfish', 'soy'];
@@ -27,11 +28,11 @@ function parseNumber(value: string): number | null {
 
 const BIRTH_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-export function ProfileForm({ submitLabel, onSubmit }: Props) {
+export function ProfileForm({ submitLabel, onSubmit, initialProfileType }: Props) {
   const { t } = useTranslation();
 
   const [name, setName] = useState('');
-  const [profileType, setProfileType] = useState<'adult' | 'child'>('adult');
+  const [profileType, setProfileType] = useState<'adult' | 'child'>(initialProfileType ?? 'adult');
   const [sex, setSex] = useState<'male' | 'female' | null>(null);
   const [birthDate, setBirthDate] = useState('');
   const [height, setHeight] = useState('');

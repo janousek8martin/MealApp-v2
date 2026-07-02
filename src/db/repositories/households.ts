@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 
 import { newId } from '../id';
-import { households, householdSettings, mealSlotSettings } from '../schema';
+import { households, householdAvoidedItems, householdRestrictions, householdSettings, mealSlotSettings } from '../schema';
 import { nowIso } from '../time';
 import { defaultNotificationSettings, type AppDb, type NotificationSettings } from '../types';
 
@@ -91,4 +91,52 @@ export async function updateMealSlotSetting(db: AppDb, slotId: string, patch: Me
     .update(mealSlotSettings)
     .set({ ...patch, updatedAt: nowIso() })
     .where(eq(mealSlotSettings.id, slotId));
+}
+
+export type HouseholdPreferencesInput = {
+  allergens: string[];
+  diets: string[];
+  avoidedRecipeIds: string[];
+  favoriteCuisines: string[];
+};
+
+/**
+ * Written once by the setup wizard. Household-level restrictions/avoid
+ * items are unioned with each profile's own at generation time (see
+ * loadGeneratorContext in repositories/plan.ts).
+ */
+export async function saveHouseholdPreferences(
+  db: AppDb,
+  householdId: string,
+  input: HouseholdPreferencesInput,
+): Promise<void> {
+  const now = nowIso();
+
+  const restrictionRows = [
+    ...input.allergens.map((value) => ({ kind: 'allergen' as const, value })),
+    ...input.diets.map((value) => ({ kind: 'diet' as const, value })),
+  ];
+  if (restrictionRows.length > 0) {
+    await db.insert(householdRestrictions).values(
+      restrictionRows.map((row) => ({ id: newId(), createdAt: now, updatedAt: now, householdId, ...row })),
+    );
+  }
+
+  if (input.avoidedRecipeIds.length > 0) {
+    await db.insert(householdAvoidedItems).values(
+      input.avoidedRecipeIds.map((itemId) => ({
+        id: newId(),
+        createdAt: now,
+        updatedAt: now,
+        householdId,
+        itemType: 'recipe' as const,
+        itemId,
+      })),
+    );
+  }
+
+  await db
+    .update(householdSettings)
+    .set({ favoriteCuisinesJson: JSON.stringify(input.favoriteCuisines), updatedAt: now })
+    .where(eq(householdSettings.householdId, householdId));
 }

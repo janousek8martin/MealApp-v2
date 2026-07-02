@@ -23,6 +23,9 @@ type AppState = {
   /** Which nav items sit in the default (always-visible) bar vs. the expand panel. */
   mainNavKeys: NavKey[];
   setMainNavKeys: (keys: NavKey[]) => void;
+  /** Set only once the user swipes through the walkthrough and taps a final CTA. */
+  walkthroughSeen: boolean;
+  setWalkthroughSeen: (seen: boolean) => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -32,6 +35,8 @@ export const useAppStore = create<AppState>()(
       setActiveProfileId: (id) => set({ activeProfileId: id }),
       mainNavKeys: DEFAULT_MAIN_NAV_KEYS,
       setMainNavKeys: (keys) => set({ mainNavKeys: keys }),
+      walkthroughSeen: false,
+      setWalkthroughSeen: (seen) => set({ walkthroughSeen: seen }),
     }),
     {
       name: 'mealapp-app-state',

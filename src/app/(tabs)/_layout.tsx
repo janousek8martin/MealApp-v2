@@ -5,12 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { AppTabBar } from '@/components/AppTabBar';
 import { useHousehold, useHouseholdSettings } from '@/hooks/data';
 import { syncHouseholdNotifications } from '@/services/notifications';
+import { useAppStore } from '@/stores/appStore';
 import { colors } from '@/theme/tokens';
 
 export default function TabsLayout() {
   const { t, i18n } = useTranslation();
   const { household, loaded } = useHousehold();
   const settings = useHouseholdSettings(household?.id);
+  const walkthroughSeen = useAppStore((state) => state.walkthroughSeen);
 
   // Reconciles scheduled reminders with current settings/meal-slot times on
   // every app open, and whenever Settings changes them – the only sync point,
@@ -33,7 +35,7 @@ export default function TabsLayout() {
     return null;
   }
   if (!household) {
-    return <Redirect href="/onboarding" />;
+    return <Redirect href={walkthroughSeen ? '/wizard' : '/walkthrough'} />;
   }
 
   return (

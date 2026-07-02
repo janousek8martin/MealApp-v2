@@ -49,7 +49,42 @@ export const householdSettings = sqliteTable('household_settings', {
     .default('efsa_min'),
   /** JSON: per-notification enabled flags and times, see NotificationSettings. */
   notificationsJson: text('notifications_json'),
+  /** JSON array of cuisine keys the household prefers – a soft bonus in generator scoring. */
+  favoriteCuisinesJson: text('favorite_cuisines_json'),
 });
+
+/**
+ * Household-wide allergies/diet rules, set during the setup wizard. The
+ * generator combines these with each profile's own restrictions (union) –
+ * a household-level "gluten-free" applies to every shared meal, while a
+ * profile can still add its own on top.
+ */
+export const householdRestrictions = sqliteTable(
+  'household_restrictions',
+  {
+    ...meta,
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id),
+    kind: text('kind', { enum: ['allergen', 'diet'] }).notNull(),
+    value: text('value').notNull(),
+  },
+  (table) => [index('household_restrictions_household_idx').on(table.householdId)],
+);
+
+/** Household-wide "nobody wants this" exclusions – same union-with-profile approach. */
+export const householdAvoidedItems = sqliteTable(
+  'household_avoided_items',
+  {
+    ...meta,
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id),
+    itemType: text('item_type', { enum: ['food', 'recipe'] }).notNull(),
+    itemId: text('item_id').notNull(),
+  },
+  (table) => [index('household_avoided_household_idx').on(table.householdId)],
+);
 
 export const mealSlotSettings = sqliteTable(
   'meal_slot_settings',
@@ -232,6 +267,8 @@ export const recipes = sqliteTable('recipes', {
   instructionsEn: text('instructions_en'),
   category: text('category', { enum: ['breakfast', 'lunch_dinner', 'snack'] }).notNull(),
   isSide: integer('is_side', { mode: 'boolean' }).notNull().default(false),
+  /** Free-form cuisine key (czech/mediterranean/italian/asian/mexican/american/other...). */
+  cuisine: text('cuisine'),
   budget: text('budget', { enum: ['cheap', 'average', 'expensive'] })
     .notNull()
     .default('average'),

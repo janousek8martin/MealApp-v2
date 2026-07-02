@@ -15,7 +15,8 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.background },
         }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="walkthrough" />
+        <Stack.Screen name="wizard" />
       </Stack>
     </DbGate>
   );

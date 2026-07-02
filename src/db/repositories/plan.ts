@@ -19,6 +19,8 @@ import {
   bodyMetrics,
   foodRestrictions,
   foods,
+  householdAvoidedItems,
+  householdRestrictions,
   householdSettings,
   households,
   mealSlotSettings,
@@ -88,6 +90,23 @@ async function loadGeneratorContext(db: AppDb, householdId: string): Promise<Gen
     .from(profiles)
     .where(and(eq(profiles.householdId, householdId), isNull(profiles.deletedAt)));
 
+  // Household-wide restrictions (set in the setup wizard) apply to every
+  // profile's shared meals in addition to whatever that profile adds itself.
+  const [householdRestrictionRows, householdAvoidRows] = await Promise.all([
+    db
+      .select()
+      .from(householdRestrictions)
+      .where(and(eq(householdRestrictions.householdId, householdId), isNull(householdRestrictions.deletedAt))),
+    db
+      .select()
+      .from(householdAvoidedItems)
+      .where(and(eq(householdAvoidedItems.householdId, householdId), isNull(householdAvoidedItems.deletedAt))),
+  ]);
+  const householdAllergens = householdRestrictionRows.filter((r) => r.kind === 'allergen').map((r) => r.value);
+  const householdDiets = householdRestrictionRows.filter((r) => r.kind === 'diet').map((r) => r.value);
+  const householdAvoidedRecipeIds = householdAvoidRows.filter((r) => r.itemType === 'recipe').map((r) => r.itemId);
+  const householdAvoidedFoodIds = householdAvoidRows.filter((r) => r.itemType === 'food').map((r) => r.itemId);
+
   const profileContexts: ProfileContext[] = [];
   const favoriteRecipeIdsByProfile = new Map<string, Set<string>>();
 
@@ -144,10 +163,14 @@ async function loadGeneratorContext(db: AppDb, householdId: string): Promise<Gen
       sharesMainMeals: profile.sharesMainMeals,
       snackSlotKeys: profile.snackPositionsJson ? (JSON.parse(profile.snackPositionsJson) as string[]) : [],
       restrictions: {
-        allergens: restrictionRows.filter((r) => r.kind === 'allergen').map((r) => r.value),
-        diets: restrictionRows.filter((r) => r.kind === 'diet').map((r) => r.value),
-        avoidedRecipeIds: avoidRows.filter((r) => r.itemType === 'recipe').map((r) => r.itemId),
-        avoidedFoodIds: avoidRows.filter((r) => r.itemType === 'food').map((r) => r.itemId),
+        allergens: [...new Set([...householdAllergens, ...restrictionRows.filter((r) => r.kind === 'allergen').map((r) => r.value)])],
+        diets: [...new Set([...householdDiets, ...restrictionRows.filter((r) => r.kind === 'diet').map((r) => r.value)])],
+        avoidedRecipeIds: [
+          ...new Set([...householdAvoidedRecipeIds, ...avoidRows.filter((r) => r.itemType === 'recipe').map((r) => r.itemId)]),
+        ],
+        avoidedFoodIds: [
+          ...new Set([...householdAvoidedFoodIds, ...avoidRows.filter((r) => r.itemType === 'food').map((r) => r.itemId)]),
+        ],
       },
       dailyTarget,
     });
