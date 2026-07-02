@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   banner: {
-    backgroundColor: colors.sand,
+    backgroundColor: colors.lime,
     borderRadius: radius.card,
     padding: spacing.md,
     marginTop: spacing.md,

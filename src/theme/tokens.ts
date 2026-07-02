@@ -1,31 +1,42 @@
 /**
- * Design tokens – "green tea" visual identity.
- * Hex values are mandated by the project brief (CLAUDE.md) and must not drift.
+ * Design tokens – "green tea" visual identity, revision 2 (redesign V2).
+ * Palette C: dark green + teal/lime, white background.
  */
 
 export const colors = {
-  /** App background – cream */
-  background: '#F4F1E8',
+  /** App background – pure white */
+  background: '#FFFFFF',
   /** Hero panel ombre gradient, light → deep green */
   heroGradientStart: '#4E7A4A',
   heroGradientEnd: '#1E3320',
   /** Primary accent – buttons, progress ring */
   primary: '#2E4A32',
   primaryLight: '#3E6B3E',
-  /** Secondary accent – success, completed meals */
-  success: '#639922',
-  /** Complementary blocks – categories, tags */
-  sand: '#E3D9A8',
-  olive: '#B7D19C',
-  earth: '#CBB79A',
+  /** Secondary accent – success, completed meals, progress */
+  success: '#9BC53D',
+  /** Secondary accent – info, highlights, secondary CTAs */
+  teal: '#2E8C8C',
+  /** Complementary blocks – categories, tags, chips */
+  mint: '#A8D8C8',
+  lime: '#D9EDB0',
+  tealTint: '#BFE3E3',
+  /** Destructive actions (delete, warnings) */
+  danger: '#E06A4E',
   /** Text */
   text: '#243620',
   textSecondary: '#6E7A5E',
   /** Subtle borders / dividers */
-  border: '#DDE3D0',
-  /** Surfaces (cards on cream background) */
-  surface: '#FFFFFF',
-  onPrimary: '#F4F1E8',
+  border: '#DCE8E2',
+  /** Card surfaces – soft mint tint against the white background */
+  surface: '#EFF6F4',
+  onPrimary: '#FFFFFF',
+} as const;
+
+/** Body-fat chart severity bands (Profile overview). */
+export const bodyFatBand = {
+  ideal: '#E6FFE6',
+  average: '#FFFDE6',
+  overweight: '#FFE6E6',
 } as const;
 
 export const heroGradient = [colors.heroGradientStart, colors.heroGradientEnd] as const;

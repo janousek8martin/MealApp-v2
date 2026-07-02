@@ -282,7 +282,7 @@ export function ProfileForm({ submitLabel, onSubmit }: Props) {
 
 const styles = StyleSheet.create({
   error: {
-    color: '#B3541E',
+    color: colors.danger,
     fontSize: typography.small,
     marginTop: -spacing.sm,
     marginBottom: spacing.sm,

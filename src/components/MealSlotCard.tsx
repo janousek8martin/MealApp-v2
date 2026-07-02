@@ -143,7 +143,7 @@ export function MealSlotCard({
                 accessibilityRole="button"
                 style={[styles.statusButton, isSkipped && styles.statusButtonActiveSkipped]}
                 onPress={() => onSetStatus(myPortion.id, isSkipped ? 'planned' : 'skipped')}>
-                <Ionicons name="close" size={16} color={isSkipped ? colors.onPrimary : '#B3541E'} />
+                <Ionicons name="close" size={16} color={isSkipped ? colors.onPrimary : colors.danger} />
                 <Text style={[styles.statusLabel, isSkipped && styles.statusLabelActive]}>
                   {t('todayMeal.notEaten')}
                 </Text>
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card - 8,
   },
   thumbPlaceholder: {
-    backgroundColor: colors.olive,
+    backgroundColor: colors.mint,
   },
   headerText: {
     flex: 1,
@@ -292,8 +292,8 @@ const styles = StyleSheet.create({
     borderColor: colors.success,
   },
   statusButtonActiveSkipped: {
-    backgroundColor: '#B3541E',
-    borderColor: '#B3541E',
+    backgroundColor: colors.danger,
+    borderColor: colors.danger,
   },
   statusLabel: {
     color: colors.text,

@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
   },
   photoPlaceholder: {
-    backgroundColor: colors.sand,
+    backgroundColor: colors.lime,
   },
   titleRow: {
     flexDirection: 'row',

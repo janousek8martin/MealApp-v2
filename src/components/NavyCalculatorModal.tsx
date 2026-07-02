@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   resultBox: {
-    backgroundColor: colors.olive,
+    backgroundColor: colors.mint,
     borderRadius: radius.input,
     padding: spacing.md,
     flexDirection: 'row',

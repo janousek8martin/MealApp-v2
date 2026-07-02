@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.olive,
+    backgroundColor: colors.mint,
     color: colors.text,
     textAlign: 'center',
     textAlignVertical: 'center',

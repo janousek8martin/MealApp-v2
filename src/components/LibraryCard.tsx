@@ -22,7 +22,7 @@ export function LibraryCard({ title, subtitle, photoUri, accent, badge, favorite
       {photoUri ? (
         <Image source={{ uri: photoUri }} style={styles.thumb} contentFit="cover" />
       ) : (
-        <View style={[styles.thumb, { backgroundColor: accent ?? colors.olive }]} />
+        <View style={[styles.thumb, { backgroundColor: accent ?? colors.mint }]} />
       )}
       <View style={styles.body}>
         <View style={styles.titleRow}>
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   badge: {
-    backgroundColor: colors.sand,
+    backgroundColor: colors.lime,
     borderRadius: radius.chip,
     paddingVertical: 2,
     paddingHorizontal: spacing.sm,

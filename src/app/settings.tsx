@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   sumTextWarning: {
-    color: '#B3541E',
+    color: colors.danger,
     fontWeight: '600',
   },
   subCard: {

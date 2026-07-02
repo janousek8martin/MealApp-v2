@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
   },
   placeholder: {
-    backgroundColor: colors.sand,
+    backgroundColor: colors.lime,
     alignItems: 'center',
     justifyContent: 'center',
   },

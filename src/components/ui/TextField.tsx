@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   inputError: {
-    borderColor: '#B3541E',
+    borderColor: colors.danger,
   },
   inputRowMultiline: {
     alignItems: 'flex-start',
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
   error: {
-    color: '#B3541E',
+    color: colors.danger,
     fontSize: typography.small,
     marginTop: spacing.xs,
   },

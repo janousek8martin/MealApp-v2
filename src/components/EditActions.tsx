@@ -40,7 +40,7 @@ export function EditActions({ onEdit, onDelete, deleteConfirmTitle, deleteConfir
       </Pressable>
       {deleteRevealed ? (
         <Pressable accessibilityRole="button" style={styles.delete} onPress={confirmDelete}>
-          <Ionicons name="trash-outline" size={16} color="#B3541E" />
+          <Ionicons name="trash-outline" size={16} color={colors.danger} />
           <Text style={styles.deleteLabel}>{t('common.delete')}</Text>
         </Pressable>
       ) : null}
@@ -75,13 +75,13 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#B3541E',
+    borderColor: colors.danger,
     borderRadius: radius.chip,
     paddingVertical: spacing.xs + 2,
     paddingHorizontal: spacing.md,
   },
   deleteLabel: {
-    color: '#B3541E',
+    color: colors.danger,
     fontSize: typography.small,
     fontWeight: '600',
   },

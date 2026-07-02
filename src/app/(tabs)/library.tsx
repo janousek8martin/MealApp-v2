@@ -14,7 +14,7 @@ import { localizedName } from '@/utils/localized';
 type Segment = 'recipes' | 'foods';
 type RecipeFilter = 'all' | 'breakfast' | 'lunch_dinner' | 'snack' | 'side';
 
-const ACCENTS = [colors.olive, colors.sand, colors.earth];
+const ACCENTS = [colors.mint, colors.lime, colors.tealTint];
 
 export default function LibraryScreen() {
   const { t } = useTranslation();

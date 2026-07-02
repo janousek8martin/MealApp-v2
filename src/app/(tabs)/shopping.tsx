@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   rowMetaWarning: {
-    color: '#B3541E',
+    color: colors.danger,
     fontWeight: '600',
   },
   emptyText: {

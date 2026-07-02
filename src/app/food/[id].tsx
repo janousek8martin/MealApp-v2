@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
   },
   photoPlaceholder: {
-    backgroundColor: colors.olive,
+    backgroundColor: colors.mint,
   },
   title: {
     color: colors.text,
@@ -203,13 +203,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   chip: {
-    backgroundColor: colors.olive,
+    backgroundColor: colors.mint,
     borderRadius: radius.chip,
     paddingVertical: spacing.xs + 2,
     paddingHorizontal: spacing.md,
   },
   allergenChip: {
-    backgroundColor: colors.sand,
+    backgroundColor: colors.lime,
   },
   chipLabel: {
     color: colors.text,

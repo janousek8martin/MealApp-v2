@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   name: {
-    color: colors.olive,
+    color: colors.mint,
     fontSize: typography.small,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     lineHeight: typography.hero + 4,
   },
   kcalUnit: {
-    color: colors.olive,
+    color: colors.mint,
     fontSize: typography.subtitle,
     fontWeight: '600',
     marginBottom: 4,
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   macroLabel: {
-    color: colors.olive,
+    color: colors.mint,
     fontSize: typography.small,
     marginTop: 2,
   },
