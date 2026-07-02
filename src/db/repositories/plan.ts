@@ -25,6 +25,7 @@ import {
   households,
   mealSlotSettings,
   pantryItems,
+  plannedMealExtras,
   plannedMealPortions,
   plannedMeals,
   profileAvoidedItems,
@@ -835,4 +836,123 @@ async function computeConsumedExcluding(
     }
   }
   return totals.get(profileId) ?? { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// Extras – a food/recipe added on top of an already-planned meal
+// ---------------------------------------------------------------------------
+
+export async function addMealExtra(
+  db: AppDb,
+  plannedMealId: string,
+  itemType: 'recipe' | 'food',
+  itemId: string,
+): Promise<void> {
+  const now = nowIso();
+  await db.insert(plannedMealExtras).values({
+    id: newId(),
+    createdAt: now,
+    updatedAt: now,
+    plannedMealId,
+    itemType,
+    itemId,
+  });
+}
+
+export async function removeMealExtra(db: AppDb, extraId: string): Promise<void> {
+  const now = nowIso();
+  await db
+    .update(plannedMealExtras)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(eq(plannedMealExtras.id, extraId));
+}
+
+// ---------------------------------------------------------------------------
+// Removing a meal from the plan
+// ---------------------------------------------------------------------------
+
+/** Soft-deletes a planned meal, its portions and any extras. Refuses if any portion is already eaten. */
+export async function removePlannedMeal(db: AppDb, plannedMealId: string): Promise<boolean> {
+  const portions = await db
+    .select()
+    .from(plannedMealPortions)
+    .where(and(eq(plannedMealPortions.plannedMealId, plannedMealId), isNull(plannedMealPortions.deletedAt)));
+  if (portions.some((p) => p.status === 'eaten')) return false;
+
+  const now = nowIso();
+  await db
+    .update(plannedMealPortions)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(eq(plannedMealPortions.plannedMealId, plannedMealId));
+  await db
+    .update(plannedMealExtras)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(eq(plannedMealExtras.plannedMealId, plannedMealId));
+  await db.update(plannedMeals).set({ deletedAt: now, updatedAt: now }).where(eq(plannedMeals.id, plannedMealId));
+  return true;
+}
+
+/**
+ * Counts other today-or-future, unlocked (not eaten) occurrences of the same
+ * recipe/food in this household, excluding `excludeMealId` – used to offer
+ * "remove other occurrences too?" when deleting a repeated meal.
+ */
+export async function countOtherOccurrences(
+  db: AppDb,
+  householdId: string,
+  itemType: 'recipe' | 'food',
+  itemId: string,
+  excludeMealId: string,
+): Promise<number> {
+  const today = todayIsoDate();
+  const rows = await db
+    .select()
+    .from(plannedMeals)
+    .where(
+      and(
+        eq(plannedMeals.householdId, householdId),
+        eq(plannedMeals.itemType, itemType),
+        eq(plannedMeals.itemId, itemId),
+        isNull(plannedMeals.deletedAt),
+      ),
+    );
+
+  let count = 0;
+  for (const row of rows) {
+    if (row.id === excludeMealId || row.date < today) continue;
+    const portions = await db
+      .select()
+      .from(plannedMealPortions)
+      .where(and(eq(plannedMealPortions.plannedMealId, row.id), isNull(plannedMealPortions.deletedAt)));
+    if (portions.some((p) => p.status === 'eaten')) continue;
+    count += 1;
+  }
+  return count;
+}
+
+/** Removes every other today-or-future, unlocked occurrence of the same item, excluding `excludeMealId`. */
+export async function removeOtherOccurrences(
+  db: AppDb,
+  householdId: string,
+  itemType: 'recipe' | 'food',
+  itemId: string,
+  excludeMealId: string,
+): Promise<void> {
+  const today = todayIsoDate();
+  const rows = await db
+    .select()
+    .from(plannedMeals)
+    .where(
+      and(
+        eq(plannedMeals.householdId, householdId),
+        eq(plannedMeals.itemType, itemType),
+        eq(plannedMeals.itemId, itemId),
+        isNull(plannedMeals.deletedAt),
+      ),
+    );
+
+  for (const row of rows) {
+    if (row.id === excludeMealId || row.date < today) continue;
+    await removePlannedMeal(db, row.id);
+  }
 }

@@ -343,6 +343,25 @@ export const plannedMealPortions = sqliteTable(
   (table) => [index('planned_meal_portions_meal_idx').on(table.plannedMealId)],
 );
 
+/**
+ * A simple food/recipe added on top of a planned meal (e.g. a drink, an
+ * extra side) – a flat 1x addition, not part of the generator's slot logic
+ * or per-profile portion scaling. Contributes to the meal's displayed
+ * nutrition and the shopping list.
+ */
+export const plannedMealExtras = sqliteTable(
+  'planned_meal_extras',
+  {
+    ...meta,
+    plannedMealId: text('planned_meal_id')
+      .notNull()
+      .references(() => plannedMeals.id),
+    itemType: text('item_type', { enum: ['recipe', 'food'] }).notNull(),
+    itemId: text('item_id').notNull(),
+  },
+  (table) => [index('planned_meal_extras_meal_idx').on(table.plannedMealId)],
+);
+
 export const pantryItems = sqliteTable(
   'pantry_items',
   {

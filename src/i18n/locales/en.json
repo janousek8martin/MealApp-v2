@@ -31,7 +31,8 @@
   "planScreen": {
     "generateWeek": "Generate week",
     "generateDay": "Generate day",
-    "pastNotice": "Past days can't be edited – you can only mark retroactively whether a meal was eaten."
+    "pastNotice": "Past days can't be edited – you can only mark retroactively whether a meal was eaten.",
+    "jumpToToday": "Today"
   },
   "library": {
     "placeholderTitle": "Recipes & foods",
@@ -307,9 +308,15 @@
     "addMeal": "+ Add meal",
     "viewRecipe": "View recipe",
     "swap": "Swap",
+    "addExtra": "Add",
     "eaten": "Eaten",
     "notEaten": "Not eaten",
-    "pickMeal": "Pick a meal"
+    "pickMeal": "Pick a meal",
+    "deleteTitle": "Remove this meal?",
+    "deleteMessage": "It will be removed from this day's plan.",
+    "deleteOthersMessage": "This recipe also appears {{count}} more time(s) later in the plan.",
+    "deleteJustThis": "Just this one",
+    "deleteAllOccurrences": "Remove all ({{count}})"
   },
   "notifications": {
     "mealTitle": "Time to eat",

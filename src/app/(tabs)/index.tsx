@@ -3,13 +3,21 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FoodPickerModal } from '@/components/FoodPickerModal';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { MealSlotCard } from '@/components/MealSlotCard';
 import { ProfileSwitcher } from '@/components/ProfileSwitcher';
 import { Button } from '@/components/ui/Button';
 import { TdciCard } from '@/components/TdciCard';
 import { db } from '@/db/client';
-import { assignManualMeal, generateWeek, regenerateSlot, setPortionStatus } from '@/db/repositories/plan';
+import {
+  addMealExtra,
+  assignManualMeal,
+  generateWeek,
+  regenerateSlot,
+  removeMealExtra,
+  setPortionStatus,
+} from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
 import { startOfWeek } from '@/domain/week';
 import {
@@ -27,6 +35,7 @@ import {
   useRecipeNutritionMap,
   type SlotRow,
 } from '@/hooks/plan';
+import { confirmDeleteMeal } from '@/utils/mealActions';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 function targetProfileIdForSlot(slot: SlotRow, profile: { id: string; sharesMainMeals: boolean }): string | null {
@@ -49,6 +58,7 @@ export default function TodayScreen() {
   const portionsForDate = usePortionsForDate(household?.id, today);
 
   const [pickerSlot, setPickerSlot] = useState<SlotRow | null>(null);
+  const [extraMealId, setExtraMealId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
 
   const hasAnyMeal = meals.length > 0;
@@ -133,6 +143,12 @@ export default function TodayScreen() {
                     void regenerateSlot(db, household.id, today, slot.slotKey, trackProfileId);
                   }}
                   onAddMeal={() => setPickerSlot(slot)}
+                  onDeleteMeal={() => {
+                    if (!household || !meal) return;
+                    void confirmDeleteMeal(t, household.id, meal);
+                  }}
+                  onAddExtra={() => meal && setExtraMealId(meal.id)}
+                  onRemoveExtra={(extraId) => void removeMealExtra(db, extraId)}
                   onSetStatus={(portionId, status) => void setPortionStatus(db, portionId, status)}
                 />
               );
@@ -149,6 +165,17 @@ export default function TodayScreen() {
             const trackProfileId = targetProfileIdForSlot(pickerSlot, activeProfile);
             void assignManualMeal(db, household.id, today, pickerSlot.slotKey, trackProfileId, itemType, itemId);
             setPickerSlot(null);
+          }}
+        />
+      ) : null}
+
+      {extraMealId ? (
+        <FoodPickerModal
+          visible
+          onClose={() => setExtraMealId(null)}
+          onPick={(food) => {
+            void addMealExtra(db, extraMealId, 'food', food.id);
+            setExtraMealId(null);
           }}
         />
       ) : null}

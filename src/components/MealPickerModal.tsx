@@ -2,11 +2,14 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { useFoods, useRecipes } from '@/hooks/library';
+import { LibraryCard } from '@/components/LibraryCard';
+import { useRecipeNutritionMap } from '@/hooks/plan';
+import { useFoods, usePhotoMap, useRecipes } from '@/hooks/library';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
 
 type PickResult = { itemType: 'recipe' | 'food'; itemId: string };
+type CategoryFilter = 'slot' | 'all';
 
 type Props = {
   visible: boolean;
@@ -15,30 +18,56 @@ type Props = {
   onPick: (result: PickResult) => void;
 };
 
-/** Lets the user manually fill a meal slot ("+ Add Meal"), independent of the generator. */
+const ACCENTS = [colors.mint, colors.lime, colors.tealTint];
+
+/**
+ * Lets the user manually fill a meal slot ("+ Add Meal"), independent of the
+ * generator. Styled like the library list (photo, name, category, kcal) and
+ * pre-filtered to the slot's category, with a toggle to see everything.
+ */
 export function MealPickerModal({ visible, category, onClose, onPick }: Props) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<CategoryFilter>('slot');
   const recipeRows = useRecipes();
   const foodRows = useFoods();
+  const nutritionByRecipe = useRecipeNutritionMap();
+  const photoMap = usePhotoMap();
 
   const items = useMemo(() => {
     const query = search.trim().toLowerCase();
     const matches = (name: string) => !query || name.toLowerCase().includes(query);
 
     const recipeItems = recipeRows
-      .filter((r) => !r.isSide && r.category === category)
-      .map((r) => ({ itemType: 'recipe' as const, itemId: r.id, name: localizedName(r) }));
+      .filter((r) => !r.isSide)
+      .filter((r) => filter === 'all' || r.category === category)
+      .map((r) => ({
+        itemType: 'recipe' as const,
+        itemId: r.id,
+        name: localizedName(r),
+        subtitle: t(`library.filter.${r.category}`),
+        kcal: nutritionByRecipe.get(r.id)?.kcal,
+        photoUri: photoMap.get(`recipe:${r.id}`),
+      }));
 
     const foodItems =
-      category === 'snack'
-        ? foodRows.filter((f) => f.snackSuitable).map((f) => ({ itemType: 'food' as const, itemId: f.id, name: localizedName(f) }))
+      category === 'snack' || filter === 'all'
+        ? foodRows
+            .filter((f) => filter === 'all' || f.snackSuitable)
+            .map((f) => ({
+              itemType: 'food' as const,
+              itemId: f.id,
+              name: localizedName(f),
+              subtitle: t(`foodCategory.${f.category}`),
+              kcal: f.kcalPer100,
+              photoUri: photoMap.get(`food:${f.id}`),
+            }))
         : [];
 
     return [...recipeItems, ...foodItems]
       .filter((item) => matches(item.name))
       .sort((a, b) => a.name.localeCompare(b.name, 'cs'));
-  }, [recipeRows, foodRows, category, search]);
+  }, [recipeRows, foodRows, category, filter, search, nutritionByRecipe, photoMap, t]);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -52,19 +81,36 @@ export function MealPickerModal({ visible, category, onClose, onPick }: Props) {
           placeholderTextColor={colors.textSecondary}
           autoFocus
         />
+
+        <View style={styles.filterRow}>
+          {(['slot', 'all'] as CategoryFilter[]).map((value) => (
+            <Pressable
+              key={value}
+              accessibilityRole="button"
+              onPress={() => setFilter(value)}
+              style={[styles.filterChip, filter === value && styles.filterChipActive]}>
+              <Text style={[styles.filterLabel, filter === value && styles.filterLabelActive]}>
+                {value === 'slot' ? t(`library.filter.${category}`) : t('library.filter.all')}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
         <FlatList
           data={items}
           keyExtractor={(item) => `${item.itemType}:${item.itemId}`}
-          renderItem={({ item }) => (
-            <Pressable
-              accessibilityRole="button"
-              style={styles.row}
+          contentContainerStyle={styles.list}
+          renderItem={({ item, index }) => (
+            <LibraryCard
+              title={item.name}
+              subtitle={item.kcal !== undefined ? `${item.subtitle} · ${Math.round(item.kcal)} kcal` : item.subtitle}
+              photoUri={item.photoUri}
+              accent={ACCENTS[index % ACCENTS.length]}
               onPress={() => {
                 onPick({ itemType: item.itemType, itemId: item.itemId });
                 setSearch('');
-              }}>
-              <Text style={styles.rowName}>{item.name}</Text>
-            </Pressable>
+              }}
+            />
           )}
         />
         <Pressable accessibilityRole="button" style={styles.close} onPress={onClose}>
@@ -98,19 +144,33 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.sm,
   },
-  row: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.input,
+  filterRow: {
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+    marginBottom: spacing.sm,
+  },
+  filterChip: {
+    borderRadius: radius.chip,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.xs + 2,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm + 2,
   },
-  rowName: {
+  filterChipActive: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primaryLight,
+  },
+  filterLabel: {
     color: colors.text,
-    fontSize: typography.body,
+    fontSize: typography.small,
+  },
+  filterLabelActive: {
+    color: colors.onPrimary,
     fontWeight: '600',
+  },
+  list: {
+    paddingBottom: spacing.md,
   },
   close: {
     paddingVertical: spacing.md,

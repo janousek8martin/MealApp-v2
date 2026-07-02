@@ -5,6 +5,7 @@ import { db } from '@/db/client';
 import {
   foods,
   mealSlotSettings,
+  plannedMealExtras,
   plannedMealPortions,
   plannedMeals,
   recipeIngredients,
@@ -79,6 +80,17 @@ export function useMealsForWeek(householdId: string | undefined, mondayIso: stri
         ),
       ),
     [householdId, mondayIso],
+  );
+  return data ?? [];
+}
+
+export function useMealExtras(mealId: string | undefined) {
+  const { data } = useLiveQuery(
+    db
+      .select()
+      .from(plannedMealExtras)
+      .where(and(eq(plannedMealExtras.plannedMealId, mealId ?? ''), isNull(plannedMealExtras.deletedAt))),
+    [mealId],
   );
   return data ?? [];
 }

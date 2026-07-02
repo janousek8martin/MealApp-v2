@@ -6,10 +6,12 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useFood, usePhoto, useRecipe } from '@/hooks/library';
-import { type MealRow, usePortionsForMeal } from '@/hooks/plan';
+import { type MealRow, useMealExtras, usePortionsForMeal } from '@/hooks/plan';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 import type { RecipeNutrition } from '@/domain/recipeNutrition';
 import { localizedName } from '@/utils/localized';
+
+type ExtraRowData = { id: string; itemType: 'recipe' | 'food'; itemId: string };
 
 type Props = {
   slotLabel: string;
@@ -18,10 +20,32 @@ type Props = {
   recipeNutritionMap: Map<string, RecipeNutrition>;
   onSwap: () => void;
   onAddMeal: () => void;
+  onDeleteMeal: () => void;
+  onAddExtra: () => void;
+  onRemoveExtra: (extraId: string) => void;
   onSetStatus: (portionId: string, status: 'planned' | 'eaten' | 'skipped') => void;
   /** Disables regeneration (swap/add) for past dates; eaten/not-eaten can still be set retroactively. */
   disabled?: boolean;
 };
+
+function ExtraRow({ extra, onRemove }: { extra: ExtraRowData; onRemove: () => void }) {
+  const recipe = useRecipe(extra.itemType === 'recipe' ? extra.itemId : undefined);
+  const food = useFood(extra.itemType === 'food' ? extra.itemId : undefined);
+  const name = recipe ? localizedName(recipe) : food ? localizedName(food) : '';
+  const kcal = food ? Math.round(food.kcalPer100) : undefined;
+
+  return (
+    <View style={styles.extraRow}>
+      <Text style={styles.extraName} numberOfLines={1}>
+        {name}
+      </Text>
+      {kcal !== undefined ? <Text style={styles.extraKcal}>{kcal} kcal</Text> : null}
+      <Pressable accessibilityRole="button" onPress={onRemove} hitSlop={8}>
+        <Ionicons name="close" size={16} color={colors.textSecondary} />
+      </Pressable>
+    </View>
+  );
+}
 
 export function MealSlotCard({
   slotLabel,
@@ -30,6 +54,9 @@ export function MealSlotCard({
   recipeNutritionMap,
   onSwap,
   onAddMeal,
+  onDeleteMeal,
+  onAddExtra,
+  onRemoveExtra,
   onSetStatus,
   disabled,
 }: Props) {
@@ -40,6 +67,7 @@ export function MealSlotCard({
   const food = useFood(meal?.itemType === 'food' ? meal.itemId : undefined);
   const photo = usePhoto(meal?.itemType ?? 'recipe', meal?.itemId);
   const portions = usePortionsForMeal(meal?.id);
+  const extras = useMealExtras(meal?.id);
   const myPortion = portions.find((p) => p.profileId === activeProfileId);
 
   if (!meal) {
@@ -96,7 +124,11 @@ export function MealSlotCard({
           <Text style={styles.name} numberOfLines={1}>
             {name}
           </Text>
-          {scaled ? <Text style={styles.kcal}>{scaled.kcal} kcal</Text> : null}
+          {scaled ? (
+            <Text style={styles.kcal}>
+              {scaled.kcal} kcal · {scaled.proteinG}/{scaled.carbsG}/{scaled.fatG} g
+            </Text>
+          ) : null}
         </View>
         <Ionicons
           name={expanded ? 'chevron-up' : 'chevron-down'}
@@ -115,16 +147,30 @@ export function MealSlotCard({
             </View>
           ) : null}
 
+          {extras.length > 0 ? (
+            <View style={styles.extrasList}>
+              {extras.map((extra) => (
+                <ExtraRow key={extra.id} extra={extra} onRemove={() => onRemoveExtra(extra.id)} />
+              ))}
+            </View>
+          ) : null}
+
           <View style={styles.actionsRow}>
             <Pressable accessibilityRole="button" style={styles.actionButton} onPress={openDetail}>
               <Ionicons name="restaurant-outline" size={16} color={colors.primary} />
               <Text style={styles.actionLabel}>{t('todayMeal.viewRecipe')}</Text>
             </Pressable>
             {!disabled ? (
-              <Pressable accessibilityRole="button" style={styles.actionButton} onPress={onSwap}>
-                <Ionicons name="shuffle-outline" size={16} color={colors.primary} />
-                <Text style={styles.actionLabel}>{t('todayMeal.swap')}</Text>
-              </Pressable>
+              <>
+                <Pressable accessibilityRole="button" style={styles.actionButton} onPress={onSwap}>
+                  <Ionicons name="shuffle-outline" size={16} color={colors.primary} />
+                  <Text style={styles.actionLabel}>{t('todayMeal.swap')}</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" style={styles.actionButton} onPress={onAddExtra}>
+                  <Ionicons name="add" size={16} color={colors.primary} />
+                  <Text style={styles.actionLabel}>{t('todayMeal.addExtra')}</Text>
+                </Pressable>
+              </>
             ) : null}
           </View>
 
@@ -148,6 +194,11 @@ export function MealSlotCard({
                   {t('todayMeal.notEaten')}
                 </Text>
               </Pressable>
+              {!disabled ? (
+                <Pressable accessibilityRole="button" style={styles.deleteButton} onPress={onDeleteMeal} hitSlop={8}>
+                  <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -171,6 +222,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.success,
     marginBottom: spacing.sm,
     overflow: 'hidden',
   },
@@ -252,8 +305,34 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: typography.small,
   },
+  extrasList: {
+    marginBottom: spacing.sm,
+    gap: spacing.xs,
+  },
+  extraRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.background,
+    borderRadius: radius.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm + 2,
+  },
+  extraName: {
+    flex: 1,
+    color: colors.text,
+    fontSize: typography.small,
+    fontWeight: '600',
+  },
+  extraKcal: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+  },
   actionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
@@ -275,6 +354,7 @@ const styles = StyleSheet.create({
   },
   statusRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   statusButton: {
@@ -302,5 +382,9 @@ const styles = StyleSheet.create({
   },
   statusLabelActive: {
     color: colors.onPrimary,
+  },
+  deleteButton: {
+    marginLeft: 'auto',
+    padding: spacing.xs,
   },
 });

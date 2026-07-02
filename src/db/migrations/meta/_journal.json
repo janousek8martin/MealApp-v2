@@ -15,6 +15,13 @@
       "when": 1783005725842,
       "tag": "0001_clever_ravenous",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783021193531,
+      "tag": "0002_serious_psylocke",
+      "breakpoints": true
     }
   ]
 }

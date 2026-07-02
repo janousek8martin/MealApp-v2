@@ -31,7 +31,8 @@
   "planScreen": {
     "generateWeek": "Vygenerovat týden",
     "generateDay": "Vygenerovat den",
-    "pastNotice": "Minulé dny jsou needitovatelné – lze zpětně jen označit, zda bylo jídlo snědené."
+    "pastNotice": "Minulé dny jsou needitovatelné – lze zpětně jen označit, zda bylo jídlo snědené.",
+    "jumpToToday": "Dnes"
   },
   "library": {
     "placeholderTitle": "Recepty a potraviny",
@@ -307,9 +308,15 @@
     "addMeal": "+ Přidat jídlo",
     "viewRecipe": "Zobrazit recept",
     "swap": "Vyměnit",
+    "addExtra": "Přidat",
     "eaten": "Snědeno",
     "notEaten": "Nesnědeno",
-    "pickMeal": "Vybrat jídlo"
+    "pickMeal": "Vybrat jídlo",
+    "deleteTitle": "Odebrat toto jídlo?",
+    "deleteMessage": "Bude odebráno z plánu tohoto dne.",
+    "deleteOthersMessage": "Tento recept se v plánu objevuje ještě {{count}}×.",
+    "deleteJustThis": "Jen tento výskyt",
+    "deleteAllOccurrences": "Odebrat vše ({{count}})"
   },
   "notifications": {
     "mealTitle": "Čas na jídlo",

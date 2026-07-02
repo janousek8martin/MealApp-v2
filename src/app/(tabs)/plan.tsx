@@ -1,15 +1,34 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Animated,
+  PanResponder,
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FoodPickerModal } from '@/components/FoodPickerModal';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { MealSlotCard } from '@/components/MealSlotCard';
 import { ProfileSwitcher } from '@/components/ProfileSwitcher';
 import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
-import { assignManualMeal, generateWeek, regenerateDay, regenerateSlot, setPortionStatus } from '@/db/repositories/plan';
+import {
+  addMealExtra,
+  assignManualMeal,
+  generateWeek,
+  regenerateDay,
+  regenerateSlot,
+  removeMealExtra,
+  setPortionStatus,
+} from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
 import { addDays, startOfWeek, weekDates } from '@/domain/week';
 import { useActiveProfile, useHousehold } from '@/hooks/data';
@@ -20,6 +39,7 @@ import {
   useRecipeNutritionMap,
   type SlotRow,
 } from '@/hooks/plan';
+import { confirmDeleteMeal } from '@/utils/mealActions';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 function targetProfileIdForSlot(slot: SlotRow, profile: { id: string; sharesMainMeals: boolean }): string | null {
@@ -43,16 +63,22 @@ function monthTitle(dateIso: string, language: string): string {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
+const SWIPE_THRESHOLD = 60;
+
 export default function PlanScreen() {
   const { t, i18n } = useTranslation();
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
   const today = todayIsoDate();
+  const { width } = useWindowDimensions();
 
   const [viewedMonday, setViewedMonday] = useState(() => startOfWeek(today));
   const [selectedDate, setSelectedDate] = useState(today);
   const [pickerSlot, setPickerSlot] = useState<SlotRow | null>(null);
+  const [extraMealId, setExtraMealId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<'week' | 'day' | null>(null);
+
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   const dates = useMemo(() => weekDates(viewedMonday), [viewedMonday]);
 
@@ -65,6 +91,50 @@ export default function PlanScreen() {
   const goToWeek = (mondayIso: string) => {
     setViewedMonday(mondayIso);
     setSelectedDate(mondayIso);
+  };
+
+  const changeDay = (delta: 1 | -1) => {
+    Animated.timing(slideAnim, {
+      toValue: delta === 1 ? -width : width,
+      duration: 180,
+      useNativeDriver: false,
+    }).start(() => {
+      slideAnim.setValue(0);
+      const nextDate = addDays(selectedDate, delta);
+      setSelectedDate(nextDate);
+      const nextMonday = startOfWeek(nextDate);
+      if (nextMonday !== viewedMonday) setViewedMonday(nextMonday);
+    });
+  };
+
+  // Recreated whenever selectedDate/viewedMonday/width change so its
+  // onPanResponderRelease closure never reads stale values – a bare useRef
+  // here would freeze `changeDay` (and the state it captures) at mount time.
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        // Capture (not bubble) so this claims clearly-horizontal gestures
+        // before the child ScrollView's own touch handling can swallow them.
+        onMoveShouldSetPanResponderCapture: (_, gesture) =>
+          Math.abs(gesture.dx) > 15 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5,
+        onPanResponderMove: Animated.event([null, { dx: slideAnim }], { useNativeDriver: false }),
+        onPanResponderRelease: (_, gesture) => {
+          if (gesture.dx <= -SWIPE_THRESHOLD) {
+            changeDay(1);
+          } else if (gesture.dx >= SWIPE_THRESHOLD) {
+            changeDay(-1);
+          } else {
+            Animated.spring(slideAnim, { toValue: 0, useNativeDriver: false }).start();
+          }
+        },
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedDate, viewedMonday, width],
+  );
+
+  const jumpToToday = () => {
+    setSelectedDate(today);
+    setViewedMonday(startOfWeek(today));
   };
 
   const generateWeekAction = async () => {
@@ -126,13 +196,60 @@ export default function PlanScreen() {
         })}
       </View>
 
-      {household ? (
-        <View style={styles.profileSwitcherRow}>
-          <ProfileSwitcher householdId={household.id} />
-        </View>
-      ) : null}
+      <View style={styles.subHeaderRow}>
+        {household ? (
+          <View style={styles.profileSwitcherRow}>
+            <ProfileSwitcher householdId={household.id} />
+          </View>
+        ) : (
+          <View />
+        )}
+        {selectedDate !== today ? (
+          <Pressable accessibilityRole="button" style={styles.todayButton} onPress={jumpToToday}>
+            <Text style={styles.todayButtonLabel}>{t('planScreen.jumpToToday')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <Animated.View
+        style={[styles.swipeArea, { transform: [{ translateX: slideAnim }] }]}
+        {...panResponder.panHandlers}>
+        <ScrollView contentContainerStyle={styles.content}>
+          {isPast ? <Text style={styles.pastNotice}>{t('planScreen.pastNotice')}</Text> : null}
+
+          {activeProfile
+            ? slots.map((slot) => {
+                const meal = findMealForProfileInSlot(meals, slot, activeProfile);
+                const trackProfileId = meal?.profileId ?? targetProfileIdForSlot(slot, activeProfile);
+                return (
+                  <MealSlotCard
+                    key={slot.id}
+                    slotLabel={t(`slots.${slot.slotKey}`)}
+                    meal={meal}
+                    activeProfileId={activeProfile.id}
+                    recipeNutritionMap={recipeNutritionMap}
+                    disabled={isPast}
+                    onSwap={() => {
+                      if (!household) return;
+                      void regenerateSlot(db, household.id, selectedDate, slot.slotKey, trackProfileId);
+                    }}
+                    onAddMeal={() => setPickerSlot(slot)}
+                    onDeleteMeal={() => {
+                      if (!household || !meal) return;
+                      void confirmDeleteMeal(t, household.id, meal);
+                    }}
+                    onAddExtra={() => meal && setExtraMealId(meal.id)}
+                    onRemoveExtra={(extraId) => void removeMealExtra(db, extraId)}
+                    onSetStatus={(portionId, status) => void setPortionStatus(db, portionId, status)}
+                  />
+                );
+              })
+            : null}
+        </ScrollView>
+      </Animated.View>
+
+      <View style={styles.footer}>
+        {generating ? <ActivityIndicator style={styles.spinner} color={colors.primary} /> : null}
         <View style={styles.actionsRow}>
           <Button
             label={generating === 'week' ? t('today.generating') : t('planScreen.generateWeek')}
@@ -150,33 +267,7 @@ export default function PlanScreen() {
             />
           ) : null}
         </View>
-        {generating ? <ActivityIndicator style={styles.spinner} color={colors.primary} /> : null}
-
-        {isPast ? <Text style={styles.pastNotice}>{t('planScreen.pastNotice')}</Text> : null}
-
-        {activeProfile
-          ? slots.map((slot) => {
-              const meal = findMealForProfileInSlot(meals, slot, activeProfile);
-              const trackProfileId = meal?.profileId ?? targetProfileIdForSlot(slot, activeProfile);
-              return (
-                <MealSlotCard
-                  key={slot.id}
-                  slotLabel={t(`slots.${slot.slotKey}`)}
-                  meal={meal}
-                  activeProfileId={activeProfile.id}
-                  recipeNutritionMap={recipeNutritionMap}
-                  disabled={isPast}
-                  onSwap={() => {
-                    if (!household) return;
-                    void regenerateSlot(db, household.id, selectedDate, slot.slotKey, trackProfileId);
-                  }}
-                  onAddMeal={() => setPickerSlot(slot)}
-                  onSetStatus={(portionId, status) => void setPortionStatus(db, portionId, status)}
-                />
-              );
-            })
-          : null}
-      </ScrollView>
+      </View>
 
       {pickerSlot && household && activeProfile ? (
         <MealPickerModal
@@ -187,6 +278,17 @@ export default function PlanScreen() {
             const trackProfileId = targetProfileIdForSlot(pickerSlot, activeProfile);
             void assignManualMeal(db, household.id, selectedDate, pickerSlot.slotKey, trackProfileId, itemType, itemId);
             setPickerSlot(null);
+          }}
+        />
+      ) : null}
+
+      {extraMealId ? (
+        <FoodPickerModal
+          visible
+          onClose={() => setExtraMealId(null)}
+          onPick={(food) => {
+            void addMealExtra(db, extraMealId, 'food', food.id);
+            setExtraMealId(null);
           }}
         />
       ) : null}
@@ -228,8 +330,27 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     gap: spacing.xs,
   },
-  profileSwitcherRow: {
+  subHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
+  },
+  profileSwitcherRow: {
+    flex: 1,
+  },
+  todayButton: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.chip,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm + 2,
+  },
+  todayButtonLabel: {
+    color: colors.primary,
+    fontSize: typography.small,
+    fontWeight: '700',
   },
   dayChip: {
     flex: 1,
@@ -262,20 +383,28 @@ const styles = StyleSheet.create({
   dayTextSelected: {
     color: colors.onPrimary,
   },
+  swipeArea: {
+    flex: 1,
+  },
   content: {
     padding: spacing.md,
     paddingBottom: spacing.xl,
   },
+  footer: {
+    padding: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+  },
   actionsRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.md,
   },
   actionButton: {
     flex: 1,
   },
   spinner: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   pastNotice: {
     color: colors.textSecondary,
