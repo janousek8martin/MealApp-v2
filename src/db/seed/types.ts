@@ -35,6 +35,8 @@ export type RecipeSeed = {
   nameEn: string;
   category: 'breakfast' | 'lunch_dinner' | 'snack';
   isSide?: boolean;
+  /** Free-form cuisine key (czech/mediterranean/italian/asian/mexican/american/other). */
+  cuisine?: string;
   budget?: 'cheap' | 'average' | 'expensive';
   prepTimeMinutes?: number;
   instructionsCs?: string;

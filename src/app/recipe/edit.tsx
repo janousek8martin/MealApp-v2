@@ -49,8 +49,6 @@ export default function RecipeEditScreen() {
   const [instructionsCs, setInstructionsCs] = useState('');
   const [instructionsEn, setInstructionsEn] = useState('');
   const [ingredients, setIngredients] = useState<DraftIngredient[]>([]);
-  const [maxRepetitionsOverride, setMaxRepetitionsOverride] = useState('');
-  const [consecutiveOverride, setConsecutiveOverride] = useState<'default' | 'yes' | 'no'>('default');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [loadedId, setLoadedId] = useState<string | null>(null);
@@ -67,12 +65,6 @@ export default function RecipeEditScreen() {
     setPrepTimeMinutes(existing.prepTimeMinutes !== null ? String(existing.prepTimeMinutes) : '');
     setInstructionsCs(existing.instructionsCs ?? '');
     setInstructionsEn(existing.instructionsEn ?? '');
-    setMaxRepetitionsOverride(
-      existing.maxRepetitionsPerWeek !== null ? String(existing.maxRepetitionsPerWeek) : '',
-    );
-    setConsecutiveOverride(
-      existing.allowConsecutiveDays === null ? 'default' : existing.allowConsecutiveDays ? 'yes' : 'no',
-    );
   }, [existing, loadedId]);
 
   useEffect(() => {
@@ -118,9 +110,6 @@ export default function RecipeEditScreen() {
         budget,
         servingsBase: num(servingsBase)!,
         prepTimeMinutes: int(prepTimeMinutes),
-        maxRepetitionsPerWeek: int(maxRepetitionsOverride),
-        allowConsecutiveDays:
-          consecutiveOverride === 'default' ? null : consecutiveOverride === 'yes',
         ingredients: ingredients.map((entry) => ({ foodId: entry.foodId, amount: num(entry.amount)! })),
       },
       id || undefined,
@@ -225,25 +214,6 @@ export default function RecipeEditScreen() {
           value={instructionsEn}
           onChangeText={setInstructionsEn}
           multiline
-        />
-
-        <Text style={styles.section}>{t('recipeEdit.repetitionSection')}</Text>
-        <TextField
-          label={t('recipeEdit.maxRepetitionsOverride')}
-          value={maxRepetitionsOverride}
-          onChangeText={setMaxRepetitionsOverride}
-          placeholder={t('recipeDetail.maxRepetitionsDefault')}
-          keyboardType="number-pad"
-        />
-        <ChipSelect
-          label={t('recipeEdit.consecutiveDays')}
-          options={[
-            { value: 'default', label: t('recipeDetail.consecutiveDefault') },
-            { value: 'yes', label: t('recipeDetail.consecutiveYes') },
-            { value: 'no', label: t('recipeDetail.consecutiveNo') },
-          ]}
-          value={consecutiveOverride}
-          onChange={(value) => setConsecutiveOverride(value as typeof consecutiveOverride)}
         />
 
         <View style={styles.actions}>

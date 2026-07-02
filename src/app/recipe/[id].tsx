@@ -108,19 +108,6 @@ export default function RecipeDetailScreen() {
             <Text style={styles.instructions}>{instructions}</Text>
           </>
         ) : null}
-
-        <Text style={styles.sectionTitle}>{t('recipeDetail.repetition')}</Text>
-        <Text style={styles.repetitionText}>
-          {recipe.maxRepetitionsPerWeek !== null
-            ? t('recipeDetail.maxRepetitions', { count: recipe.maxRepetitionsPerWeek })
-            : t('recipeDetail.maxRepetitionsDefault')}
-          {' · '}
-          {recipe.allowConsecutiveDays !== null
-            ? recipe.allowConsecutiveDays
-              ? t('recipeDetail.consecutiveYes')
-              : t('recipeDetail.consecutiveNo')
-            : t('recipeDetail.consecutiveDefault')}
-        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -242,10 +229,5 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: typography.body,
     lineHeight: 22,
-  },
-  repetitionText: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    lineHeight: 20,
   },
 });

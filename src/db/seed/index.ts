@@ -76,6 +76,7 @@ export async function seedIfEmpty(
       instructionsEn: seed.instructionsEn,
       category: seed.category,
       isSide: seed.isSide ?? false,
+      cuisine: seed.cuisine ?? null,
       budget: seed.budget ?? 'average',
       prepTimeMinutes: seed.prepTimeMinutes,
       tagsJson: seed.tags ? JSON.stringify(seed.tags) : null,

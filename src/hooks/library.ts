@@ -10,6 +10,8 @@ import {
   recipeIngredients,
   recipes,
 } from '@/db/schema';
+import { deriveRecipeTags } from '@/domain/generator/filters';
+import type { DerivedRecipeTags, IngredientFoodTags } from '@/domain/generator/types';
 import { computeRecipeNutrition, type RecipeNutrition } from '@/domain/recipeNutrition';
 
 export function useFoods() {
@@ -89,6 +91,58 @@ export function useFoodAllergens(foodId: string | undefined) {
     [foodId],
   );
   return (data ?? []).map((row) => row.allergen);
+}
+
+/** Every recipe's derived allergens/diet compatibility, keyed by recipe id – for library filtering. */
+export function useRecipeTagsMap(): Map<string, DerivedRecipeTags> {
+  const { data: ingredientRows } = useLiveQuery(
+    db.select().from(recipeIngredients).where(isNull(recipeIngredients.deletedAt)),
+  );
+  const { data: foodRows } = useLiveQuery(db.select().from(foods).where(isNull(foods.deletedAt)));
+  const { data: restrictionRows } = useLiveQuery(
+    db.select().from(foodRestrictions).where(isNull(foodRestrictions.deletedAt)),
+  );
+
+  const map = new Map<string, DerivedRecipeTags>();
+  if (!ingredientRows || !foodRows || !restrictionRows) return map;
+
+  const foodById = new Map(foodRows.map((food) => [food.id, food]));
+  const allergensByFood = new Map<string, string[]>();
+  for (const row of restrictionRows) {
+    const list = allergensByFood.get(row.foodId) ?? [];
+    list.push(row.allergen);
+    allergensByFood.set(row.foodId, list);
+  }
+
+  const ingredientsByRecipe = new Map<string, IngredientFoodTags[]>();
+  for (const ingredient of ingredientRows) {
+    const food = foodById.get(ingredient.foodId);
+    if (!food) continue;
+    const list = ingredientsByRecipe.get(ingredient.recipeId) ?? [];
+    list.push({
+      foodId: food.id,
+      allergens: allergensByFood.get(food.id) ?? [],
+      dietFlags: food.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : [],
+    });
+    ingredientsByRecipe.set(ingredient.recipeId, list);
+  }
+
+  for (const [recipeId, ingredients] of ingredientsByRecipe) {
+    map.set(recipeId, deriveRecipeTags(ingredients));
+  }
+  return map;
+}
+
+/** Every food's allergen list, keyed by food id – for library filtering. */
+export function useFoodAllergensMap(): Map<string, string[]> {
+  const { data } = useLiveQuery(db.select().from(foodRestrictions).where(isNull(foodRestrictions.deletedAt)));
+  const map = new Map<string, string[]>();
+  for (const row of data ?? []) {
+    const list = map.get(row.foodId) ?? [];
+    list.push(row.allergen);
+    map.set(row.foodId, list);
+  }
+  return map;
 }
 
 export function usePhoto(ownerType: 'recipe' | 'food', ownerId: string | undefined) {

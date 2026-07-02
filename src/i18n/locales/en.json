@@ -46,6 +46,17 @@
       "lunch_dinner": "Lunch/dinner",
       "snack": "Snack",
       "side": "Side"
+    },
+    "filterModal": {
+      "title": "Filters",
+      "cuisine": "Cuisine",
+      "tags": "Tags",
+      "diet": "Diet",
+      "excludeAllergens": "Exclude allergens",
+      "budget": "Budget",
+      "category": "Category",
+      "reset": "Reset filters",
+      "apply": "Show results"
     }
   },
   "shopping": {
@@ -176,6 +187,20 @@
     "vegan": "Vegan",
     "pescatarian": "Pescatarian"
   },
+  "recipeTags": {
+    "sweet": "Sweet",
+    "savoury": "Savoury",
+    "no_cook": "No-cook",
+    "mediterranean": "Mediterranean",
+    "fish": "Fish",
+    "czech": "Czech",
+    "batch_friendly": "Batch-cooking friendly",
+    "vegan": "Vegan",
+    "vegetarian": "Vegetarian",
+    "quick": "Quick",
+    "protein": "Protein-rich",
+    "fat": "High-fat"
+  },
   "navy": {
     "title": "Body fat calculator",
     "subtitle": "Navy tape method (body circumferences, ±3–4 % accuracy). A more precise DEXA or caliper value can be entered manually.",
@@ -265,13 +290,7 @@
     "deleteMessage": "This recipe will be removed from the library.",
     "nutritionPerPortion": "Nutrition per portion",
     "ingredients": "Ingredients",
-    "instructions": "Instructions",
-    "repetition": "Repetition in the plan",
-    "maxRepetitions": "max {{count}}× a week",
-    "maxRepetitionsDefault": "household default limit",
-    "consecutiveYes": "may repeat on consecutive days",
-    "consecutiveNo": "may not repeat on consecutive days",
-    "consecutiveDefault": "follows the household default"
+    "instructions": "Instructions"
   },
   "recipeEdit": {
     "newTitle": "New recipe",
@@ -287,10 +306,7 @@
     "addIngredient": "Add ingredient",
     "pickFood": "Pick a food",
     "instructionsCs": "Instructions (Czech)",
-    "instructionsEn": "Instructions (English)",
-    "repetitionSection": "Repetition in the plan",
-    "maxRepetitionsOverride": "Max repetitions per week (optional)",
-    "consecutiveDays": "Repeat on consecutive days"
+    "instructionsEn": "Instructions (English)"
   },
   "photo": {
     "take": "Take photo",

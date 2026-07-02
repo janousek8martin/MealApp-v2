@@ -46,6 +46,17 @@
       "lunch_dinner": "Oběd/večeře",
       "snack": "Svačina",
       "side": "Příloha"
+    },
+    "filterModal": {
+      "title": "Filtry",
+      "cuisine": "Kuchyně",
+      "tags": "Štítky",
+      "diet": "Stravovací režim",
+      "excludeAllergens": "Vyloučit alergeny",
+      "budget": "Cenová kategorie",
+      "category": "Kategorie",
+      "reset": "Zrušit filtry",
+      "apply": "Zobrazit výsledky"
     }
   },
   "shopping": {
@@ -176,6 +187,20 @@
     "vegan": "Vegan",
     "pescatarian": "Pescetarián"
   },
+  "recipeTags": {
+    "sweet": "Sladké",
+    "savoury": "Slané",
+    "no_cook": "Bez vaření",
+    "mediterranean": "Středomořské",
+    "fish": "Rybí",
+    "czech": "České",
+    "batch_friendly": "Vhodné na dávkové vaření",
+    "vegan": "Veganské",
+    "vegetarian": "Vegetariánské",
+    "quick": "Rychlé",
+    "protein": "Proteinové",
+    "fat": "Tučné"
+  },
   "navy": {
     "title": "Kalkulačka tělesného tuku",
     "subtitle": "Navy tape metoda (obvody těla, přesnost ±3–4 %). Přesnější hodnotu z DEXA nebo kaliperace můžete zadat ručně.",
@@ -265,13 +290,7 @@
     "deleteMessage": "Tento recept bude odstraněn z knihovny.",
     "nutritionPerPortion": "Nutriční hodnoty na porci",
     "ingredients": "Suroviny",
-    "instructions": "Postup",
-    "repetition": "Opakování v jídelníčku",
-    "maxRepetitions": "max {{count}}× týdně",
-    "maxRepetitionsDefault": "výchozí limit domácnosti",
-    "consecutiveYes": "smí se opakovat i po sobě jdoucí dny",
-    "consecutiveNo": "nesmí se opakovat po sobě jdoucí dny",
-    "consecutiveDefault": "podle výchozího nastavení domácnosti"
+    "instructions": "Postup"
   },
   "recipeEdit": {
     "newTitle": "Nový recept",
@@ -287,10 +306,7 @@
     "addIngredient": "Přidat surovinu",
     "pickFood": "Vybrat potravinu",
     "instructionsCs": "Postup (česky)",
-    "instructionsEn": "Postup (anglicky)",
-    "repetitionSection": "Opakování v jídelníčku",
-    "maxRepetitionsOverride": "Max. opakování za týden (nepovinné)",
-    "consecutiveDays": "Opakování po sobě jdoucí dny"
+    "instructionsEn": "Postup (anglicky)"
   },
   "photo": {
     "take": "Vyfotit",
