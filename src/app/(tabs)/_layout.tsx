@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ColorValue } from 'react-native';
 
-import { useHousehold } from '@/hooks/data';
+import { useHousehold, useHouseholdSettings } from '@/hooks/data';
 import { syncHouseholdNotifications } from '@/services/notifications';
 import { colors } from '@/theme/tokens';
 
@@ -17,18 +17,26 @@ function tabIcon(name: IconName) {
 }
 
 export default function TabsLayout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { household, loaded } = useHousehold();
+  const settings = useHouseholdSettings(household?.id);
 
   // Reconciles scheduled reminders with current settings/meal-slot times on
-  // every app open – cheap, and the only sync point until Settings (phase 9)
-  // lets the user change these without restarting.
+  // every app open, and whenever Settings changes them – the only sync point,
+  // no restart required.
   useEffect(() => {
     if (!household) return;
     syncHouseholdNotifications(household.id).catch((error) => {
       console.error('Failed to sync notifications', error);
     });
-  }, [household?.id]);
+  }, [household?.id, settings?.notificationsJson]);
+
+  // The household's language choice (Settings) drives the whole app's UI language.
+  useEffect(() => {
+    if (settings?.language && settings.language !== i18n.language) {
+      void i18n.changeLanguage(settings.language);
+    }
+  }, [settings?.language, i18n]);
 
   if (!loaded) {
     return null;

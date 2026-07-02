@@ -35,6 +35,19 @@ export function useMealSlots(householdId: string | undefined) {
   return data ?? [];
 }
 
+/** Every slot including disabled ones – used by the Settings editor. */
+export function useAllMealSlots(householdId: string | undefined) {
+  const { data } = useLiveQuery(
+    db
+      .select()
+      .from(mealSlotSettings)
+      .where(and(eq(mealSlotSettings.householdId, householdId ?? ''), isNull(mealSlotSettings.deletedAt)))
+      .orderBy(asc(mealSlotSettings.sortOrder)),
+    [householdId],
+  );
+  return data ?? [];
+}
+
 export function useMealsForDate(householdId: string | undefined, date: string) {
   const { data } = useLiveQuery(
     db

@@ -1,7 +1,9 @@
+import { eq } from 'drizzle-orm';
+
 import { newId } from '../id';
 import { households, householdSettings, mealSlotSettings } from '../schema';
 import { nowIso } from '../time';
-import { defaultNotificationSettings, type AppDb } from '../types';
+import { defaultNotificationSettings, type AppDb, type NotificationSettings } from '../types';
 
 export type SlotSeed = {
   slotKey: string;
@@ -55,4 +57,38 @@ export async function createHouseholdWithDefaults(db: AppDb, name: string): Prom
   );
 
   return householdId;
+}
+
+export type HouseholdSettingsPatch = Partial<{
+  unitSystem: 'metric' | 'us';
+  language: 'cs' | 'en';
+  defaultMaxRepetitionsPerWeek: number;
+  defaultAllowConsecutiveDays: boolean;
+  fiberMode: 'efsa_min' | 'gender_specific';
+  notifications: NotificationSettings;
+}>;
+
+export async function updateHouseholdSettings(
+  db: AppDb,
+  householdId: string,
+  patch: HouseholdSettingsPatch,
+): Promise<void> {
+  const { notifications, ...rest } = patch;
+  await db
+    .update(householdSettings)
+    .set({
+      ...rest,
+      ...(notifications ? { notificationsJson: JSON.stringify(notifications) } : {}),
+      updatedAt: nowIso(),
+    })
+    .where(eq(householdSettings.householdId, householdId));
+}
+
+export type MealSlotPatch = Partial<{ time: string; calorieShare: number; enabled: boolean }>;
+
+export async function updateMealSlotSetting(db: AppDb, slotId: string, patch: MealSlotPatch): Promise<void> {
+  await db
+    .update(mealSlotSettings)
+    .set({ ...patch, updatedAt: nowIso() })
+    .where(eq(mealSlotSettings.id, slotId));
 }

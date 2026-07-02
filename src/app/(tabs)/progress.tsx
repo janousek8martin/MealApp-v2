@@ -1,6 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
@@ -73,7 +75,12 @@ export default function ProgressScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>{t('tabs.progress')}</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.heading}>{t('tabs.progress')}</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/settings')} hitSlop={8}>
+            <Ionicons name="settings-outline" size={24} color={colors.text} />
+          </Pressable>
+        </View>
 
         {household ? <ProfileSwitcher householdId={household.id} /> : null}
 
@@ -162,11 +169,16 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingBottom: spacing.xl,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
   heading: {
     color: colors.text,
     fontSize: typography.title,
     fontWeight: '800',
-    marginBottom: spacing.sm,
   },
   banner: {
     backgroundColor: colors.sand,

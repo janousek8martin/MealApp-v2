@@ -132,3 +132,24 @@ export async function addBodyMetric(db: AppDb, profileId: string, input: AddBody
     await db.insert(bodyMetrics).values({ id: newId(), createdAt: now, profileId, date, ...values });
   }
 }
+
+export type MacroOverrides = {
+  proteinPerKgLbm?: number;
+  surplusKcal?: number;
+  fatShareOfTdci?: number;
+};
+
+/** Pass `null` to clear all overrides and fall back to the domain defaults. */
+export async function updateProfileMacroOverrides(
+  db: AppDb,
+  profileId: string,
+  overrides: MacroOverrides | null,
+): Promise<void> {
+  await db
+    .update(profiles)
+    .set({
+      macroOverridesJson: overrides ? JSON.stringify(overrides) : null,
+      updatedAt: nowIso(),
+    })
+    .where(eq(profiles.id, profileId));
+}
