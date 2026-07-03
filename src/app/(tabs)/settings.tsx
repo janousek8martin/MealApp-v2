@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
@@ -16,12 +17,7 @@ import { useHousehold, useHouseholdSettings, useProfiles, useProfileTargets } fr
 import type { ProfileRow } from '@/hooks/dataMapping';
 import { useAllMealSlots, type SlotRow } from '@/hooks/plan';
 import { syncHouseholdNotifications } from '@/services/notifications';
-import {
-  ALL_NAV_KEYS,
-  MAX_MAIN_NAV_ITEMS,
-  useAppStore,
-  type NavKey,
-} from '@/stores/appStore';
+import { MAX_MAIN_NAV_ITEMS, useAppStore, type NavKey } from '@/stores/appStore';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -168,37 +164,39 @@ function MealSlotsCard({ householdId }: { householdId: string }) {
 
 function NavigationCard() {
   const { t } = useTranslation();
-  const mainNavKeys = useAppStore((s) => s.mainNavKeys);
-  const setMainNavKeys = useAppStore((s) => s.setMainNavKeys);
+  const navOrder = useAppStore((s) => s.navOrder);
+  const setNavOrder = useAppStore((s) => s.setNavOrder);
 
-  const toggle = (key: NavKey, inMain: boolean) => {
-    if (inMain) {
-      setMainNavKeys(mainNavKeys.filter((k) => k !== key));
-    } else if (mainNavKeys.length < MAX_MAIN_NAV_ITEMS) {
-      setMainNavKeys(ALL_NAV_KEYS.filter((k) => mainNavKeys.includes(k) || k === key));
-    }
+  const renderItem = ({ item, drag, isActive, getIndex }: RenderItemParams<NavKey>) => {
+    const index = getIndex() ?? 0;
+    return (
+      <View>
+        {index === 0 ? <Text style={styles.navSectionLabel}>{t('settings.navigationMain')}</Text> : null}
+        {index === MAX_MAIN_NAV_ITEMS ? (
+          <Text style={styles.navSectionLabel}>{t('settings.navigationExpand')}</Text>
+        ) : null}
+        <View style={[styles.navDragRow, isActive && styles.navDragRowActive]}>
+          <Text style={styles.slotLabel}>{t(NAV_LABEL_KEYS[item])}</Text>
+          <Pressable onPressIn={drag} disabled={isActive} hitSlop={12} style={styles.navDragHandle}>
+            <Ionicons name="reorder-three-outline" size={20} color={colors.textSecondary} />
+          </Pressable>
+        </View>
+      </View>
+    );
   };
 
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>{t('settings.navigation')}</Text>
       <Text style={styles.cardHint}>{t('settings.navigationHint', { max: MAX_MAIN_NAV_ITEMS })}</Text>
-      {ALL_NAV_KEYS.map((key) => {
-        const inMain = mainNavKeys.includes(key);
-        const disable = !inMain && mainNavKeys.length >= MAX_MAIN_NAV_ITEMS;
-        return (
-          <View key={key} style={styles.navRow}>
-            <Text style={styles.slotLabel}>{t(NAV_LABEL_KEYS[key])}</Text>
-            <Switch
-              value={inMain}
-              onValueChange={() => toggle(key, inMain)}
-              disabled={disable}
-              trackColor={{ false: colors.border, true: colors.primaryLight }}
-              thumbColor={colors.surface}
-            />
-          </View>
-        );
-      })}
+      <DraggableFlatList
+        data={navOrder}
+        keyExtractor={(item) => item}
+        renderItem={renderItem}
+        onDragEnd={({ data }) => setNavOrder(data)}
+        scrollEnabled={false}
+        activationDistance={0}
+      />
     </View>
   );
 }
@@ -476,12 +474,31 @@ const styles = StyleSheet.create({
     minWidth: 20,
     textAlign: 'center',
   },
-  navRow: {
+  navSectionLabel: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  navDragRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+    borderRadius: radius.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  navDragRowActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+  },
+  navDragHandle: {
+    padding: spacing.xs,
   },
 });

@@ -12,6 +12,12 @@ export const DEFAULT_MAIN_NAV_KEYS: NavKey[] = ['index', 'plan', 'shopping', 'se
 
 export const MAX_MAIN_NAV_ITEMS = 4;
 
+/** Full default order: the default main bar first, then the rest (expand panel). */
+const DEFAULT_NAV_ORDER: NavKey[] = [
+  ...DEFAULT_MAIN_NAV_KEYS,
+  ...ALL_NAV_KEYS.filter((key) => !DEFAULT_MAIN_NAV_KEYS.includes(key)),
+];
+
 /**
  * Ephemeral device/UI state only. All domain data lives in SQLite – this
  * store must never duplicate it.
@@ -20,9 +26,12 @@ type AppState = {
   /** Which household member's numbers the UI currently shows. */
   activeProfileId: string | null;
   setActiveProfileId: (id: string | null) => void;
-  /** Which nav items sit in the default (always-visible) bar vs. the expand panel. */
-  mainNavKeys: NavKey[];
-  setMainNavKeys: (keys: NavKey[]) => void;
+  /**
+   * User's full drag-reordered nav sequence: the first `MAX_MAIN_NAV_ITEMS`
+   * entries sit in the always-visible bar, the rest in the expand panel.
+   */
+  navOrder: NavKey[];
+  setNavOrder: (order: NavKey[]) => void;
   /** Set only once the user swipes through the walkthrough and taps a final CTA. */
   walkthroughSeen: boolean;
   setWalkthroughSeen: (seen: boolean) => void;
@@ -33,14 +42,24 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       activeProfileId: null,
       setActiveProfileId: (id) => set({ activeProfileId: id }),
-      mainNavKeys: DEFAULT_MAIN_NAV_KEYS,
-      setMainNavKeys: (keys) => set({ mainNavKeys: keys }),
+      navOrder: DEFAULT_NAV_ORDER,
+      setNavOrder: (order) => set({ navOrder: order }),
       walkthroughSeen: false,
       setWalkthroughSeen: (seen) => set({ walkthroughSeen: seen }),
     }),
     {
       name: 'mealapp-app-state',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 2,
+      migrate: (persistedState, version) => {
+        const state = persistedState as { mainNavKeys?: NavKey[] } & Record<string, unknown>;
+        if (version < 2) {
+          const mainNavKeys = state.mainNavKeys ?? DEFAULT_MAIN_NAV_KEYS;
+          state.navOrder = [...mainNavKeys, ...ALL_NAV_KEYS.filter((key) => !mainNavKeys.includes(key))];
+          delete state.mainNavKeys;
+        }
+        return state as AppState;
+      },
     },
   ),
 );

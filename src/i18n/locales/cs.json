@@ -415,6 +415,8 @@
     "saveTimes": "Uložit časy",
     "invalidTime": "Použijte formát HH:MM",
     "navigation": "Navigační lišta",
-    "navigationHint": "Vyberte, které sekce budou v hlavním panelu (max {{max}}) – zbytek se přesune do rozbalovacího panelu."
+    "navigationHint": "Přetažením seřaďte pořadí. Prvních {{max}} položek je v hlavním panelu, zbytek v rozbalovacím panelu.",
+    "navigationMain": "Hlavní panel",
+    "navigationExpand": "Rozbalovací panel"
   }
 }

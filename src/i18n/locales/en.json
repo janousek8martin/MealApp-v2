@@ -415,6 +415,8 @@
     "saveTimes": "Save times",
     "invalidTime": "Use the HH:MM format",
     "navigation": "Navigation bar",
-    "navigationHint": "Choose which sections sit in the main bar (max {{max}}) – the rest move into the expand panel."
+    "navigationHint": "Drag to reorder. The first {{max}} items sit in the main bar, the rest in the expand panel.",
+    "navigationMain": "Main bar",
+    "navigationExpand": "Expand panel"
   }
 }

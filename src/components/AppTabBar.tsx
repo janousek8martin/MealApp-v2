@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ALL_NAV_KEYS, useAppStore, type NavKey } from '@/stores/appStore';
+import { MAX_MAIN_NAV_ITEMS, useAppStore, type NavKey } from '@/stores/appStore';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -53,8 +53,9 @@ function NavButton({
  */
 export function AppTabBar({ state, navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const mainNavKeys = useAppStore((s) => s.mainNavKeys);
-  const moreNavKeys = ALL_NAV_KEYS.filter((key) => !mainNavKeys.includes(key));
+  const navOrder = useAppStore((s) => s.navOrder);
+  const mainNavKeys = navOrder.slice(0, MAX_MAIN_NAV_ITEMS);
+  const moreNavKeys = navOrder.slice(MAX_MAIN_NAV_ITEMS);
   const [expanded, setExpanded] = useState(false);
 
   const activeName = state.routes[state.index]?.name;
