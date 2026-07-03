@@ -5,6 +5,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
+import { IllustrationScene } from '@/components/IllustrationScene';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
@@ -84,7 +85,12 @@ export default function PantryScreen() {
         data={pantryItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <PantryRow item={item} onRemove={() => void removePantryItem(db, item.id)} />}
-        ListEmptyComponent={<Text style={styles.emptyText}>{t('shopping.emptyPantry')}</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            <IllustrationScene icon="file-tray-stacked-outline" accent="primary" size={110} />
+            <Text style={styles.emptyText}>{t('shopping.emptyPantry')}</Text>
+          </View>
+        }
       />
 
       <FoodPickerModal
@@ -178,11 +184,15 @@ function createStyles(colors: ColorTokens) {
       color: colors.danger,
       fontWeight: '600',
     },
+    emptyWrap: {
+      alignItems: 'center',
+      marginTop: spacing.xl,
+    },
     emptyText: {
       color: colors.textSecondary,
       fontSize: typography.small,
       textAlign: 'center',
-      marginTop: spacing.xl,
+      marginTop: spacing.sm,
     },
     quantityOverlay: {
       position: 'absolute',

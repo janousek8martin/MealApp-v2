@@ -273,8 +273,6 @@ export const foods = sqliteTable('foods', {
   barcode: text('barcode'),
   /** Audit reference: 'usda:fdc/171287', 'nutridatabaze:123', 'user'. */
   source: text('source').notNull().default('user'),
-  /** Stable key from the seed data (e.g. 'oats') – matches bundled placeholder images in src/assets/foodImages.ts; null for user-added foods. */
-  seedKey: text('seed_key'),
 });
 
 export const foodRestrictions = sqliteTable(
@@ -312,8 +310,6 @@ export const recipes = sqliteTable('recipes', {
   /** Per-recipe override for batch cooking on consecutive days; null = household default. */
   allowConsecutiveDays: integer('allow_consecutive_days', { mode: 'boolean' }),
   source: text('source').notNull().default('user'),
-  /** Stable key from the seed data (e.g. 'oats_banana_smoothie') – matches bundled placeholder images in src/assets/recipeImages.ts; null for user-added recipes. */
-  seedKey: text('seed_key'),
 });
 
 export const recipeIngredients = sqliteTable(

@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
+import { IllustrationScene } from '@/components/IllustrationScene';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
@@ -141,7 +142,12 @@ export default function ShoppingScreen() {
             </View>
           ) : null
         }
-        ListEmptyComponent={<Text style={styles.emptyText}>{t('shopping.emptyList')}</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            <IllustrationScene icon="cart-outline" accent="secondary" size={110} />
+            <Text style={styles.emptyText}>{t('shopping.emptyList')}</Text>
+          </View>
+        }
       />
 
       <FoodPickerModal
@@ -245,11 +251,15 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small,
       marginTop: 2,
     },
+    emptyWrap: {
+      alignItems: 'center',
+      marginTop: spacing.xl,
+    },
     emptyText: {
       color: colors.textSecondary,
       fontSize: typography.small,
       textAlign: 'center',
-      marginTop: spacing.xl,
+      marginTop: spacing.sm,
     },
     quantityOverlay: {
       position: 'absolute',

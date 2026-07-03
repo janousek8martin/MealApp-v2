@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,22 +13,23 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { IllustrationScene } from '@/components/IllustrationScene';
 import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
 import { createHouseholdWithDefaults } from '@/db/repositories/households';
 import { createProfile } from '@/db/repositories/profiles';
 import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
-import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const PAGES: { icon: IconName; titleKey: string; bodyKey: string }[] = [
-  { icon: 'people', titleKey: 'walkthrough.page1Title', bodyKey: 'walkthrough.page1Body' },
-  { icon: 'flame', titleKey: 'walkthrough.page2Title', bodyKey: 'walkthrough.page2Body' },
-  { icon: 'calendar', titleKey: 'walkthrough.page3Title', bodyKey: 'walkthrough.page3Body' },
-  { icon: 'cart', titleKey: 'walkthrough.page4Title', bodyKey: 'walkthrough.page4Body' },
-  { icon: 'trending-up', titleKey: 'walkthrough.page5Title', bodyKey: 'walkthrough.page5Body' },
+const PAGES: { icon: IconName; accent: 'primary' | 'secondary'; titleKey: string; bodyKey: string }[] = [
+  { icon: 'people', accent: 'primary', titleKey: 'walkthrough.page1Title', bodyKey: 'walkthrough.page1Body' },
+  { icon: 'flame', accent: 'secondary', titleKey: 'walkthrough.page2Title', bodyKey: 'walkthrough.page2Body' },
+  { icon: 'calendar', accent: 'primary', titleKey: 'walkthrough.page3Title', bodyKey: 'walkthrough.page3Body' },
+  { icon: 'cart', accent: 'secondary', titleKey: 'walkthrough.page4Title', bodyKey: 'walkthrough.page4Body' },
+  { icon: 'trending-up', accent: 'primary', titleKey: 'walkthrough.page5Title', bodyKey: 'walkthrough.page5Body' },
 ];
 
 /** Quick-start defaults for the "skip the wizard" path – editable later in Profile settings. */
@@ -48,10 +48,6 @@ export default function WalkthroughScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const heroGradient = useMemo(
-    () => [colors.heroGradientStart, colors.heroGradientEnd] as const,
-    [colors],
-  );
   const { width } = useWindowDimensions();
   const [pageIndex, setPageIndex] = useState(0);
   const listRef = useRef<FlatList>(null);
@@ -95,9 +91,7 @@ export default function WalkthroughScreen() {
         scrollEventThrottle={16}
         renderItem={({ item }) => (
           <View style={[styles.page, { width }]}>
-            <LinearGradient colors={heroGradient} style={styles.iconWrap}>
-              <Ionicons name={item.icon} size={56} color={colors.onPrimary} />
-            </LinearGradient>
+            <IllustrationScene icon={item.icon} accent={item.accent} size={180} />
             <Text style={styles.title}>{t(item.titleKey)}</Text>
             <Text style={styles.body}>{t(item.bodyKey)}</Text>
           </View>
@@ -139,14 +133,7 @@ function createStyles(colors: ColorTokens) {
       alignItems: 'center',
       justifyContent: 'center',
       padding: spacing.lg,
-    },
-    iconWrap: {
-      width: 120,
-      height: 120,
-      borderRadius: radius.chip,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: spacing.lg,
+      gap: spacing.lg,
     },
     title: {
       color: colors.text,

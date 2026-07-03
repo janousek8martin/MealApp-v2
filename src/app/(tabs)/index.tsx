@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal } from '@/components/FoodPickerModal';
+import { IllustrationScene } from '@/components/IllustrationScene';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { MealSlotCard } from '@/components/MealSlotCard';
 import { NextMealCard } from '@/components/NextMealCard';
@@ -191,6 +192,7 @@ export default function TodayScreen() {
 
         {!hasAnyMeal ? (
           <View style={styles.emptyState}>
+            <IllustrationScene icon="restaurant-outline" accent="primary" size={120} />
             <Text style={styles.emptyTitle}>{t('today.mealsComingTitle')}</Text>
             <Text style={styles.emptyText}>{t('today.mealsComingText')}</Text>
             <Button
@@ -352,22 +354,24 @@ function createStyles(colors: ColorTokens) {
       padding: spacing.lg,
       marginTop: spacing.md,
       marginBottom: spacing.md,
+      alignItems: 'center',
     },
     emptyTitle: {
       color: colors.text,
       fontSize: typography.subtitle,
       fontWeight: '700',
+      marginTop: spacing.sm,
       marginBottom: spacing.xs,
+      textAlign: 'center',
     },
     emptyText: {
       color: colors.textSecondary,
       fontSize: typography.small,
       lineHeight: 20,
       marginBottom: spacing.md,
+      textAlign: 'center',
     },
-    generateButton: {
-      alignSelf: 'flex-start',
-    },
+    generateButton: {},
     spinner: {
       marginTop: spacing.sm,
     },
