@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FoodPickerModal } from '@/components/FoodPickerModal';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { MealSlotCard } from '@/components/MealSlotCard';
-import { ProfileSwitcher } from '@/components/ProfileSwitcher';
+import { NextMealCard } from '@/components/NextMealCard';
+import { ProfileDropdownChip } from '@/components/ProfileDropdownChip';
 import { Button } from '@/components/ui/Button';
 import { TdciCard } from '@/components/TdciCard';
 import { db } from '@/db/client';
@@ -38,10 +39,15 @@ import {
   useRecipeNutritionMap,
   type SlotRow,
 } from '@/hooks/plan';
-import { useShoppingItems } from '@/hooks/shopping';
+import { usePantryItems, useShoppingItems } from '@/hooks/shopping';
 import { confirmDeleteMeal } from '@/utils/mealActions';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+
+function currentHHMM(): string {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 function targetProfileIdForSlot(slot: SlotRow, profile: { id: string; sharesMainMeals: boolean }): string | null {
   if (slot.kind === 'snack') return profile.id;
@@ -66,6 +72,8 @@ export default function TodayScreen() {
   const portionsForDate = usePortionsForDate(household?.id, today);
   const shoppingItems = useShoppingItems(household?.id);
   const shoppingRemaining = shoppingItems.filter((item) => !item.checked).length;
+  const pantryItems = usePantryItems(household?.id);
+  const pantryExpiringSoon = pantryItems.filter((item) => item.expiresAt !== null && item.expiresAt <= today).length;
 
   const [pickerSlot, setPickerSlot] = useState<SlotRow | null>(null);
   const [extraMealId, setExtraMealId] = useState<string | null>(null);
@@ -73,24 +81,38 @@ export default function TodayScreen() {
 
   const hasAnyMeal = meals.length > 0;
 
-  const consumed = activeProfile
-    ? portionsForDate
-        .filter((row) => row.portion.profileId === activeProfile.id)
-        .reduce(
-          (acc, row) => {
-            const nutrition = nutritionForMeal(row.meal, recipeNutritionMap, foodById);
-            if (!nutrition) return acc;
-            const m = row.portion.multiplier;
-            return {
-              kcal: acc.kcal + nutrition.kcal * m,
-              proteinG: acc.proteinG + nutrition.proteinG * m,
-              carbsG: acc.carbsG + nutrition.carbsG * m,
-              fatG: acc.fatG + nutrition.fatG * m,
-            };
-          },
-          { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 },
-        )
+  const sumNutrition = (rows: typeof portionsForDate) =>
+    rows.reduce(
+      (acc, row) => {
+        const nutrition = nutritionForMeal(row.meal, recipeNutritionMap, foodById);
+        if (!nutrition) return acc;
+        const m = row.portion.multiplier;
+        return {
+          kcal: acc.kcal + nutrition.kcal * m,
+          proteinG: acc.proteinG + nutrition.proteinG * m,
+          carbsG: acc.carbsG + nutrition.carbsG * m,
+          fatG: acc.fatG + nutrition.fatG * m,
+        };
+      },
+      { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 },
+    );
+
+  const profilePortionsToday = activeProfile
+    ? portionsForDate.filter((row) => row.portion.profileId === activeProfile.id)
+    : [];
+  const planned = activeProfile ? sumNutrition(profilePortionsToday) : null;
+  const eaten = activeProfile
+    ? sumNutrition(profilePortionsToday.filter((row) => row.portion.status === 'eaten'))
     : null;
+
+  const nowHHMM = currentHHMM();
+  const nextMealEntry = activeProfile
+    ? [...slots]
+        .filter((slot) => slot.time >= nowHHMM)
+        .sort((a, b) => a.time.localeCompare(b.time))
+        .map((slot) => ({ slot, meal: findMealForProfileInSlot(meals, slot, activeProfile) }))
+        .find((entry) => entry.meal !== undefined)
+    : undefined;
 
   const generateThisWeek = async () => {
     if (!household) return;
@@ -107,20 +129,22 @@ export default function TodayScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.heading}>{t('today.title')}</Text>
 
-        {household ? <ProfileSwitcher householdId={household.id} /> : null}
-
-        {activeProfile && targets ? (
-          <View>
-            <TdciCard name={activeProfile.name} targets={targets} />
-            <Pressable
-              accessibilityRole="button"
-              style={styles.profileLink}
-              onPress={() => router.push({ pathname: '/profile/[id]', params: { id: activeProfile.id } })}>
-              <Ionicons name="settings-outline" size={14} color={colors.primary} />
-              <Text style={styles.profileLinkLabel}>{t('today.editProfile')}</Text>
-            </Pressable>
+        {household ? (
+          <View style={styles.profileRow}>
+            <ProfileDropdownChip householdId={household.id} />
+            {activeProfile ? (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.profileLink}
+                onPress={() => router.push({ pathname: '/profile/[id]', params: { id: activeProfile.id } })}>
+                <Ionicons name="settings-outline" size={14} color={colors.primary} />
+                <Text style={styles.profileLinkLabel}>{t('today.editProfile')}</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
+
+        {activeProfile && targets ? <TdciCard name={activeProfile.name} targets={targets} /> : null}
 
         <View style={styles.quickRow}>
           <Pressable
@@ -134,22 +158,35 @@ export default function TodayScreen() {
           <Pressable
             accessibilityRole="button"
             style={styles.quickCard}
+            onPress={() => router.push('/pantry')}>
+            <Ionicons name="file-tray-stacked-outline" size={20} color={colors.primary} />
+            <Text style={styles.quickValue}>{pantryExpiringSoon}</Text>
+            <Text style={styles.quickLabel}>{t('today.pantryExpiring')}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.quickCard}
             onPress={() => router.push('/progress')}>
             <Ionicons name="trending-up-outline" size={20} color={colors.primary} />
             <Text style={styles.quickValueSmall}>{t('today.logWeight')}</Text>
           </Pressable>
         </View>
 
-        {activeProfile && dailyTargets && consumed ? (
+        {activeProfile && dailyTargets && planned && eaten ? (
           <View style={styles.fitCard}>
             <Text style={styles.fitTitle}>{t('today.fitTitle')}</Text>
             <Text style={styles.fitLine}>
-              {t('today.fitSummary', {
-                consumed: Math.round(consumed.kcal),
+              {t('today.fitSummaryFull', {
+                eaten: Math.round(eaten.kcal),
+                planned: Math.round(planned.kcal),
                 target: Math.round(dailyTargets.kcal),
               })}
             </Text>
           </View>
+        ) : null}
+
+        {nextMealEntry?.meal ? (
+          <NextMealCard slotLabel={t(`slots.${nextMealEntry.slot.slotKey}`)} meal={nextMealEntry.meal} />
         ) : null}
 
         {!hasAnyMeal ? (
@@ -166,8 +203,9 @@ export default function TodayScreen() {
           </View>
         ) : null}
 
-        {activeProfile
-          ? slots.map((slot) => {
+        {activeProfile ? (
+          <View style={styles.mealList}>
+            {slots.map((slot) => {
               const meal = findMealForProfileInSlot(meals, slot, activeProfile);
               const trackProfileId = meal?.profileId ?? targetProfileIdForSlot(slot, activeProfile);
               return (
@@ -191,8 +229,9 @@ export default function TodayScreen() {
                   onSetStatus={(portionId, status) => void setPortionStatus(db, portionId, status)}
                 />
               );
-            })
-          : null}
+            })}
+          </View>
+        ) : null}
       </ScrollView>
 
       {pickerSlot && household && activeProfile ? (
@@ -256,17 +295,24 @@ function createStyles(colors: ColorTokens) {
       color: colors.textSecondary,
       fontSize: typography.small,
     },
+    profileRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.sm,
+    },
     profileLink: {
       flexDirection: 'row',
       alignItems: 'center',
-      alignSelf: 'flex-end',
       gap: spacing.xs,
-      marginTop: spacing.xs,
     },
     profileLinkLabel: {
       color: colors.primary,
       fontSize: typography.small,
       fontWeight: '600',
+    },
+    mealList: {
+      marginTop: spacing.md,
     },
     quickRow: {
       flexDirection: 'row',

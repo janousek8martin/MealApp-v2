@@ -25,11 +25,15 @@
     "placeholderSubtitle": "Kalorie a jídla dneška se objeví tady.",
     "fitTitle": "Jak dnešek sedí na cíl",
     "fitSummary": "Naplánováno {{consumed}} / {{target}} kcal",
+    "fitSummaryFull": "Snědeno {{eaten}} · Naplánováno {{planned}} · Cíl {{target}} kcal",
     "generateWeek": "Vygenerovat tento týden",
     "generating": "Generuji…",
     "editProfile": "Upravit profil",
     "shoppingRemaining": "položek k nákupu",
-    "logWeight": "Zaznamenat váhu"
+    "pantryExpiring": "brzy expiruje",
+    "logWeight": "Zapsat váhu",
+    "nextMealTitle": "Další jídlo dne",
+    "nextMealNone": "Pro dnešek už nic dalšího neplánujete"
   },
   "planScreen": {
     "generateWeek": "Vygenerovat týden",

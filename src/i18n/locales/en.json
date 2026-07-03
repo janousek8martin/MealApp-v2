@@ -25,11 +25,15 @@
     "placeholderSubtitle": "Today's calories and meals will appear here.",
     "fitTitle": "How today matches your target",
     "fitSummary": "Planned {{consumed}} / {{target}} kcal",
+    "fitSummaryFull": "Eaten {{eaten}} · Planned {{planned}} · Target {{target}} kcal",
     "generateWeek": "Generate this week",
     "generating": "Generating…",
     "editProfile": "Edit profile",
     "shoppingRemaining": "items to buy",
-    "logWeight": "Log weight"
+    "pantryExpiring": "expiring soon",
+    "logWeight": "Log weight",
+    "nextMealTitle": "Next meal today",
+    "nextMealNone": "Nothing else planned for today"
   },
   "planScreen": {
     "generateWeek": "Generate week",
