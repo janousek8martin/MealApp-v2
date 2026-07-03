@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
@@ -34,6 +35,11 @@ export function TdciCard({ name, targets }: Props) {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.card}>
+      <Image
+        source={require('../assets/images/hero/home-hero.png')}
+        style={styles.heroTexture}
+        contentFit="cover"
+      />
       <Text style={styles.name}>{name}</Text>
       <View style={styles.heroRow}>
         <Text style={styles.kcal}>{Math.round(targets.adjustedTdciKcal)}</Text>
@@ -58,6 +64,15 @@ function createStyles(colors: ColorTokens) {
     card: {
       borderRadius: radius.card,
       padding: spacing.lg,
+      overflow: 'hidden',
+    },
+    heroTexture: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      opacity: 0.16,
     },
     name: {
       color: colors.mint,

@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
-import { IllustrationScene } from '@/components/IllustrationScene';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
@@ -87,7 +87,11 @@ export default function PantryScreen() {
         renderItem={({ item }) => <PantryRow item={item} onRemove={() => void removePantryItem(db, item.id)} />}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
-            <IllustrationScene icon="file-tray-stacked-outline" accent="primary" size={110} />
+            <Image
+              source={require('../../assets/images/empty-states/pantry-empty.png')}
+              style={styles.emptyImage}
+              contentFit="contain"
+            />
             <Text style={styles.emptyText}>{t('shopping.emptyPantry')}</Text>
           </View>
         }
@@ -187,6 +191,10 @@ function createStyles(colors: ColorTokens) {
     emptyWrap: {
       alignItems: 'center',
       marginTop: spacing.xl,
+    },
+    emptyImage: {
+      width: 220,
+      height: 160,
     },
     emptyText: {
       color: colors.textSecondary,

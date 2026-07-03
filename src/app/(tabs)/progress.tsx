@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -120,6 +121,16 @@ export default function ProgressScreen() {
             <Text style={styles.cardTitle}>{t('progress.chartTitle')}</Text>
             <WeightChart points={history.map((h) => ({ date: h.date, weightKg: h.weightKg }))} />
           </View>
+        ) : activeProfile ? (
+          <View style={styles.emptyState}>
+            <Image
+              source={require('../../assets/images/empty-states/progress-no-data.png')}
+              style={styles.emptyImage}
+              contentFit="contain"
+            />
+            <Text style={styles.cardTitle}>{t('progress.noDataTitle')}</Text>
+            <Text style={styles.emptyText}>{t('progress.noDataText')}</Text>
+          </View>
         ) : null}
 
         {activeProfile && (activeProfile.goalWeightKg !== null || activeProfile.goalBodyFatPct !== null) ? (
@@ -202,6 +213,25 @@ function createStyles(colors: ColorTokens) {
     },
     chartSection: {
       marginTop: spacing.md,
+    },
+    emptyState: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      marginTop: spacing.md,
+      alignItems: 'center',
+    },
+    emptyImage: {
+      width: 200,
+      height: 140,
+      marginBottom: spacing.sm,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      textAlign: 'center',
     },
     goalLine: {
       color: colors.text,

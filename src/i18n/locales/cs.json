@@ -64,7 +64,8 @@
       "category": "Kategorie",
       "reset": "Zrušit filtry",
       "apply": "Zobrazit výsledky"
-    }
+    },
+    "noResults": "Nic jsme nenašli. Zkus upravit hledání nebo filtry."
   },
   "shopping": {
     "list": "Seznam",
@@ -86,7 +87,9 @@
     "currentGoal": "Aktuální cíl",
     "goalWeightLabel": "Cílová váha",
     "goalBodyFatLabel": "Cílový tělesný tuk",
-    "dietCycleBanner": "Od začátku jste ubrali dost tělesného tuku – zvažte přechod na udržovací kalorie na 1–2 měsíce, než budete pokračovat v deficitu."
+    "dietCycleBanner": "Od začátku jste ubrali dost tělesného tuku – zvažte přechod na udržovací kalorie na 1–2 měsíce, než budete pokračovat v deficitu.",
+    "noDataTitle": "Zatím žádná data",
+    "noDataText": "Jakmile zapíšete první váhu, uvidíte tu vývoj v čase."
   },
   "walkthrough": {
     "page1Title": "Jeden plán pro celou rodinu",

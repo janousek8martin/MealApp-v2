@@ -64,7 +64,8 @@
       "category": "Category",
       "reset": "Reset filters",
       "apply": "Show results"
-    }
+    },
+    "noResults": "Nothing found. Try adjusting your search or filters."
   },
   "shopping": {
     "list": "List",
@@ -86,7 +87,9 @@
     "currentGoal": "Current goal",
     "goalWeightLabel": "Goal weight",
     "goalBodyFatLabel": "Goal body fat",
-    "dietCycleBanner": "You've lost a good amount of body fat since you started – consider switching to maintenance calories for 1–2 months before continuing the deficit."
+    "dietCycleBanner": "You've lost a good amount of body fat since you started – consider switching to maintenance calories for 1–2 months before continuing the deficit.",
+    "noDataTitle": "No data yet",
+    "noDataText": "Once you log your first weight entry, you'll see your trend here."
   },
   "walkthrough": {
     "page1Title": "One plan for the whole family",

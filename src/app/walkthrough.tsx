@@ -1,5 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -13,23 +13,40 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { IllustrationScene } from '@/components/IllustrationScene';
 import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
 import { createHouseholdWithDefaults } from '@/db/repositories/households';
 import { createProfile } from '@/db/repositories/profiles';
 import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
-import { spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
-type IconName = keyof typeof Ionicons.glyphMap;
-
-const PAGES: { icon: IconName; accent: 'primary' | 'secondary'; titleKey: string; bodyKey: string }[] = [
-  { icon: 'people', accent: 'primary', titleKey: 'walkthrough.page1Title', bodyKey: 'walkthrough.page1Body' },
-  { icon: 'flame', accent: 'secondary', titleKey: 'walkthrough.page2Title', bodyKey: 'walkthrough.page2Body' },
-  { icon: 'calendar', accent: 'primary', titleKey: 'walkthrough.page3Title', bodyKey: 'walkthrough.page3Body' },
-  { icon: 'cart', accent: 'secondary', titleKey: 'walkthrough.page4Title', bodyKey: 'walkthrough.page4Body' },
-  { icon: 'trending-up', accent: 'primary', titleKey: 'walkthrough.page5Title', bodyKey: 'walkthrough.page5Body' },
+const PAGES: { image: ReturnType<typeof require>; titleKey: string; bodyKey: string }[] = [
+  {
+    image: require('../assets/images/walkthrough/household.png'),
+    titleKey: 'walkthrough.page1Title',
+    bodyKey: 'walkthrough.page1Body',
+  },
+  {
+    image: require('../assets/images/walkthrough/calories.png'),
+    titleKey: 'walkthrough.page2Title',
+    bodyKey: 'walkthrough.page2Body',
+  },
+  {
+    image: require('../assets/images/walkthrough/mealplan.png'),
+    titleKey: 'walkthrough.page3Title',
+    bodyKey: 'walkthrough.page3Body',
+  },
+  {
+    image: require('../assets/images/walkthrough/shopping.png'),
+    titleKey: 'walkthrough.page4Title',
+    bodyKey: 'walkthrough.page4Body',
+  },
+  {
+    image: require('../assets/images/walkthrough/progress.png'),
+    titleKey: 'walkthrough.page5Title',
+    bodyKey: 'walkthrough.page5Body',
+  },
 ];
 
 /** Quick-start defaults for the "skip the wizard" path – editable later in Profile settings. */
@@ -91,7 +108,7 @@ export default function WalkthroughScreen() {
         scrollEventThrottle={16}
         renderItem={({ item }) => (
           <View style={[styles.page, { width }]}>
-            <IllustrationScene icon={item.icon} accent={item.accent} size={180} />
+            <Image source={item.image} style={styles.illustration} contentFit="contain" />
             <Text style={styles.title}>{t(item.titleKey)}</Text>
             <Text style={styles.body}>{t(item.bodyKey)}</Text>
           </View>
@@ -107,6 +124,11 @@ export default function WalkthroughScreen() {
       <View style={styles.footer}>
         {isLast ? (
           <>
+            <Image
+              source={require('../assets/images/hero/onboarding-hero.png')}
+              style={styles.onboardingHero}
+              contentFit="cover"
+            />
             <Button label={t('walkthrough.setupHousehold')} onPress={startWizard} style={styles.footerButton} />
             <Button
               label={t('walkthrough.quickStart')}
@@ -134,6 +156,11 @@ function createStyles(colors: ColorTokens) {
       justifyContent: 'center',
       padding: spacing.lg,
       gap: spacing.lg,
+    },
+    illustration: {
+      width: '100%',
+      height: 220,
+      borderRadius: radius.card,
     },
     title: {
       color: colors.text,
@@ -168,6 +195,12 @@ function createStyles(colors: ColorTokens) {
     footer: {
       padding: spacing.lg,
       gap: spacing.sm,
+    },
+    onboardingHero: {
+      width: '100%',
+      height: 110,
+      borderRadius: radius.card,
+      marginBottom: spacing.xs,
     },
     footerButton: {
       width: '100%',

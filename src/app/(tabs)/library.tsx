@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -348,6 +349,16 @@ export default function LibraryScreen() {
           data={filteredRecipes}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              <Image
+                source={require('../../assets/images/empty-states/library-no-results.png')}
+                style={styles.emptyImage}
+                contentFit="contain"
+              />
+              <Text style={styles.emptyText}>{t('library.noResults')}</Text>
+            </View>
+          }
           renderItem={({ item, index }) => {
             const nutrition = recipeNutritionMap.get(item.id);
             const categoryLabel = t(`library.filter.${item.isSide ? 'side' : item.category}`);
@@ -372,6 +383,16 @@ export default function LibraryScreen() {
           data={filteredFoods}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              <Image
+                source={require('../../assets/images/empty-states/library-no-results.png')}
+                style={styles.emptyImage}
+                contentFit="contain"
+              />
+              <Text style={styles.emptyText}>{t('library.noResults')}</Text>
+            </View>
+          }
           renderItem={({ item, index }) => {
             const dietFlags: string[] = item.dietFlagsJson ? JSON.parse(item.dietFlagsJson) : [];
             return (
@@ -524,6 +545,21 @@ function createStyles(colors: ColorTokens) {
     list: {
       paddingVertical: spacing.md,
       paddingBottom: spacing.xl,
+    },
+    emptyWrap: {
+      alignItems: 'center',
+      marginTop: spacing.xl,
+    },
+    emptyImage: {
+      width: 220,
+      height: 160,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      textAlign: 'center',
+      marginTop: spacing.sm,
+      maxWidth: 280,
     },
   });
 }

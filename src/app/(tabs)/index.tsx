@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal } from '@/components/FoodPickerModal';
-import { IllustrationScene } from '@/components/IllustrationScene';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { MealSlotCard } from '@/components/MealSlotCard';
 import { NextMealCard } from '@/components/NextMealCard';
@@ -192,7 +192,11 @@ export default function TodayScreen() {
 
         {!hasAnyMeal ? (
           <View style={styles.emptyState}>
-            <IllustrationScene icon="restaurant-outline" accent="primary" size={120} />
+            <Image
+              source={require('../../assets/images/empty-states/mealplan-empty.png')}
+              style={styles.emptyImage}
+              contentFit="contain"
+            />
             <Text style={styles.emptyTitle}>{t('today.mealsComingTitle')}</Text>
             <Text style={styles.emptyText}>{t('today.mealsComingText')}</Text>
             <Button
@@ -355,6 +359,11 @@ function createStyles(colors: ColorTokens) {
       marginTop: spacing.md,
       marginBottom: spacing.md,
       alignItems: 'center',
+    },
+    emptyImage: {
+      width: '100%',
+      height: 140,
+      marginBottom: spacing.sm,
     },
     emptyTitle: {
       color: colors.text,
