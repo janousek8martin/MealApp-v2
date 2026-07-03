@@ -1,24 +1,36 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ManualAdjustmentCard, MacroOverridesCard } from '@/components/ProfileNutritionCards';
+import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
+import { TdciCard } from '@/components/TdciCard';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { SwitchRow } from '@/components/ui/SwitchRow';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
 import { updateHouseholdSettings, updateMealSlotSetting } from '@/db/repositories/households';
+import { updateProfile } from '@/db/repositories/profiles';
 import { defaultNotificationSettings, type NotificationSettings } from '@/db/types';
-import { useHousehold, useHouseholdSettings, useProfiles, useProfileTargets } from '@/hooks/data';
+import {
+  useHousehold,
+  useHouseholdSettings,
+  useLatestBodyMetric,
+  useProfileRestrictions,
+  useProfiles,
+  useProfileTargets,
+} from '@/hooks/data';
 import type { ProfileRow } from '@/hooks/dataMapping';
 import { useAllMealSlots, type SlotRow } from '@/hooks/plan';
 import { syncHouseholdNotifications } from '@/services/notifications';
 import { MAX_MAIN_NAV_ITEMS, useAppStore, type NavKey } from '@/stores/appStore';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -46,30 +58,183 @@ function parseNotifications(json: string | null): NotificationSettings {
   }
 }
 
-function ProfileSummaryRow({ profile }: { profile: ProfileRow }) {
-  const { t } = useTranslation();
-  const targets = useProfileTargets(profile);
+/** Collapsible card shared by every settings section – tap the header to expand/collapse. */
+function AccordionCard({
+  title,
+  subtitle,
+  defaultExpanded,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  defaultExpanded?: boolean;
+  children: ReactNode;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const [expanded, setExpanded] = useState(defaultExpanded ?? false);
+
   return (
-    <Pressable
-      accessibilityRole="button"
-      style={styles.summaryRow}
-      onPress={() => router.push({ pathname: '/profile/[id]', params: { id: profile.id } })}>
-      <View style={styles.summaryText}>
-        <Text style={styles.summaryName}>{profile.name}</Text>
-        <Text style={styles.summaryMeta}>
-          {t(`goal.${profile.goal}`)}
-          {targets ? ` · ${Math.round(targets.adjustedTdciKcal)} kcal` : ''}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-    </Pressable>
+    <View style={styles.card}>
+      <Pressable
+        accessibilityRole="button"
+        style={styles.accordionHeader}
+        onPress={() => setExpanded((prev) => !prev)}>
+        <View style={styles.accordionHeaderText}>
+          <Text style={styles.cardTitle}>{title}</Text>
+          {subtitle ? <Text style={styles.cardHint}>{subtitle}</Text> : null}
+        </View>
+        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
+      </Pressable>
+      {expanded ? <View style={styles.accordionBody}>{children}</View> : null}
+    </View>
   );
 }
 
-type SlotEdit = { time: string; percent: string; enabled: boolean };
+/** Header pill showing the selected profile; tapping opens a dropdown of all profiles + "add profile". */
+function ProfileSwitcherHeader({
+  householdId,
+  selectedProfileId,
+  onSelect,
+}: {
+  householdId: string;
+  selectedProfileId: string | undefined;
+  onSelect: (profileId: string) => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const members = useProfiles(householdId);
+  const [visible, setVisible] = useState(false);
+  const selected = members.find((m) => m.id === selectedProfileId) ?? members[0];
+
+  return (
+    <>
+      <Pressable accessibilityRole="button" style={styles.profileHeader} onPress={() => setVisible(true)}>
+        <View style={styles.profileHeaderIcon}>
+          <Text style={styles.profileHeaderInitial}>{selected?.name.slice(0, 1).toUpperCase() ?? '?'}</Text>
+        </View>
+        <View style={styles.profileHeaderText}>
+          <Text style={styles.profileHeaderLabel}>{t('settings.selectProfile')}</Text>
+          <Text style={styles.profileHeaderName}>{selected?.name ?? '—'}</Text>
+        </View>
+        <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+      </Pressable>
+
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
+          <Pressable style={styles.dropdownSheet} onPress={() => undefined}>
+            {members.map((m) => (
+              <Pressable
+                key={m.id}
+                accessibilityRole="button"
+                style={styles.dropdownRow}
+                onPress={() => {
+                  onSelect(m.id);
+                  setVisible(false);
+                }}>
+                <Text style={styles.dropdownRowLabel}>{m.name}</Text>
+                {m.id === selected?.id ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
+              </Pressable>
+            ))}
+            <Pressable
+              accessibilityRole="button"
+              style={styles.dropdownAdd}
+              onPress={() => {
+                setVisible(false);
+                router.push({ pathname: '/profile/new', params: { householdId } });
+              }}>
+              <Ionicons name="add" size={18} color={colors.primary} />
+              <Text style={styles.dropdownAddLabel}>{t('settings.addProfile')}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+function profileFormValueFor(profile: ProfileRow, weightKg: number, bodyFatPct: number | null | undefined, restrictions: { allergens: string[]; diets: string[] }): ProfileFormValue {
+  return {
+    name: profile.name,
+    profileType: profile.profileType,
+    sex: profile.sex,
+    birthDate: profile.birthDate,
+    heightCm: profile.heightCm,
+    weightKg,
+    bodyFatPct: bodyFatPct ?? undefined,
+    activityLevel: profile.activityLevel,
+    goal: profile.goal,
+    goalWeightKg: profile.goalWeightKg ?? undefined,
+    goalBodyFatPct: profile.goalBodyFatPct ?? undefined,
+    fitnessExperience: profile.fitnessExperience ?? undefined,
+    sharesMainMeals: profile.sharesMainMeals,
+    workoutDays: profile.workoutDaysJson ? (JSON.parse(profile.workoutDaysJson) as number[]) : [],
+    allergens: restrictions.allergens,
+    diets: restrictions.diets,
+  };
+}
+
+/** Accordion cards for the profile selected in the header dropdown. */
+function ProfileSections({ profile }: { profile: ProfileRow }) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const targets = useProfileTargets(profile);
+  const latestMetric = useLatestBodyMetric(profile.id);
+  const restrictions = useProfileRestrictions(profile.id);
+
+  const saveProfile = async (value: ProfileFormValue) => {
+    await updateProfile(db, profile.id, {
+      name: value.name,
+      sex: value.sex,
+      birthDate: value.birthDate,
+      heightCm: value.heightCm,
+      activityLevel: value.activityLevel,
+      goal: value.goal ?? 'maintain',
+      goalWeightKg: value.goalWeightKg,
+      goalBodyFatPct: value.goalBodyFatPct,
+      fitnessExperience: value.fitnessExperience,
+      workoutDays: value.workoutDays ?? [],
+      sharesMainMeals: value.sharesMainMeals ?? true,
+      allergens: value.allergens ?? [],
+      diets: value.diets ?? [],
+    });
+  };
+
+  return (
+    <>
+      <AccordionCard title={t('profile.personalAndGoals')} subtitle={profile.name}>
+        {latestMetric ? (
+          <ProfileForm
+            key={profile.id}
+            submitLabel={t('common.save')}
+            initialValue={profileFormValueFor(profile, latestMetric.weightKg, latestMetric.bodyFatPct, restrictions)}
+            onSubmit={saveProfile}
+          />
+        ) : null}
+      </AccordionCard>
+
+      <AccordionCard title={t('settings.nutritionSection')}>
+        {targets ? <TdciCard name={profile.name} targets={targets} /> : null}
+        {targets ? <ManualAdjustmentCard profileId={profile.id} kcal={profile.tdciManualAdjustmentKcal} /> : null}
+        <MacroOverridesCard profileId={profile.id} macroOverridesJson={profile.macroOverridesJson} />
+        {targets ? (
+          <Text style={styles.fiberInfo}>
+            {t('settings.fiberTarget')}: {Math.round(targets.fiberG)} g
+          </Text>
+        ) : null}
+      </AccordionCard>
+    </>
+  );
+}
+
+type SlotEdit = { percent: string; enabled: boolean };
 
 function MealSlotsCard({ householdId }: { householdId: string }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const slots = useAllMealSlots(householdId);
   const [edits, setEdits] = useState<Record<string, SlotEdit>>({});
   const [seeded, setSeeded] = useState(false);
@@ -79,7 +244,6 @@ function MealSlotsCard({ householdId }: { householdId: string }) {
     const next: Record<string, SlotEdit> = {};
     for (const slot of slots) {
       next[slot.id] = {
-        time: slot.time,
         percent: String(Math.round(slot.calorieShare * 100)),
         enabled: slot.enabled,
       };
@@ -97,15 +261,13 @@ function MealSlotsCard({ householdId }: { householdId: string }) {
     if (!edit?.enabled) return sum;
     return sum + (num(edit.percent) ?? 0);
   }, 0);
-  const allTimesValid = slots.every((slot) => TIME_RE.test(edits[slot.id]?.time ?? ''));
-  const canSave = Math.abs(enabledSum - 100) < 0.5 && allTimesValid;
+  const canSave = Math.abs(enabledSum - 100) < 0.5;
 
   const save = async () => {
     for (const slot of slots) {
       const edit = edits[slot.id];
       if (!edit) continue;
       await updateMealSlotSetting(db, slot.id, {
-        time: edit.time,
         calorieShare: (num(edit.percent) ?? 0) / 100,
         enabled: edit.enabled,
       });
@@ -113,10 +275,7 @@ function MealSlotsCard({ householdId }: { householdId: string }) {
   };
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{t('settings.mealSlots')}</Text>
-      <Text style={styles.cardHint}>{t('settings.mealSlotsHint')}</Text>
-
+    <>
       {slots.map((slot: SlotRow) => {
         const edit = edits[slot.id];
         if (!edit) return null;
@@ -131,25 +290,13 @@ function MealSlotsCard({ householdId }: { householdId: string }) {
                 thumbColor={colors.surface}
               />
             </View>
-            <View style={styles.slotFields}>
-              <View style={styles.slotFieldTime}>
-                <TextField
-                  label={t('settings.slotTime')}
-                  value={edit.time}
-                  onChangeText={(v) => updateEdit(slot.id, { time: v })}
-                  placeholder="HH:MM"
-                />
-              </View>
-              <View style={styles.slotFieldPercent}>
-                <TextField
-                  label={t('settings.slotShare')}
-                  value={edit.percent}
-                  onChangeText={(v) => updateEdit(slot.id, { percent: v })}
-                  keyboardType="numeric"
-                  suffix="%"
-                />
-              </View>
-            </View>
+            <TextField
+              label={t('settings.slotShare')}
+              value={edit.percent}
+              onChangeText={(v) => updateEdit(slot.id, { percent: v })}
+              keyboardType="numeric"
+              suffix="%"
+            />
           </View>
         );
       })}
@@ -158,12 +305,59 @@ function MealSlotsCard({ householdId }: { householdId: string }) {
         {t('settings.slotsSumWarning', { sum: Math.round(enabledSum) })}
       </Text>
       <Button label={t('settings.saveSlots')} onPress={save} disabled={!canSave} />
+    </>
+  );
+}
+
+/** Per-slot time fields, shown only while meal reminders are enabled (moved here from the slots editor). */
+function MealTimesSection({ householdId }: { householdId: string }) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const slots = useAllMealSlots(householdId);
+  const [times, setTimes] = useState<Record<string, string>>({});
+  const [seeded, setSeeded] = useState(false);
+
+  useEffect(() => {
+    if (seeded || slots.length === 0) return;
+    const next: Record<string, string> = {};
+    for (const slot of slots) next[slot.id] = slot.time;
+    setTimes(next);
+    setSeeded(true);
+  }, [slots, seeded]);
+
+  const allValid = slots.every((slot) => TIME_RE.test(times[slot.id] ?? ''));
+
+  const save = async () => {
+    for (const slot of slots) {
+      const time = times[slot.id];
+      if (time === undefined || !TIME_RE.test(time)) continue;
+      await updateMealSlotSetting(db, slot.id, { time });
+    }
+  };
+
+  return (
+    <View style={styles.mealTimesSection}>
+      <Text style={styles.cardTitle}>{t('settings.mealTimes')}</Text>
+      <Text style={styles.cardHint}>{t('settings.mealTimesHint')}</Text>
+      {slots.map((slot) => (
+        <TextField
+          key={slot.id}
+          label={t(`slots.${slot.slotKey}`)}
+          value={times[slot.id] ?? ''}
+          onChangeText={(v) => setTimes((prev) => ({ ...prev, [slot.id]: v }))}
+          placeholder="HH:MM"
+        />
+      ))}
+      <Button label={t('settings.saveTimes')} onPress={save} disabled={!allValid} />
     </View>
   );
 }
 
 function NavigationCard() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navOrder = useAppStore((s) => s.navOrder);
   const setNavOrder = useAppStore((s) => s.setNavOrder);
 
@@ -186,28 +380,28 @@ function NavigationCard() {
   };
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{t('settings.navigation')}</Text>
-      <Text style={styles.cardHint}>{t('settings.navigationHint', { max: MAX_MAIN_NAV_ITEMS })}</Text>
-      <DraggableFlatList
-        data={navOrder}
-        keyExtractor={(item) => item}
-        renderItem={renderItem}
-        onDragEnd={({ data }) => setNavOrder(data)}
-        scrollEnabled={false}
-        activationDistance={0}
-      />
-    </View>
+    <DraggableFlatList
+      data={navOrder}
+      keyExtractor={(item) => item}
+      renderItem={renderItem}
+      onDragEnd={({ data }) => setNavOrder(data)}
+      scrollEnabled={false}
+      activationDistance={0}
+    />
   );
 }
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { household } = useHousehold();
   const settings = useHouseholdSettings(household?.id);
   const members = useProfiles(household?.id);
   const themeMode = useAppStore((s) => s.themeMode);
   const setThemeMode = useAppStore((s) => s.setThemeMode);
+  const activeProfileId = useAppStore((s) => s.activeProfileId);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>(undefined);
 
   const notifications = parseNotifications(settings?.notificationsJson ?? null);
   const [weighInTime, setWeighInTime] = useState('');
@@ -223,6 +417,10 @@ export default function SettingsScreen() {
   }, [settings, timesSeeded]);
 
   if (!household || !settings) return null;
+
+  const effectiveProfileId =
+    selectedProfileId ?? (members.some((m) => m.id === activeProfileId) ? (activeProfileId ?? undefined) : members[0]?.id);
+  const selectedProfile = members.find((m) => m.id === effectiveProfileId);
 
   const patchNotifications = async (patch: Partial<NotificationSettings>) => {
     await updateHouseholdSettings(db, household.id, { notifications: { ...notifications, ...patch } });
@@ -242,14 +440,15 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.heading}>{t('settings.title')}</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{household.name}</Text>
-          {members.map((profile) => (
-            <ProfileSummaryRow key={profile.id} profile={profile} />
-          ))}
-        </View>
+        <ProfileSwitcherHeader
+          householdId={household.id}
+          selectedProfileId={effectiveProfileId}
+          onSelect={setSelectedProfileId}
+        />
 
-        <View style={styles.card}>
+        {selectedProfile ? <ProfileSections profile={selectedProfile} /> : null}
+
+        <AccordionCard title={t('settings.general')}>
           <ChipSelect
             label={t('settings.units')}
             options={[
@@ -280,21 +479,9 @@ export default function SettingsScreen() {
             value={themeMode}
             onChange={(v) => setThemeMode(v as 'light' | 'dark')}
           />
-          <ChipSelect
-            label={t('settings.fiberMode')}
-            options={[
-              { value: 'efsa_min', label: t('settings.fiberEfsa') },
-              { value: 'gender_specific', label: t('settings.fiberGenderSpecific') },
-            ]}
-            value={settings.fiberMode}
-            onChange={(v) =>
-              updateHouseholdSettings(db, household.id, { fiberMode: v as 'efsa_min' | 'gender_specific' })
-            }
-          />
-        </View>
+        </AccordionCard>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('settings.mealRepetition')}</Text>
+        <AccordionCard title={t('settings.mealRepetition')}>
           <View style={styles.stepperRow}>
             <Text style={styles.slotLabel}>{t('settings.maxRepetitionsPerWeek')}</Text>
             <View style={styles.stepper}>
@@ -329,12 +516,13 @@ export default function SettingsScreen() {
             value={settings.defaultAllowConsecutiveDays}
             onChange={(v) => updateHouseholdSettings(db, household.id, { defaultAllowConsecutiveDays: v })}
           />
-        </View>
+        </AccordionCard>
 
-        <MealSlotsCard householdId={household.id} />
+        <AccordionCard title={t('settings.mealSlots')} subtitle={t('settings.mealSlotsHint')}>
+          <MealSlotsCard householdId={household.id} />
+        </AccordionCard>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('settings.notifications')}</Text>
+        <AccordionCard title={t('settings.notifications')}>
           <SwitchRow
             label={t('settings.mealReminders')}
             value={notifications.mealRemindersEnabled}
@@ -365,151 +553,234 @@ export default function SettingsScreen() {
           </View>
           {!timesValid ? <Text style={styles.sumTextWarning}>{t('settings.invalidTime')}</Text> : null}
           <Button label={t('settings.saveTimes')} onPress={saveTimes} disabled={!timesValid} />
-        </View>
 
-        <NavigationCard />
+          {notifications.mealRemindersEnabled ? <MealTimesSection householdId={household.id} /> : null}
+        </AccordionCard>
+
+        <AccordionCard title={t('settings.navigation')} subtitle={t('settings.navigationHint', { max: MAX_MAIN_NAV_ITEMS })}>
+          <NavigationCard />
+        </AccordionCard>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  heading: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-    marginBottom: spacing.sm,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginTop: spacing.md,
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-  },
-  cardHint: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginBottom: spacing.sm,
-    lineHeight: 18,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  summaryText: {
-    flex: 1,
-  },
-  summaryName: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  summaryMeta: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-  },
-  slotRow: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingVertical: spacing.sm,
-  },
-  slotHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  slotLabel: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  slotFields: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  slotFieldTime: {
-    flex: 1,
-  },
-  slotFieldPercent: {
-    width: 110,
-  },
-  sumText: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginBottom: spacing.sm,
-  },
-  sumTextWarning: {
-    color: colors.danger,
-    fontWeight: '600',
-  },
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  stepperButton: {
-    width: 44,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: 0,
-  },
-  stepperValue: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '700',
-    minWidth: 20,
-    textAlign: 'center',
-  },
-  navSectionLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  navDragRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.background,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.xs,
-  },
-  navDragRowActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.surface,
-  },
-  navDragHandle: {
-    padding: spacing.xs,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    heading: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+      marginBottom: spacing.sm,
+    },
+    profileHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+    },
+    profileHeaderIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    profileHeaderInitial: {
+      color: colors.onPrimary,
+      fontWeight: '700',
+    },
+    profileHeaderText: {
+      flex: 1,
+    },
+    profileHeaderLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+    },
+    profileHeaderName: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+    },
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+      padding: spacing.lg,
+    },
+    dropdownSheet: {
+      backgroundColor: colors.background,
+      borderRadius: radius.card,
+      padding: spacing.sm,
+    },
+    dropdownRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
+    },
+    dropdownRowLabel: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    dropdownAdd: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      marginTop: spacing.xs,
+    },
+    dropdownAddLabel: {
+      color: colors.primary,
+      fontSize: typography.body,
+      fontWeight: '700',
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginTop: spacing.md,
+      overflow: 'hidden',
+    },
+    accordionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.md,
+    },
+    accordionHeaderText: {
+      flex: 1,
+      paddingRight: spacing.sm,
+    },
+    accordionBody: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: spacing.md,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+    },
+    cardHint: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: 2,
+      lineHeight: 18,
+    },
+    fiberInfo: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: spacing.sm,
+    },
+    slotRow: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingVertical: spacing.sm,
+    },
+    slotHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    slotLabel: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    slotFields: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    slotFieldTime: {
+      flex: 1,
+    },
+    sumText: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginBottom: spacing.sm,
+    },
+    sumTextWarning: {
+      color: colors.danger,
+      fontWeight: '600',
+    },
+    mealTimesSection: {
+      marginTop: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: spacing.md,
+    },
+    stepperRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xs,
+    },
+    stepper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    stepperButton: {
+      width: 44,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: 0,
+    },
+    stepperValue: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+      minWidth: 20,
+      textAlign: 'center',
+    },
+    navSectionLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      marginTop: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    navDragRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.background,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.xs,
+    },
+    navDragRowActive: {
+      borderColor: colors.primary,
+      backgroundColor: colors.surface,
+    },
+    navDragHandle: {
+      padding: spacing.xs,
+    },
+  });
+}

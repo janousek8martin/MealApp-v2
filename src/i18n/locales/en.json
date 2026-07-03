@@ -420,6 +420,14 @@
     "navigation": "Navigation bar",
     "navigationHint": "Drag to reorder. The first {{max}} items sit in the main bar, the rest in the expand panel.",
     "navigationMain": "Main bar",
-    "navigationExpand": "Expand panel"
+    "navigationExpand": "Expand panel",
+    "selectProfile": "Select profile",
+    "addProfile": "Add profile",
+    "general": "General",
+    "editProfile": "Edit profile",
+    "nutritionSection": "TDCI & macros",
+    "fiberTarget": "Fiber target",
+    "mealTimes": "Meal times",
+    "mealTimesHint": "Shown when meal reminders are enabled."
   }
 }
