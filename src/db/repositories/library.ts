@@ -15,6 +15,7 @@ export type FoodInput = {
   category: string;
   baseUnit: 'g' | 'ml' | 'piece';
   gramsPerPiece?: number | null;
+  gramsPerCup?: number | null;
   kcalPer100: number;
   proteinPer100: number;
   carbsPer100: number;
@@ -37,6 +38,7 @@ export async function upsertFood(db: AppDb, input: FoodInput, foodId?: string): 
     category: input.category,
     baseUnit: input.baseUnit,
     gramsPerPiece: input.gramsPerPiece ?? null,
+    gramsPerCup: input.gramsPerCup ?? null,
     kcalPer100: input.kcalPer100,
     proteinPer100: input.proteinPer100,
     carbsPer100: input.carbsPer100,

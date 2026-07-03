@@ -250,6 +250,8 @@ export const foods = sqliteTable('foods', {
   baseUnit: text('base_unit', { enum: ['g', 'ml', 'piece'] }).notNull().default('g'),
   /** Weight of one piece when baseUnit is 'piece' (e.g. one egg ≈ 55 g). */
   gramsPerPiece: real('grams_per_piece'),
+  /** Density reference for baseUnit 'g' foods (e.g. rolled oats ≈ 90 g/cup) – drives the recipe-detail kitchen equivalent, null = not shown. */
+  gramsPerCup: real('grams_per_cup'),
   // Nutrition per 100 g / 100 ml / 100 g-equivalent of pieces.
   kcalPer100: real('kcal_per_100').notNull(),
   proteinPer100: real('protein_per_100').notNull(),

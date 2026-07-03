@@ -19,6 +19,7 @@ import {
 } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { kitchenEquivalentLabel } from '@/domain/units';
 import { localizedInstructions, localizedName } from '@/utils/localized';
 
 export default function RecipeDetailScreen() {
@@ -97,14 +98,24 @@ export default function RecipeDetailScreen() {
         </View>
 
         <Text style={styles.sectionTitle}>{t('recipeDetail.ingredients')}</Text>
-        {ingredientRows.map((row) => (
-          <View key={row.ingredient.id} style={styles.ingredientRow}>
-            <Text style={styles.ingredientName}>{localizedName(row.food)}</Text>
-            <Text style={styles.ingredientAmount}>
-              {row.ingredient.amount} {row.food.baseUnit === 'piece' ? t('units.pcs') : row.food.baseUnit}
-            </Text>
-          </View>
-        ))}
+        {ingredientRows.map((row) => {
+          const equivalent = kitchenEquivalentLabel(row.ingredient.amount, row.food.baseUnit, row.food.gramsPerCup);
+          return (
+            <View key={row.ingredient.id} style={styles.ingredientRow}>
+              <Text style={styles.ingredientName}>{localizedName(row.food)}</Text>
+              <View style={styles.ingredientAmountCol}>
+                <Text style={styles.ingredientAmount}>
+                  {row.ingredient.amount} {row.food.baseUnit === 'piece' ? t('units.pcs') : row.food.baseUnit}
+                </Text>
+                {equivalent ? (
+                  <Text style={styles.ingredientEquivalent}>
+                    {t('recipeDetail.kitchenEquivalent', { fraction: equivalent })}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          );
+        })}
 
         {instructions ? (
           <>
@@ -228,9 +239,17 @@ function createStyles(colors: ColorTokens) {
       color: colors.text,
       fontSize: typography.body,
     },
+    ingredientAmountCol: {
+      alignItems: 'flex-end',
+    },
     ingredientAmount: {
       color: colors.textSecondary,
       fontSize: typography.body,
+    },
+    ingredientEquivalent: {
+      color: colors.textSecondary,
+      fontSize: typography.small - 1,
+      marginTop: 1,
     },
     instructions: {
       color: colors.text,

@@ -13,6 +13,8 @@ export type FoodSeed = {
   category: string;
   baseUnit: 'g' | 'ml' | 'piece';
   gramsPerPiece?: number;
+  /** Density reference for baseUnit 'g' foods (e.g. rolled oats ≈ 90 g/cup) – drives the recipe-detail kitchen equivalent. */
+  gramsPerCup?: number;
   kcalPer100: number;
   proteinPer100: number;
   carbsPer100: number;

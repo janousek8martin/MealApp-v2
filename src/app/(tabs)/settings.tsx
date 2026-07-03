@@ -6,6 +6,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 're
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { KitchenUnitsModal } from '@/components/KitchenUnitsModal';
 import { ManualAdjustmentCard, MacroOverridesCard } from '@/components/ProfileNutritionCards';
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { ProfilePortionsCard } from '@/components/ProfilePortionsCard';
@@ -411,6 +412,7 @@ export default function SettingsScreen() {
   const setThemeMode = useAppStore((s) => s.setThemeMode);
   const activeProfileId = useAppStore((s) => s.activeProfileId);
   const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>(undefined);
+  const [kitchenUnitsVisible, setKitchenUnitsVisible] = useState(false);
 
   const notifications = parseNotifications(settings?.notificationsJson ?? null);
   const [weighInTime, setWeighInTime] = useState('');
@@ -467,6 +469,13 @@ export default function SettingsScreen() {
             value={settings.unitSystem}
             onChange={(v) => updateHouseholdSettings(db, household.id, { unitSystem: v as 'metric' | 'us' })}
           />
+          <Pressable
+            accessibilityRole="button"
+            style={styles.kitchenUnitsRow}
+            onPress={() => setKitchenUnitsVisible(true)}>
+            <Text style={styles.slotLabel}>{t('settings.kitchenUnits')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </Pressable>
           <ChipSelect
             label={t('settings.language')}
             options={[
@@ -570,6 +579,8 @@ export default function SettingsScreen() {
           <NavigationCard />
         </AccordionCard>
       </ScrollView>
+
+      <KitchenUnitsModal visible={kitchenUnitsVisible} onClose={() => setKitchenUnitsVisible(false)} />
     </SafeAreaView>
   );
 }
@@ -703,6 +714,13 @@ function createStyles(colors: ColorTokens) {
       color: colors.textSecondary,
       fontSize: typography.small,
       marginTop: spacing.sm,
+    },
+    kitchenUnitsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.sm,
     },
     slotRow: {
       borderTopWidth: 1,

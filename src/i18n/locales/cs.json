@@ -328,7 +328,8 @@
     "deleteMessage": "Tento recept bude odstraněn z knihovny.",
     "nutritionPerPortion": "Nutriční hodnoty na porci",
     "ingredients": "Suroviny",
-    "instructions": "Postup"
+    "instructions": "Postup",
+    "kitchenEquivalent": "cca {{fraction}} hrnku"
   },
   "recipeEdit": {
     "newTitle": "Nový recept",
@@ -441,6 +442,22 @@
     "carbsComputed": "Sacharidy (dopočet)",
     "snackPresets": "Rychlé předvolby",
     "useDefault": "Použít výchozí",
-    "savePortions": "Uložit porce"
+    "savePortions": "Uložit porce",
+    "kitchenUnits": "Kuchyňské jednotky",
+    "kitchenUnitsTitle": "Kuchyňské jednotky",
+    "kitchenUnitsTable": "Převodní tabulka",
+    "kitchenCalculator": "Kalkulačka",
+    "kitchenCalculatorAmount": "Množství",
+    "kitchenCalculatorResult": "= {{result}}"
+  },
+  "kitchenUnitNames": {
+    "tsp": "1 lžička",
+    "tbsp": "1 lžíce",
+    "cup_quarter": "1/4 hrnku",
+    "cup_third": "1/3 hrnku",
+    "cup_half": "1/2 hrnku",
+    "cup": "1 hrnek",
+    "oz": "1 unce (oz)",
+    "lb": "1 libra (lb)"
   }
 }

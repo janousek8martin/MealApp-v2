@@ -36,6 +36,7 @@ export async function seedIfEmpty(
       category: seed.category,
       baseUnit: seed.baseUnit,
       gramsPerPiece: seed.gramsPerPiece,
+      gramsPerCup: seed.gramsPerCup,
       kcalPer100: seed.kcalPer100,
       proteinPer100: seed.proteinPer100,
       carbsPer100: seed.carbsPer100,
