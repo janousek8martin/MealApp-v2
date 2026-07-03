@@ -6,6 +6,7 @@ import m0001 from './0001_clever_ravenous.sql';
 import m0002 from './0002_serious_psylocke.sql';
 import m0003 from './0003_overjoyed_fantastic_four.sql';
 import m0004 from './0004_violet_nova.sql';
+import m0005 from './0005_typical_peter_quill.sql';
 
   export default {
     journal,
@@ -14,7 +15,8 @@ import m0004 from './0004_violet_nova.sql';
 m0001,
 m0002,
 m0003,
-m0004
+m0004,
+m0005
     }
   }
   

@@ -49,6 +49,7 @@ export async function seedIfEmpty(
       storage: seed.storage,
       snackSuitable: seed.snackSuitable ?? false,
       source: seed.source ?? 'seed-draft',
+      seedKey: seed.key,
     });
 
     if (seed.allergens?.length) {
@@ -82,6 +83,7 @@ export async function seedIfEmpty(
       prepTimeMinutes: seed.prepTimeMinutes,
       tagsJson: seed.tags ? JSON.stringify(seed.tags) : null,
       source: 'seed',
+      seedKey: seed.key,
     });
 
     await db.insert(recipeIngredients).values(

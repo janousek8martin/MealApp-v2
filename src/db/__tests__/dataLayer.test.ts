@@ -69,6 +69,16 @@ describe('data layer', () => {
         .where(eq(recipeIngredients.recipeId, recipe.id));
       expect(ingredients.length).toBeGreaterThan(0);
     }
+
+    // seedKey must persist so bundled placeholder images (recipeImages.ts /
+    // foodImages.ts) can be matched later, since the runtime id is a random
+    // UUID that differs per install.
+    expect(seededFoods.every((f) => typeof f.seedKey === 'string' && f.seedKey.length > 0)).toBe(
+      true,
+    );
+    expect(
+      seededRecipes.every((r) => typeof r.seedKey === 'string' && r.seedKey.length > 0),
+    ).toBe(true);
   });
 
   it('enforces foreign keys', async () => {
