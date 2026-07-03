@@ -5,7 +5,8 @@ import { Modal, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { navyBodyFatPct } from '@/domain/bodyFat';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Props = {
   visible: boolean;
@@ -21,6 +22,8 @@ type Props = {
  */
 export function NavyCalculatorModal({ visible, sex, heightCm, onClose, onUse }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [waist, setWaist] = useState('');
   const [neck, setNeck] = useState('');
   const [hip, setHip] = useState('');
@@ -95,54 +98,56 @@ export function NavyCalculatorModal({ visible, sex, heightCm, onClose, onUse }: 
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(36, 54, 32, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radius.card,
-    borderTopRightRadius: radius.card,
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginTop: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  resultBox: {
-    backgroundColor: colors.mint,
-    borderRadius: radius.input,
-    padding: spacing.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  resultLabel: {
-    color: colors.text,
-    fontSize: typography.small,
-    fontWeight: '600',
-  },
-  resultValue: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '700',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  action: {
-    flex: 1,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(36, 54, 32, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: colors.background,
+      borderTopLeftRadius: radius.card,
+      borderTopRightRadius: radius.card,
+      padding: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: spacing.xs,
+      marginBottom: spacing.md,
+    },
+    resultBox: {
+      backgroundColor: colors.mint,
+      borderRadius: radius.input,
+      padding: spacing.md,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    resultLabel: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+    resultValue: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '700',
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    action: {
+      flex: 1,
+    },
+  });
+}

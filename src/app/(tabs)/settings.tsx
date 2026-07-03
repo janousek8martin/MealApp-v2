@@ -206,6 +206,8 @@ export default function SettingsScreen() {
   const { household } = useHousehold();
   const settings = useHouseholdSettings(household?.id);
   const members = useProfiles(household?.id);
+  const themeMode = useAppStore((s) => s.themeMode);
+  const setThemeMode = useAppStore((s) => s.setThemeMode);
 
   const notifications = parseNotifications(settings?.notificationsJson ?? null);
   const [weighInTime, setWeighInTime] = useState('');
@@ -268,6 +270,15 @@ export default function SettingsScreen() {
               void updateHouseholdSettings(db, household.id, { language: v as 'cs' | 'en' });
               void i18n.changeLanguage(v);
             }}
+          />
+          <ChipSelect
+            label={t('settings.theme')}
+            options={[
+              { value: 'light', label: t('settings.themeLight') },
+              { value: 'dark', label: t('settings.themeDark') },
+            ]}
+            value={themeMode}
+            onChange={(v) => setThemeMode(v as 'light' | 'dark')}
           />
           <ChipSelect
             label={t('settings.fiberMode')}

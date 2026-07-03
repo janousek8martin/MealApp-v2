@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { bodyFatBand, colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Props = {
   visible: boolean;
@@ -26,6 +28,8 @@ const RANGES = {
 /** Reference body-fat ranges (ACE classification), shown as a simple color-coded info card. */
 export function BodyFatChartModal({ visible, sex, onClose }: Props) {
   const { t } = useTranslation();
+  const { colors, bodyFatBand } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -53,58 +57,60 @@ export function BodyFatChartModal({ visible, sex, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  card: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radius.card,
-    borderTopRightRadius: radius.card,
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '800',
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginBottom: spacing.md,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderRadius: radius.input,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  rowLabel: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '700',
-  },
-  rowValue: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  hint: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    lineHeight: 18,
-    marginTop: spacing.xs,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'flex-end',
+    },
+    card: {
+      backgroundColor: colors.background,
+      borderTopLeftRadius: radius.card,
+      borderTopRightRadius: radius.card,
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xs,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '800',
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginBottom: spacing.md,
+    },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderRadius: radius.input,
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    rowLabel: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+    },
+    rowValue: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    hint: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      lineHeight: 18,
+      marginTop: spacing.xs,
+    },
+  });
+}

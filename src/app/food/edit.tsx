@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +11,8 @@ import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
 import { setPhoto, upsertFood } from '@/db/repositories/library';
 import { useFood, useFoodAllergens, usePhoto } from '@/hooks/library';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 const ALLERGEN_KEYS = ['gluten', 'lactose', 'eggs', 'nuts', 'peanuts', 'fish', 'shellfish', 'soy'];
 const DIET_KEYS = ['vegetarian', 'vegan', 'pescatarian'];
@@ -27,6 +28,8 @@ function num(value: string): number | null {
 
 export default function FoodEditScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id?: string }>();
   const existing = useFood(id);
   const existingAllergens = useFoodAllergens(id);
@@ -223,44 +226,46 @@ export default function FoodEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-    marginBottom: spacing.md,
-  },
-  section: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginVertical: spacing.sm,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  switchLabel: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  action: {
-    flex: 1,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+      marginBottom: spacing.md,
+    },
+    section: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginVertical: spacing.sm,
+    },
+    switchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    switchLabel: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    action: {
+      flex: 1,
+    },
+  });
+}

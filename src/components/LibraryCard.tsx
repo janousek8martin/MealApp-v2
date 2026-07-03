@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Props = {
   title: string;
@@ -31,6 +32,8 @@ export function LibraryCard({
   onPress,
   onDelete,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [deleteRevealed, setDeleteRevealed] = useState(false);
 
   return (
@@ -86,71 +89,73 @@ export function LibraryCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.sm,
-    marginBottom: spacing.sm,
-    gap: spacing.md,
-  },
-  thumb: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.card - 8,
-  },
-  body: {
-    flex: 1,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '700',
-    flexShrink: 1,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginTop: 2,
-  },
-  badge: {
-    backgroundColor: colors.lime,
-    borderRadius: radius.chip,
-    paddingVertical: 2,
-    paddingHorizontal: spacing.sm,
-  },
-  badgeLabel: {
-    color: colors.text,
-    fontSize: typography.small,
-    fontWeight: '600',
-  },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  tag: {
-    backgroundColor: colors.tealTint,
-    borderRadius: radius.chip,
-    paddingVertical: 1,
-    paddingHorizontal: spacing.xs + 2,
-  },
-  tagLabel: {
-    color: colors.text,
-    fontSize: typography.small - 2,
-    fontWeight: '600',
-  },
-  deleteButton: {
-    padding: spacing.xs,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.sm,
+      marginBottom: spacing.sm,
+      gap: spacing.md,
+    },
+    thumb: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.card - 8,
+    },
+    body: {
+      flex: 1,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+      flexShrink: 1,
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: 2,
+    },
+    badge: {
+      backgroundColor: colors.lime,
+      borderRadius: radius.chip,
+      paddingVertical: 2,
+      paddingHorizontal: spacing.sm,
+    },
+    badgeLabel: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+    tagRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.xs,
+      marginTop: spacing.xs,
+    },
+    tag: {
+      backgroundColor: colors.tealTint,
+      borderRadius: radius.chip,
+      paddingVertical: 1,
+      paddingHorizontal: spacing.xs + 2,
+    },
+    tagLabel: {
+      color: colors.text,
+      fontSize: typography.small - 2,
+      fontWeight: '600',
+    },
+    deleteButton: {
+      padding: spacing.xs,
+    },
+  });
+}

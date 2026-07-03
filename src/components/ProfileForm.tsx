@@ -10,7 +10,8 @@ import { ChipSelect } from '@/components/ui/ChipSelect';
 import { TextField } from '@/components/ui/TextField';
 import type { CreateProfileInput } from '@/db/repositories/profiles';
 import { validateGoals } from '@/domain/goals';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 export type ProfileFormValue = Omit<CreateProfileInput, 'householdId'>;
 
@@ -47,6 +48,8 @@ function weekdayOptions(language: string): { value: string; label: string }[] {
 
 export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initialValue }: Props) {
   const { t, i18n } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [name, setName] = useState(initialValue?.name ?? '');
   const [profileType, setProfileType] = useState<'adult' | 'child'>(
@@ -356,75 +359,77 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
   );
 }
 
-const styles = StyleSheet.create({
-  error: {
-    color: colors.danger,
-    fontSize: typography.small,
-    marginTop: -spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  bodyFatActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  bodyFatActionButton: {
-    flex: 1,
-  },
-  infoToggle: {
-    alignSelf: 'flex-start',
-    marginBottom: spacing.sm,
-  },
-  infoToggleLabel: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: '600',
-  },
-  infoCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.sm + 2,
-    marginBottom: spacing.md,
-  },
-  infoLine: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    lineHeight: 18,
-    marginBottom: spacing.xs,
-  },
-  infoLineLabel: {
-    color: colors.text,
-    fontWeight: '700',
-  },
-  workoutDaysHint: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginTop: -spacing.sm,
-    marginBottom: spacing.md,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-  },
-  switchText: {
-    flex: 1,
-    paddingRight: spacing.md,
-  },
-  switchLabel: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  switchHint: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginTop: 2,
-  },
-  submit: {
-    marginBottom: spacing.xl,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    error: {
+      color: colors.danger,
+      fontSize: typography.small,
+      marginTop: -spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    bodyFatActions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    bodyFatActionButton: {
+      flex: 1,
+    },
+    infoToggle: {
+      alignSelf: 'flex-start',
+      marginBottom: spacing.sm,
+    },
+    infoToggleLabel: {
+      color: colors.primary,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+    infoCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.sm + 2,
+      marginBottom: spacing.md,
+    },
+    infoLine: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      lineHeight: 18,
+      marginBottom: spacing.xs,
+    },
+    infoLineLabel: {
+      color: colors.text,
+      fontWeight: '700',
+    },
+    workoutDaysHint: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: -spacing.sm,
+      marginBottom: spacing.md,
+    },
+    switchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.lg,
+    },
+    switchText: {
+      flex: 1,
+      paddingRight: spacing.md,
+    },
+    switchLabel: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    switchHint: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: 2,
+    },
+    submit: {
+      marginBottom: spacing.xl,
+    },
+  });
+}

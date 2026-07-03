@@ -6,10 +6,11 @@ import { AppTabBar } from '@/components/AppTabBar';
 import { useHousehold, useHouseholdSettings } from '@/hooks/data';
 import { syncHouseholdNotifications } from '@/services/notifications';
 import { useAppStore } from '@/stores/appStore';
-import { colors } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
 
 export default function TabsLayout() {
   const { t, i18n } = useTranslation();
+  const { colors } = useTheme();
   const { household, loaded } = useHousehold();
   const settings = useHouseholdSettings(household?.id);
   const walkthroughSeen = useAppStore((state) => state.walkthroughSeen);

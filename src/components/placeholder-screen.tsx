@@ -1,8 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, heroGradient, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Props = {
   title: string;
@@ -11,6 +13,12 @@ type Props = {
 
 /** Temporary screen body used while the real feature screens are being built. */
 export function PlaceholderScreen({ title, subtitle }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const heroGradient = useMemo(
+    () => [colors.heroGradientStart, colors.heroGradientEnd] as const,
+    [colors],
+  );
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <LinearGradient
@@ -27,29 +35,31 @@ export function PlaceholderScreen({ title, subtitle }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: spacing.md,
-  },
-  hero: {
-    borderRadius: radius.card,
-    padding: spacing.lg,
-    minHeight: 140,
-    justifyContent: 'flex-end',
-  },
-  heroTitle: {
-    color: colors.onPrimary,
-    fontSize: typography.title,
-    fontWeight: '700',
-  },
-  body: {
-    paddingVertical: spacing.lg,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: typography.body,
-    lineHeight: 22,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: spacing.md,
+    },
+    hero: {
+      borderRadius: radius.card,
+      padding: spacing.lg,
+      minHeight: 140,
+      justifyContent: 'flex-end',
+    },
+    heroTitle: {
+      color: colors.onPrimary,
+      fontSize: typography.title,
+      fontWeight: '700',
+    },
+    body: {
+      paddingVertical: spacing.lg,
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      fontSize: typography.body,
+      lineHeight: 22,
+    },
+  });
+}

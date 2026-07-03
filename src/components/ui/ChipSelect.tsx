@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 export type ChipOption = { value: string; label: string };
 
@@ -24,6 +26,9 @@ type Props = SingleProps | MultiProps;
 
 /** Rounded chip group used across forms (single or multi select). */
 export function ChipSelect(props: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const isSelected = (option: string) =>
     props.multi ? props.value.includes(option) : props.value === option;
 
@@ -62,39 +67,41 @@ export function ChipSelect(props: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing.md,
-  },
-  label: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginBottom: spacing.xs,
-    fontWeight: '600',
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    borderRadius: radius.chip,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  chipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipLabel: {
-    color: colors.text,
-    fontSize: typography.small,
-    fontWeight: '500',
-  },
-  chipLabelSelected: {
-    color: colors.onPrimary,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: spacing.md,
+    },
+    label: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginBottom: spacing.xs,
+      fontWeight: '600',
+    },
+    chips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    chipSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    chipLabel: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '500',
+    },
+    chipLabelSelected: {
+      color: colors.onPrimary,
+    },
+  });
+}

@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { useProfiles } from '@/hooks/data';
 import { useAppStore } from '@/stores/appStore';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Props = {
   householdId: string;
@@ -13,6 +15,8 @@ export function ProfileSwitcher({ householdId }: Props) {
   const memberList = useProfiles(householdId);
   const activeProfileId = useAppStore((state) => state.activeProfileId);
   const setActiveProfileId = useAppStore((state) => state.setActiveProfileId);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const effectiveActiveId = memberList.some((p) => p.id === activeProfileId)
     ? activeProfileId
@@ -44,56 +48,58 @@ export function ProfileSwitcher({ householdId }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    // A horizontal ScrollView with no height constraint will stretch to
-    // fill any leftover cross-axis space in a flex-column parent (visible
-    // when this sits directly in a screen body rather than nested inside
-    // another scroll view's content).
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  row: {
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.chip,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.md,
-  },
-  chipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  initial: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.mint,
-    color: colors.text,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontWeight: '700',
-    fontSize: typography.small,
-    overflow: 'hidden',
-  },
-  initialSelected: {
-    backgroundColor: colors.primaryLight,
-    color: colors.onPrimary,
-  },
-  name: {
-    color: colors.text,
-    fontSize: typography.small,
-    fontWeight: '600',
-  },
-  nameSelected: {
-    color: colors.onPrimary,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    container: {
+      // A horizontal ScrollView with no height constraint will stretch to
+      // fill any leftover cross-axis space in a flex-column parent (visible
+      // when this sits directly in a screen body rather than nested inside
+      // another scroll view's content).
+      flexGrow: 0,
+      flexShrink: 0,
+    },
+    row: {
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.chip,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
+    },
+    chipSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    initial: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.mint,
+      color: colors.text,
+      textAlign: 'center',
+      textAlignVertical: 'center',
+      fontWeight: '700',
+      fontSize: typography.small,
+      overflow: 'hidden',
+    },
+    initialSelected: {
+      backgroundColor: colors.primaryLight,
+      color: colors.onPrimary,
+    },
+    name: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+    nameSelected: {
+      color: colors.onPrimary,
+    },
+  });
+}

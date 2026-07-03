@@ -1,8 +1,9 @@
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { db } from './client';
 import migrations from './migrations/migrations';
 import { seedIfEmpty } from './seed';
@@ -14,6 +15,8 @@ type Props = { children: ReactNode };
  * Keeps the splash-like state minimal – both steps are local and fast.
  */
 export function DbGate({ children }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { success, error } = useMigrations(db, migrations);
   const [seedState, setSeedState] = useState<'pending' | 'done' | 'failed'>('pending');
 
@@ -43,23 +46,25 @@ export function DbGate({ children }: Props) {
   return <>{children}</>;
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  errorTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-  },
-  errorDetail: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    textAlign: 'center',
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.lg,
+    },
+    errorTitle: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginBottom: spacing.sm,
+    },
+    errorDetail: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      textAlign: 'center',
+    },
+  });
+}

@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Props = {
   onEdit: () => void;
@@ -12,12 +13,10 @@ type Props = {
   deleteConfirmMessage: string;
 };
 
-/**
- * UX rule from the brief: the destructive action stays hidden until the user
- * long-presses the edit button (~0.5 s); deleting always asks for confirmation.
- */
 export function EditActions({ onEdit, onDelete, deleteConfirmTitle, deleteConfirmMessage }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [deleteRevealed, setDeleteRevealed] = useState(false);
 
   const confirmDelete = () => {
@@ -48,41 +47,43 @@ export function EditActions({ onEdit, onDelete, deleteConfirmTitle, deleteConfir
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  edit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.chip,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.md,
-  },
-  editLabel: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: '600',
-  },
-  delete: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.danger,
-    borderRadius: radius.chip,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.md,
-  },
-  deleteLabel: {
-    color: colors.danger,
-    fontSize: typography.small,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    edit: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.chip,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
+    },
+    editLabel: {
+      color: colors.primary,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+    delete: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.danger,
+      borderRadius: radius.chip,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
+    },
+    deleteLabel: {
+      color: colors.danger,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+  });
+}

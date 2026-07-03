@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +15,8 @@ import { createHouseholdWithDefaults, saveHouseholdPreferences, updateHouseholdS
 import { createProfile } from '@/db/repositories/profiles';
 import { useRecipes } from '@/hooks/library';
 import { useAppStore } from '@/stores/appStore';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
 
 type Step = 'composition' | 'preferences' | 'profile' | 'done';
@@ -37,6 +38,8 @@ function Stepper({
   min?: number;
   max?: number;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.stepperRow}>
       <Text style={styles.stepperLabel}>{label}</Text>
@@ -61,6 +64,8 @@ function Stepper({
 
 export default function WizardScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const setActiveProfileId = useAppStore((state) => state.setActiveProfileId);
   const recipes = useRecipes();
 
@@ -227,76 +232,78 @@ export default function WizardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  flex: {
-    flex: 1,
-  },
-  content: {
-    padding: spacing.lg,
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  centered: {
-    alignItems: 'stretch',
-  },
-  stepLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.xs,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: typography.body,
-    lineHeight: 22,
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  cta: {
-    marginTop: spacing.md,
-  },
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  stepperLabel: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '600',
-    flex: 1,
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  stepperButton: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.chip,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperValue: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '700',
-    minWidth: 24,
-    textAlign: 'center',
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    flex: {
+      flex: 1,
+    },
+    content: {
+      padding: spacing.lg,
+      flexGrow: 1,
+      justifyContent: 'center',
+    },
+    centered: {
+      alignItems: 'stretch',
+    },
+    stepLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: spacing.xs,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      fontSize: typography.body,
+      lineHeight: 22,
+      marginTop: spacing.sm,
+      marginBottom: spacing.lg,
+    },
+    cta: {
+      marginTop: spacing.md,
+    },
+    stepperRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    stepperLabel: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '600',
+      flex: 1,
+    },
+    stepper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    stepperButton: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepperValue: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+      minWidth: 24,
+      textAlign: 'center',
+    },
+  });
+}

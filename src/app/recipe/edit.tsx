@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +13,8 @@ import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
 import { setPhoto, upsertRecipe } from '@/db/repositories/library';
 import { useFoods, usePhoto, useRecipe, useRecipeIngredients } from '@/hooks/library';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
 
 const RECIPE_CATEGORIES = ['breakfast', 'lunch_dinner', 'snack'] as const;
@@ -32,6 +33,8 @@ function int(value: string): number | null {
 
 export default function RecipeEditScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id?: string }>();
   const existing = useRecipe(id);
   const existingIngredients = useRecipeIngredients(id);
@@ -231,87 +234,89 @@ export default function RecipeEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-    marginBottom: spacing.md,
-  },
-  section: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginVertical: spacing.sm,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  switchLabel: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  ingredientRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.xs + 2,
-  },
-  ingredientName: {
-    flex: 1,
-    color: colors.text,
-    fontSize: typography.body,
-  },
-  ingredientAmountInput: {
-    width: 60,
-    textAlign: 'right',
-    color: colors.text,
-    fontSize: typography.body,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  ingredientUnit: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    width: 24,
-  },
-  addIngredient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    alignSelf: 'flex-start',
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  addIngredientLabel: {
-    color: colors.primary,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  action: {
-    flex: 1,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+      marginBottom: spacing.md,
+    },
+    section: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginVertical: spacing.sm,
+    },
+    switchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    switchLabel: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    ingredientRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.xs + 2,
+    },
+    ingredientName: {
+      flex: 1,
+      color: colors.text,
+      fontSize: typography.body,
+    },
+    ingredientAmountInput: {
+      width: 60,
+      textAlign: 'right',
+      color: colors.text,
+      fontSize: typography.body,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    ingredientUnit: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      width: 24,
+    },
+    addIngredient: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      alignSelf: 'flex-start',
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    addIngredientLabel: {
+      color: colors.primary,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    action: {
+      flex: 1,
+    },
+  });
+}

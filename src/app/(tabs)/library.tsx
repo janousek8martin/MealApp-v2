@@ -20,13 +20,13 @@ import {
   useRecipeTagsMap,
 } from '@/hooks/library';
 import { useRecipeNutritionMap } from '@/hooks/plan';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
 
 type Segment = 'recipes' | 'foods';
 type RecipeFilter = 'all' | 'breakfast' | 'lunch_dinner' | 'snack' | 'side';
 
-const ACCENTS = [colors.mint, colors.lime, colors.tealTint];
 const DIET_KEYS = ['vegetarian', 'vegan', 'pescatarian'];
 const ALLERGEN_KEYS = ['gluten', 'lactose', 'eggs', 'nuts', 'peanuts', 'fish', 'shellfish', 'soy'];
 const BUDGET_KEYS = ['cheap', 'average', 'expensive'] as const;
@@ -37,6 +37,9 @@ function toggleValue(list: string[], value: string): string[] {
 
 export default function LibraryScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const ACCENTS = useMemo(() => [colors.mint, colors.lime, colors.tealTint], [colors]);
   const [segment, setSegment] = useState<Segment>('recipes');
   const [search, setSearch] = useState('');
   const [recipeFilter, setRecipeFilter] = useState<RecipeFilter>('all');
@@ -397,128 +400,130 @@ export default function LibraryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.sm,
-  },
-  heading: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-  },
-  addButton: {
-    backgroundColor: colors.primary,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 3,
-    marginTop: spacing.md,
-  },
-  segment: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.input - 4,
-    alignItems: 'center',
-  },
-  segmentActive: {
-    backgroundColor: colors.primary,
-  },
-  segmentLabel: {
-    color: colors.textSecondary,
-    fontWeight: '600',
-    fontSize: typography.small,
-  },
-  segmentLabelActive: {
-    color: colors.onPrimary,
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  search: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    color: colors.text,
-  },
-  filterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  filterBadgeLabel: {
-    color: colors.onPrimary,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs + 2,
-    marginTop: spacing.sm,
-  },
-  filterChip: {
-    borderRadius: radius.chip,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.sm + 2,
-  },
-  filterChipActive: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primaryLight,
-  },
-  filterLabel: {
-    color: colors.text,
-    fontSize: typography.small,
-  },
-  filterLabelActive: {
-    color: colors.onPrimary,
-    fontWeight: '600',
-  },
-  list: {
-    paddingVertical: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: spacing.md,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: spacing.sm,
+    },
+    heading: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+    },
+    addButton: {
+      backgroundColor: colors.primary,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    segmentRow: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 3,
+      marginTop: spacing.md,
+    },
+    segment: {
+      flex: 1,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.input - 4,
+      alignItems: 'center',
+    },
+    segmentActive: {
+      backgroundColor: colors.primary,
+    },
+    segmentLabel: {
+      color: colors.textSecondary,
+      fontWeight: '600',
+      fontSize: typography.small,
+    },
+    segmentLabelActive: {
+      color: colors.onPrimary,
+    },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    search: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
+      color: colors.text,
+    },
+    filterButton: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    filterBadge: {
+      position: 'absolute',
+      top: -4,
+      right: -4,
+      minWidth: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: colors.danger,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 2,
+    },
+    filterBadgeLabel: {
+      color: colors.onPrimary,
+      fontSize: 10,
+      fontWeight: '700',
+    },
+    filterRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.xs + 2,
+      marginTop: spacing.sm,
+    },
+    filterChip: {
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.sm + 2,
+    },
+    filterChipActive: {
+      backgroundColor: colors.primaryLight,
+      borderColor: colors.primaryLight,
+    },
+    filterLabel: {
+      color: colors.text,
+      fontSize: typography.small,
+    },
+    filterLabelActive: {
+      color: colors.onPrimary,
+      fontWeight: '600',
+    },
+    list: {
+      paddingVertical: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+  });
+}

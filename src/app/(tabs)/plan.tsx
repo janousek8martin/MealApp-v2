@@ -40,7 +40,8 @@ import {
   type SlotRow,
 } from '@/hooks/plan';
 import { confirmDeleteMeal } from '@/utils/mealActions';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 function targetProfileIdForSlot(slot: SlotRow, profile: { id: string; sharesMainMeals: boolean }): string | null {
   if (slot.kind === 'snack') return profile.id;
@@ -67,6 +68,8 @@ const SWIPE_THRESHOLD = 60;
 
 export default function PlanScreen() {
   const { t, i18n } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
   const today = todayIsoDate();
@@ -296,119 +299,121 @@ export default function PlanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.sm,
-  },
-  weekNavButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  monthTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-  },
-  weekStrip: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.sm,
-    gap: spacing.xs,
-  },
-  subHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-  },
-  profileSwitcherRow: {
-    flex: 1,
-  },
-  todayButton: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: radius.chip,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.sm + 2,
-  },
-  todayButtonLabel: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: '700',
-  },
-  dayChip: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  dayChipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  dayChipToday: {
-    borderColor: colors.primary,
-  },
-  dayWeekday: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  dayNumber: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  dayTextSelected: {
-    color: colors.onPrimary,
-  },
-  swipeArea: {
-    flex: 1,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  footer: {
-    padding: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  spinner: {
-    marginBottom: spacing.sm,
-  },
-  pastNotice: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginBottom: spacing.md,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.sm,
+    },
+    weekNavButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    monthTitle: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+    },
+    weekStrip: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.sm,
+      gap: spacing.xs,
+    },
+    subHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+    },
+    profileSwitcherRow: {
+      flex: 1,
+    },
+    todayButton: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: radius.chip,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.sm + 2,
+    },
+    todayButtonLabel: {
+      color: colors.primary,
+      fontSize: typography.small,
+      fontWeight: '700',
+    },
+    dayChip: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    dayChipSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    dayChipToday: {
+      borderColor: colors.primary,
+    },
+    dayWeekday: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '600',
+      textTransform: 'capitalize',
+    },
+    dayNumber: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+      marginTop: 2,
+    },
+    dayTextSelected: {
+      color: colors.onPrimary,
+    },
+    swipeArea: {
+      flex: 1,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    footer: {
+      padding: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    actionsRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    actionButton: {
+      flex: 1,
+    },
+    spinner: {
+      marginBottom: spacing.sm,
+    },
+    pastNotice: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginBottom: spacing.md,
+    },
+  });
+}

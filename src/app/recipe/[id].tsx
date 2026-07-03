@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,11 +17,14 @@ import {
   useRecipe,
   useRecipeIngredients,
 } from '@/hooks/library';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedInstructions, localizedName } from '@/utils/localized';
 
 export default function RecipeDetailScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const recipe = useRecipe(id);
   const ingredientRows = useRecipeIngredients(id);
@@ -114,6 +118,8 @@ export default function RecipeDetailScreen() {
 }
 
 function NutritionItem({ label, value }: { label: string; value: string | number }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.nutritionItem}>
       <Text style={styles.nutritionValue}>{value}</Text>
@@ -122,112 +128,114 @@ function NutritionItem({ label, value }: { label: string; value: string | number
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  back: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photo: {
-    width: '100%',
-    height: 200,
-    borderRadius: radius.card,
-  },
-  photoPlaceholder: {
-    backgroundColor: colors.lime,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-    gap: spacing.sm,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-    flex: 1,
-  },
-  meta: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginTop: 2,
-  },
-  nutritionCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginTop: spacing.md,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  nutritionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  nutritionItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  nutritionValue: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '700',
-  },
-  nutritionLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginTop: 2,
-  },
-  ingredientRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.xs + 2,
-  },
-  ingredientName: {
-    color: colors.text,
-    fontSize: typography.body,
-  },
-  ingredientAmount: {
-    color: colors.textSecondary,
-    fontSize: typography.body,
-  },
-  instructions: {
-    color: colors.text,
-    fontSize: typography.body,
-    lineHeight: 22,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.sm,
+    },
+    back: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    photo: {
+      width: '100%',
+      height: 200,
+      borderRadius: radius.card,
+    },
+    photoPlaceholder: {
+      backgroundColor: colors.lime,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: spacing.md,
+      gap: spacing.sm,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+      flex: 1,
+    },
+    meta: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: 2,
+    },
+    nutritionCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      marginTop: spacing.md,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    nutritionRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    nutritionItem: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    nutritionValue: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+    },
+    nutritionLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: 2,
+    },
+    ingredientRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      backgroundColor: colors.surface,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.xs + 2,
+    },
+    ingredientName: {
+      color: colors.text,
+      fontSize: typography.body,
+    },
+    ingredientAmount: {
+      color: colors.textSecondary,
+      fontSize: typography.body,
+    },
+    instructions: {
+      color: colors.text,
+      fontSize: typography.body,
+      lineHeight: 22,
+    },
+  });
+}

@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_MAIN_NAV_ITEMS, useAppStore, type NavKey } from '@/stores/appStore';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -35,6 +36,8 @@ function NavButton({
   onPress: () => void;
 }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const meta = NAV_META[navKey];
   return (
     <Pressable accessibilityRole="button" style={styles.navButton} onPress={onPress}>
@@ -53,6 +56,8 @@ function NavButton({
  */
 export function AppTabBar({ state, navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const navOrder = useAppStore((s) => s.navOrder);
   const mainNavKeys = navOrder.slice(0, MAX_MAIN_NAV_ITEMS);
   const moreNavKeys = navOrder.slice(MAX_MAIN_NAV_ITEMS);
@@ -88,7 +93,6 @@ export function AppTabBar({ state, navigation }: Props) {
               size={22}
               color={expanded ? colors.primary : colors.textSecondary}
             />
-            <Text style={styles.navLabel}>{expanded ? '—' : '···'}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -96,37 +100,39 @@ export function AppTabBar({ state, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: {
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  mainRow: {
-    flexDirection: 'row',
-  },
-  moreRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    borderRadius: radius.card,
-    marginHorizontal: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  navButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.sm,
-    gap: 2,
-  },
-  navLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.small - 2,
-    fontWeight: '600',
-  },
-  navLabelActive: {
-    color: colors.primary,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    wrapper: {
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    mainRow: {
+      flexDirection: 'row',
+    },
+    moreRow: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.card,
+      marginHorizontal: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    navButton: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.sm,
+      gap: 2,
+    },
+    navLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small - 2,
+      fontWeight: '600',
+    },
+    navLabelActive: {
+      color: colors.primary,
+    },
+  });
+}

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FlatList,
@@ -19,7 +19,8 @@ import { db } from '@/db/client';
 import { createHouseholdWithDefaults } from '@/db/repositories/households';
 import { createProfile } from '@/db/repositories/profiles';
 import { useAppStore } from '@/stores/appStore';
-import { colors, heroGradient, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -45,6 +46,12 @@ const QUICK_START_PROFILE = {
 
 export default function WalkthroughScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const heroGradient = useMemo(
+    () => [colors.heroGradientStart, colors.heroGradientEnd] as const,
+    [colors],
+  );
   const { width } = useWindowDimensions();
   const [pageIndex, setPageIndex] = useState(0);
   const listRef = useRef<FlatList>(null);
@@ -122,59 +129,61 @@ export default function WalkthroughScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  page: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  iconWrap: {
-    width: 120,
-    height: 120,
-    borderRadius: radius.chip,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  body: {
-    color: colors.textSecondary,
-    fontSize: typography.body,
-    lineHeight: 22,
-    textAlign: 'center',
-    maxWidth: 320,
-  },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    backgroundColor: colors.primary,
-    width: 20,
-  },
-  footer: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  footerButton: {
-    width: '100%',
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    page: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.lg,
+    },
+    iconWrap: {
+      width: 120,
+      height: 120,
+      borderRadius: radius.chip,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.lg,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
+    body: {
+      color: colors.textSecondary,
+      fontSize: typography.body,
+      lineHeight: 22,
+      textAlign: 'center',
+      maxWidth: 320,
+    },
+    dots: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      marginBottom: spacing.md,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.border,
+    },
+    dotActive: {
+      backgroundColor: colors.primary,
+      width: 20,
+    },
+    footer: {
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    footerButton: {
+      width: '100%',
+    },
+  });
+}

@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { newId } from '@/db/id';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { persistPhoto } from '@/utils/photos';
 
 type Props = {
@@ -19,6 +21,8 @@ type Props = {
  */
 export function PhotoPicker({ uri, onPicked }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const handleResult = (result: ImagePicker.ImagePickerResult) => {
     if (result.canceled || !result.assets[0]) return;
@@ -62,39 +66,41 @@ export function PhotoPicker({ uri, onPicked }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing.md,
-  },
-  photo: {
-    width: '100%',
-    height: 180,
-    borderRadius: radius.card,
-  },
-  placeholder: {
-    backgroundColor: colors.lime,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.chip,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  buttonLabel: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: spacing.md,
+    },
+    photo: {
+      width: '100%',
+      height: 180,
+      borderRadius: radius.card,
+    },
+    placeholder: {
+      backgroundColor: colors.lime,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    buttons: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    button: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.chip,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    buttonLabel: {
+      color: colors.primary,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+  });
+}

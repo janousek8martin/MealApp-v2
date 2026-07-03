@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Props = {
   label: string;
@@ -11,6 +13,9 @@ type Props = {
 };
 
 export function Button({ label, onPress, variant = 'primary', disabled, style }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -36,39 +41,41 @@ export function Button({ label, onPress, variant = 'primary', disabled, style }:
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    borderRadius: radius.input,
-    paddingVertical: spacing.md - 2,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primary: {
-    backgroundColor: colors.primary,
-  },
-  secondary: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-  },
-  disabled: {
-    opacity: 0.45,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  label: {
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  labelOnPrimary: {
-    color: colors.onPrimary,
-  },
-  labelOnLight: {
-    color: colors.primary,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    base: {
+      borderRadius: radius.input,
+      paddingVertical: spacing.md - 2,
+      paddingHorizontal: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primary: {
+      backgroundColor: colors.primary,
+    },
+    secondary: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+    },
+    disabled: {
+      opacity: 0.45,
+    },
+    pressed: {
+      opacity: 0.85,
+    },
+    label: {
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    labelOnPrimary: {
+      color: colors.onPrimary,
+    },
+    labelOnLight: {
+      color: colors.primary,
+    },
+  });
+}

@@ -5,7 +5,8 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { LibraryCard } from '@/components/LibraryCard';
 import { useRecipeNutritionMap } from '@/hooks/plan';
 import { useFoods, usePhotoMap, useRecipes } from '@/hooks/library';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
 
 type PickResult = { itemType: 'recipe' | 'food'; itemId: string };
@@ -18,8 +19,6 @@ type Props = {
   onPick: (result: PickResult) => void;
 };
 
-const ACCENTS = [colors.mint, colors.lime, colors.tealTint];
-
 /**
  * Lets the user manually fill a meal slot ("+ Add Meal"), independent of the
  * generator. Styled like the library list (photo, name, category, kcal) and
@@ -27,6 +26,9 @@ const ACCENTS = [colors.mint, colors.lime, colors.tealTint];
  */
 export function MealPickerModal({ visible, category, onClose, onPick }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const ACCENTS = useMemo(() => [colors.mint, colors.lime, colors.tealTint], [colors]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<CategoryFilter>('slot');
   const recipeRows = useRecipes();
@@ -121,64 +123,66 @@ export function MealPickerModal({ visible, category, onClose, onPick }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: spacing.md,
-    paddingTop: spacing.xl,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-  },
-  search: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: spacing.xs + 2,
-    marginBottom: spacing.sm,
-  },
-  filterChip: {
-    borderRadius: radius.chip,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.sm + 2,
-  },
-  filterChipActive: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primaryLight,
-  },
-  filterLabel: {
-    color: colors.text,
-    fontSize: typography.small,
-  },
-  filterLabelActive: {
-    color: colors.onPrimary,
-    fontWeight: '600',
-  },
-  list: {
-    paddingBottom: spacing.md,
-  },
-  close: {
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  closeLabel: {
-    color: colors.primary,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: spacing.md,
+      paddingTop: spacing.xl,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginBottom: spacing.sm,
+    },
+    search: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
+      color: colors.text,
+      marginBottom: spacing.sm,
+    },
+    filterRow: {
+      flexDirection: 'row',
+      gap: spacing.xs + 2,
+      marginBottom: spacing.sm,
+    },
+    filterChip: {
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.sm + 2,
+    },
+    filterChipActive: {
+      backgroundColor: colors.primaryLight,
+      borderColor: colors.primaryLight,
+    },
+    filterLabel: {
+      color: colors.text,
+      fontSize: typography.small,
+    },
+    filterLabelActive: {
+      color: colors.onPrimary,
+      fontWeight: '600',
+    },
+    list: {
+      paddingBottom: spacing.md,
+    },
+    close: {
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+    },
+    closeLabel: {
+      color: colors.primary,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+  });
+}

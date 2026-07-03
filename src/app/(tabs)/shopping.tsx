@@ -17,10 +17,13 @@ import {
 import { useHousehold } from '@/hooks/data';
 import { useFood } from '@/hooks/library';
 import { useShoppingItems, type ShoppingItemRow } from '@/hooks/shopping';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
 
 function ShoppingRow({ item, onToggle, onRemove }: { item: ShoppingItemRow; onToggle: () => void; onRemove: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const food = useFood(item.foodId ?? undefined);
   const name = food ? localizedName(food) : (item.customName ?? '');
 
@@ -50,6 +53,8 @@ function ShoppingRow({ item, onToggle, onRemove }: { item: ShoppingItemRow; onTo
 
 export default function ShoppingScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { household } = useHousehold();
   const [generating, setGenerating] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -173,104 +178,106 @@ export default function ShoppingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.sm,
-  },
-  heading: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  spinner: {
-    marginTop: spacing.sm,
-  },
-  list: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.xs + 2,
-  },
-  rowText: {
-    flex: 1,
-  },
-  rowName: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  rowNameChecked: {
-    color: colors.textSecondary,
-    textDecorationLine: 'line-through',
-  },
-  rowMeta: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginTop: 2,
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    textAlign: 'center',
-    marginTop: spacing.xl,
-  },
-  quantityOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(36, 54, 32, 0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  quantityCard: {
-    backgroundColor: colors.background,
-    borderRadius: radius.card,
-    padding: spacing.lg,
-    width: '100%',
-  },
-  quantityTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginBottom: spacing.md,
-  },
-  quantityActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.sm,
+    },
+    heading: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+    },
+    actionsRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.md,
+    },
+    actionButton: {
+      flex: 1,
+    },
+    spinner: {
+      marginTop: spacing.sm,
+    },
+    list: {
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.xs + 2,
+    },
+    rowText: {
+      flex: 1,
+    },
+    rowName: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    rowNameChecked: {
+      color: colors.textSecondary,
+      textDecorationLine: 'line-through',
+    },
+    rowMeta: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: 2,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      textAlign: 'center',
+      marginTop: spacing.xl,
+    },
+    quantityOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(36, 54, 32, 0.4)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.lg,
+    },
+    quantityCard: {
+      backgroundColor: colors.background,
+      borderRadius: radius.card,
+      padding: spacing.lg,
+      width: '100%',
+    },
+    quantityTitle: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginBottom: spacing.md,
+    },
+    quantityActions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+  });
+}

@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 export type FilterOption = { value: string; label: string };
 
@@ -24,6 +26,8 @@ type Props = {
 /** Full-screen filter modal shared by the recipes and foods segments of the library. */
 export function LibraryFilterModal({ visible, onClose, onReset, sections }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -75,94 +79,96 @@ export function LibraryFilterModal({ visible, onClose, onReset, sections }: Prop
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: spacing.xl,
-    paddingHorizontal: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-  },
-  content: {
-    paddingBottom: spacing.xl,
-  },
-  section: {
-    marginBottom: spacing.lg,
-  },
-  sectionLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-    textTransform: 'uppercase',
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    borderRadius: radius.chip,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  chipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipLabel: {
-    color: colors.text,
-    fontSize: typography.small,
-    fontWeight: '500',
-  },
-  chipLabelSelected: {
-    color: colors.onPrimary,
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  resetButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.sm + 2,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  resetLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  applyButton: {
-    flex: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.sm + 2,
-    borderRadius: radius.input,
-    backgroundColor: colors.primary,
-  },
-  applyLabel: {
-    color: colors.onPrimary,
-    fontSize: typography.body,
-    fontWeight: '700',
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingTop: spacing.xl,
+      paddingHorizontal: spacing.md,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+    },
+    content: {
+      paddingBottom: spacing.xl,
+    },
+    section: {
+      marginBottom: spacing.lg,
+    },
+    sectionLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '700',
+      marginBottom: spacing.sm,
+      textTransform: 'uppercase',
+    },
+    chips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    chipSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    chipLabel: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '500',
+    },
+    chipLabelSelected: {
+      color: colors.onPrimary,
+    },
+    footer: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    resetButton: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.sm + 2,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    resetLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    applyButton: {
+      flex: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.sm + 2,
+      borderRadius: radius.input,
+      backgroundColor: colors.primary,
+    },
+    applyLabel: {
+      color: colors.onPrimary,
+      fontSize: typography.body,
+      fontWeight: '700',
+    },
+  });
+}

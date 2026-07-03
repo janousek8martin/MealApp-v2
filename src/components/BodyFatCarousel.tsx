@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
-import { useRef } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef } from 'react';
+import { FlatList, Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 const MALE_VALUES = [8, 12, 15, 20, 25, 30, 35];
 const FEMALE_VALUES = [15, 20, 25, 30, 35, 40, 45];
@@ -38,6 +39,8 @@ export function BodyFatCarousel({ sex, value, onSelect }: Props) {
   const values = sex === 'male' ? MALE_VALUES : FEMALE_VALUES;
   const images = sex === 'male' ? MALE_IMAGES : FEMALE_IMAGES;
   const listRef = useRef<FlatList<number>>(null);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <FlatList
@@ -64,33 +67,35 @@ export function BodyFatCarousel({ sex, value, onSelect }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  item: {
-    alignItems: 'center',
-    padding: spacing.xs,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  itemSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.surface,
-  },
-  image: {
-    width: 72,
-    height: 128,
-  },
-  label: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    fontWeight: '600',
-    marginTop: spacing.xs,
-  },
-  labelSelected: {
-    color: colors.primary,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    list: {
+      gap: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    item: {
+      alignItems: 'center',
+      padding: spacing.xs,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    itemSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.surface,
+    },
+    image: {
+      width: 72,
+      height: 128,
+    },
+    label: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '600',
+      marginTop: spacing.xs,
+    },
+    labelSelected: {
+      color: colors.primary,
+    },
+  });
+}

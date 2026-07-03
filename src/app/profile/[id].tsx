@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +13,8 @@ import { updateProfile, updateProfileMacroOverrides, updateTdciManualAdjustment,
 import { PROTEIN_PER_KG_LBM, FAT_SHARE_DEFAULT, SURPLUS_KCAL_DEFAULT } from '@/domain/constants';
 import { useLatestBodyMetric, useProfile, useProfileRestrictions, useProfileTargets } from '@/hooks/data';
 import { TdciCard } from '@/components/TdciCard';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 function num(value: string): number | null {
   const parsed = Number(value.replace(',', '.'));
@@ -31,6 +32,8 @@ function parseMacroOverrides(json: string | null): MacroOverrides {
 
 function ManualAdjustmentCard({ profileId, kcal }: { profileId: string; kcal: number }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>{t('profile.manualAdjustment')}</Text>
@@ -61,6 +64,8 @@ function ManualAdjustmentCard({ profileId, kcal }: { profileId: string; kcal: nu
 
 function MacroOverridesCard({ profileId, macroOverridesJson }: { profileId: string; macroOverridesJson: string | null }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const overrides = parseMacroOverrides(macroOverridesJson);
   const [protein, setProtein] = useState(overrides.proteinPerKgLbm !== undefined ? String(overrides.proteinPerKgLbm) : '');
   const [fatShare, setFatShare] = useState(
@@ -124,6 +129,8 @@ function MacroOverridesCard({ profileId, macroOverridesJson }: { profileId: stri
 
 export default function ProfileOverviewScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const profile = useProfile(id);
   const targets = useProfileTargets(profile);
@@ -216,95 +223,97 @@ export default function ProfileOverviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  topBar: {
-    marginBottom: spacing.sm,
-  },
-  back: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginTop: spacing.md,
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginBottom: spacing.xs,
-  },
-  cardHint: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginBottom: spacing.sm,
-    lineHeight: 18,
-  },
-  weightRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  weightValue: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-  },
-  weightMeta: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-  },
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  stepperButton: {
-    width: 44,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: 0,
-  },
-  stepperValue: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '700',
-  },
-  macroActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  sectionHeading: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '800',
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    topBar: {
+      marginBottom: spacing.sm,
+    },
+    back: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      marginTop: spacing.md,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginBottom: spacing.xs,
+    },
+    cardHint: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginBottom: spacing.sm,
+      lineHeight: 18,
+    },
+    weightRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    weightValue: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+    },
+    weightMeta: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+    },
+    stepperRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    stepper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    stepperButton: {
+      width: 44,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: 0,
+    },
+    stepperValue: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+    },
+    macroActions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    actionButton: {
+      flex: 1,
+    },
+    sectionHeading: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '800',
+      marginTop: spacing.lg,
+      marginBottom: spacing.sm,
+    },
+  });
+}

@@ -35,6 +35,9 @@ type AppState = {
   /** Set only once the user swipes through the walkthrough and taps a final CTA. */
   walkthroughSeen: boolean;
   setWalkthroughSeen: (seen: boolean) => void;
+  /** Light/dark theme; defaults to light so existing installs don't flip unexpectedly. */
+  themeMode: 'light' | 'dark';
+  setThemeMode: (mode: 'light' | 'dark') => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -46,17 +49,22 @@ export const useAppStore = create<AppState>()(
       setNavOrder: (order) => set({ navOrder: order }),
       walkthroughSeen: false,
       setWalkthroughSeen: (seen) => set({ walkthroughSeen: seen }),
+      themeMode: 'light',
+      setThemeMode: (mode) => set({ themeMode: mode }),
     }),
     {
       name: 'mealapp-app-state',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 2,
+      version: 3,
       migrate: (persistedState, version) => {
         const state = persistedState as { mainNavKeys?: NavKey[] } & Record<string, unknown>;
         if (version < 2) {
           const mainNavKeys = state.mainNavKeys ?? DEFAULT_MAIN_NAV_KEYS;
           state.navOrder = [...mainNavKeys, ...ALL_NAV_KEYS.filter((key) => !mainNavKeys.includes(key))];
           delete state.mainNavKeys;
+        }
+        if (version < 3) {
+          state.themeMode = 'light';
         }
         return state as AppState;
       },

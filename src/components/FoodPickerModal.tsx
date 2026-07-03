@@ -4,7 +4,8 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'r
 
 import type { foods } from '@/db/schema';
 import { useFoods } from '@/hooks/library';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
 
 export type FoodRow = typeof foods.$inferSelect;
@@ -18,6 +19,8 @@ type Props = {
 /** Searchable food list used when composing recipe ingredients. */
 export function FoodPickerModal({ visible, onClose, onPick }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [search, setSearch] = useState('');
   const foodRows = useFoods();
 
@@ -71,55 +74,57 @@ export function FoodPickerModal({ visible, onClose, onPick }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: spacing.md,
-    paddingTop: spacing.xl,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-  },
-  search: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  row: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.xs + 2,
-  },
-  rowName: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-  rowMeta: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    marginTop: 2,
-  },
-  close: {
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  closeLabel: {
-    color: colors.primary,
-    fontSize: typography.body,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: spacing.md,
+      paddingTop: spacing.xl,
+    },
+    title: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginBottom: spacing.sm,
+    },
+    search: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
+      color: colors.text,
+      marginBottom: spacing.sm,
+    },
+    row: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.xs + 2,
+    },
+    rowName: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+    rowMeta: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: 2,
+    },
+    close: {
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+    },
+    closeLabel: {
+      color: colors.primary,
+      fontSize: typography.body,
+      fontWeight: '600',
+    },
+  });
+}

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,7 +40,8 @@ import {
 } from '@/hooks/plan';
 import { useShoppingItems } from '@/hooks/shopping';
 import { confirmDeleteMeal } from '@/utils/mealActions';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 function targetProfileIdForSlot(slot: SlotRow, profile: { id: string; sharesMainMeals: boolean }): string | null {
   if (slot.kind === 'snack') return profile.id;
@@ -49,6 +50,8 @@ function targetProfileIdForSlot(slot: SlotRow, profile: { id: string; sharesMain
 
 export default function TodayScreen() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
   const targets = useProfileTargets(activeProfile);
@@ -219,106 +222,108 @@ export default function TodayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  heading: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: '800',
-    marginBottom: spacing.sm,
-  },
-  fitCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginTop: spacing.md,
-  },
-  fitTitle: {
-    color: colors.text,
-    fontSize: typography.small,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  fitLine: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-  },
-  profileLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  profileLinkLabel: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: '600',
-  },
-  quickRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  quickCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    alignItems: 'flex-start',
-    gap: 2,
-  },
-  quickValue: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '800',
-  },
-  quickValueSmall: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: '700',
-    marginTop: spacing.xs,
-  },
-  quickLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-  },
-  emptyState: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    marginTop: spacing.md,
-    marginBottom: spacing.md,
-  },
-  emptyTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: '700',
-    marginBottom: spacing.xs,
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    lineHeight: 20,
-    marginBottom: spacing.md,
-  },
-  generateButton: {
-    alignSelf: 'flex-start',
-  },
-  spinner: {
-    marginTop: spacing.sm,
-  },
-});
+function createStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    heading: {
+      color: colors.text,
+      fontSize: typography.title,
+      fontWeight: '800',
+      marginBottom: spacing.sm,
+    },
+    fitCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      marginTop: spacing.md,
+    },
+    fitTitle: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '700',
+      marginBottom: 2,
+    },
+    fitLine: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+    },
+    profileLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-end',
+      gap: spacing.xs,
+      marginTop: spacing.xs,
+    },
+    profileLinkLabel: {
+      color: colors.primary,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+    quickRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+    },
+    quickCard: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      alignItems: 'flex-start',
+      gap: 2,
+    },
+    quickValue: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '800',
+    },
+    quickValueSmall: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+      marginTop: spacing.xs,
+    },
+    quickLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+    },
+    emptyState: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.lg,
+      marginTop: spacing.md,
+      marginBottom: spacing.md,
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginBottom: spacing.xs,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      lineHeight: 20,
+      marginBottom: spacing.md,
+    },
+    generateButton: {
+      alignSelf: 'flex-start',
+    },
+    spinner: {
+      marginTop: spacing.sm,
+    },
+  });
+}
