@@ -428,6 +428,15 @@
     "nutritionSection": "TDCI & macros",
     "fiberTarget": "Fiber target",
     "mealTimes": "Meal times",
-    "mealTimesHint": "Shown when meal reminders are enabled."
+    "mealTimesHint": "Shown when meal reminders are enabled.",
+    "slotPortions": "Slot portions",
+    "slotPortionsHint": "Adjust how this profile splits their daily calorie target across slots. Leave unchanged to use the household default.",
+    "percentOfTdci": "% of TDCI",
+    "proteinTargetLabel": "Protein",
+    "fatTargetLabel": "Fat",
+    "carbsComputed": "Carbs (computed)",
+    "snackPresets": "Quick presets",
+    "useDefault": "Use default",
+    "savePortions": "Save portions"
   }
 }

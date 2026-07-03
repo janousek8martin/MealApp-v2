@@ -2,7 +2,7 @@ import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 
 import { db } from '@/db/client';
-import { bodyMetrics, householdSettings, households, profileRestrictions, profiles } from '@/db/schema';
+import { bodyMetrics, householdSettings, households, profileRestrictions, profileSlotPortions, profiles } from '@/db/schema';
 import { applyWorkoutDayCycling } from '@/domain/workoutDays';
 import { targetsForProfile, type ProfileRow } from '@/hooks/dataMapping';
 import { useAppStore } from '@/stores/appStore';
@@ -80,6 +80,18 @@ export function useProfileRestrictions(profileId: string | undefined) {
     allergens: rows.filter((row) => row.kind === 'allergen').map((row) => row.value),
     diets: rows.filter((row) => row.kind === 'diet').map((row) => row.value),
   };
+}
+
+/** A profile's per-slot portion overrides (calorie share % + snack macro grams), keyed by slotId. */
+export function useProfileSlotPortions(profileId: string | undefined) {
+  const { data } = useLiveQuery(
+    db
+      .select()
+      .from(profileSlotPortions)
+      .where(and(eq(profileSlotPortions.profileId, profileId ?? ''), isNull(profileSlotPortions.deletedAt))),
+    [profileId],
+  );
+  return data ?? [];
 }
 
 /** Latest weight/body-fat entry – the single source of truth for "current". */

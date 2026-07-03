@@ -1,4 +1,4 @@
-import { pickClosestSnack, scalingMultiplier } from '../portions';
+import { pickClosestSnack, resolveSlotCalorieShare, resolveSnackTarget, scalingMultiplier } from '../portions';
 
 describe('scalingMultiplier', () => {
   it('scales up when the target exceeds the recipe portion', () => {
@@ -38,5 +38,63 @@ describe('pickClosestSnack', () => {
     ];
     const target = { kcal: 200, proteinG: 20, carbsG: 20, fatG: 6 };
     expect(pickClosestSnack(target, candidates)?.item).toBe('carb_heavy');
+  });
+});
+
+describe('resolveSlotCalorieShare', () => {
+  it('falls back to the household share when there is no override', () => {
+    expect(resolveSlotCalorieShare(0.25, undefined)).toBe(0.25);
+  });
+
+  it('falls back to the household share when the override has a null calorieSharePercent', () => {
+    expect(
+      resolveSlotCalorieShare(0.25, { calorieSharePercent: null, proteinTargetG: 20, fatTargetG: 10 }),
+    ).toBe(0.25);
+  });
+
+  it("uses the profile's own override percent when set", () => {
+    expect(
+      resolveSlotCalorieShare(0.25, { calorieSharePercent: 0.3, proteinTargetG: null, fatTargetG: null }),
+    ).toBe(0.3);
+  });
+});
+
+describe('resolveSnackTarget', () => {
+  const remaining = { kcal: 400, proteinG: 30, carbsG: 40, fatG: 10 };
+
+  it('returns the remaining daily target unchanged when there is no override', () => {
+    expect(resolveSnackTarget(remaining, 2400, undefined)).toEqual(remaining);
+  });
+
+  it('returns the remaining daily target unchanged when the override has every field null', () => {
+    const override = { calorieSharePercent: null, proteinTargetG: null, fatTargetG: null };
+    expect(resolveSnackTarget(remaining, 2400, override)).toEqual(remaining);
+  });
+
+  it('computes carbs from the remaining kcal once protein/fat are overridden', () => {
+    // kcal stays "remaining" (no calorieSharePercent override); protein/fat come from the override.
+    const override = { calorieSharePercent: null, proteinTargetG: 20, fatTargetG: 15 };
+    const result = resolveSnackTarget(remaining, 2400, override);
+    expect(result.kcal).toBe(400);
+    expect(result.proteinG).toBe(20);
+    expect(result.fatG).toBe(15);
+    // (400 - 20*4 - 15*9) / 4 = (400 - 80 - 135) / 4 = 185/4 = 46.25
+    expect(result.carbsG).toBeCloseTo(46.25);
+  });
+
+  it('derives kcal from calorieSharePercent × daily target when the share is overridden too', () => {
+    const override = { calorieSharePercent: 0.1, proteinTargetG: 10, fatTargetG: 5 };
+    const result = resolveSnackTarget(remaining, 2400, override);
+    expect(result.kcal).toBe(240);
+    expect(result.proteinG).toBe(10);
+    expect(result.fatG).toBe(5);
+    // (240 - 40 - 45) / 4 = 155/4 = 38.75
+    expect(result.carbsG).toBeCloseTo(38.75);
+  });
+
+  it('never returns negative carbs when protein/fat overrides exceed the kcal budget', () => {
+    const override = { calorieSharePercent: 0.05, proteinTargetG: 40, fatTargetG: 20 };
+    const result = resolveSnackTarget(remaining, 2400, override);
+    expect(result.carbsG).toBe(0);
   });
 });

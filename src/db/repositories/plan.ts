@@ -2,7 +2,7 @@ import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { ageYears } from '@/domain/age';
 import { createSeededRng, type Rng } from '@/domain/generator/rng';
-import { scalingMultiplier } from '@/domain/generator/portions';
+import { resolveSlotCalorieShare, resolveSnackTarget, scalingMultiplier, type SlotPortionOverride } from '@/domain/generator/portions';
 import { computeRecipeNutrition, type RecipeNutrition } from '@/domain/recipeNutrition';
 import {
   pickMealForSlot,
@@ -32,6 +32,7 @@ import {
   profileAvoidedItems,
   profileFavorites,
   profileRestrictions,
+  profileSlotPortions,
   profiles,
   recipeIngredients,
   recipes,
@@ -51,6 +52,8 @@ type ProfileContext = {
   snackSlotKeys: string[];
   restrictions: DietRestrictions;
   dailyTarget: MacroTotal | null;
+  /** Per-slot portion overrides (P2-C), keyed by mealSlotSettings.id. */
+  slotOverrides: Map<string, SlotPortionOverride>;
 };
 
 type GeneratorContext = {
@@ -113,7 +116,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
   const favoriteRecipeIdsByProfile = new Map<string, Set<string>>();
 
   for (const profile of profileRows) {
-    const [restrictionRows, avoidRows, favoriteRows, [latestMetric]] = await Promise.all([
+    const [restrictionRows, avoidRows, favoriteRows, slotPortionRows, [latestMetric]] = await Promise.all([
       db
         .select()
         .from(profileRestrictions)
@@ -128,6 +131,10 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
         .where(and(eq(profileFavorites.profileId, profile.id), isNull(profileFavorites.deletedAt))),
       db
         .select()
+        .from(profileSlotPortions)
+        .where(and(eq(profileSlotPortions.profileId, profile.id), isNull(profileSlotPortions.deletedAt))),
+      db
+        .select()
         .from(bodyMetrics)
         .where(and(eq(bodyMetrics.profileId, profile.id), isNull(bodyMetrics.deletedAt)))
         .orderBy(desc(bodyMetrics.date), desc(bodyMetrics.createdAt))
@@ -135,6 +142,15 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     ]);
 
     favoriteRecipeIdsByProfile.set(profile.id, new Set(favoriteRows.map((r) => r.recipeId)));
+
+    const slotOverrides = new Map<string, SlotPortionOverride>();
+    for (const row of slotPortionRows) {
+      slotOverrides.set(row.slotId, {
+        calorieSharePercent: row.calorieSharePercent,
+        proteinTargetG: row.proteinTargetG,
+        fatTargetG: row.fatTargetG,
+      });
+    }
 
     const dailyTarget: MacroTotal | null = latestMetric
       ? (() => {
@@ -181,6 +197,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
         ],
       },
       dailyTarget,
+      slotOverrides,
     });
   }
 
@@ -533,7 +550,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
             .map((p) => ({
               profileId: p.id,
               multiplier: scalingMultiplier(
-                p.dailyTarget!.kcal * slot.calorieShare,
+                p.dailyTarget!.kcal * resolveSlotCalorieShare(slot.calorieShare, p.slotOverrides.get(slot.id)),
                 picked.candidate.nutritionPerPortion.kcal,
               ),
             }));
@@ -561,7 +578,10 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
         rng,
       );
       if (!picked) continue;
-      const multiplier = scalingMultiplier(profile.dailyTarget.kcal * slot.calorieShare, picked.candidate.nutritionPerPortion.kcal);
+      const multiplier = scalingMultiplier(
+        profile.dailyTarget.kcal * resolveSlotCalorieShare(slot.calorieShare, profile.slotOverrides.get(slot.id)),
+        picked.candidate.nutritionPerPortion.kcal,
+      );
       await insertPlannedMeal(db, householdId, date, slot.slotKey, profile.id, picked.itemType, picked.candidate.id, [
         { profileId: profile.id, multiplier },
       ]);
@@ -585,7 +605,8 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
         carbsG: profile.dailyTarget.carbsG - consumed.carbsG,
         fatG: profile.dailyTarget.fatG - consumed.fatG,
       };
-      const picked = pickSnackForSlot(ctx.snackItems, profile.restrictions, repetitionCtx, remaining);
+      const target = resolveSnackTarget(remaining, profile.dailyTarget.kcal, profile.slotOverrides.get(slot.id));
+      const picked = pickSnackForSlot(ctx.snackItems, profile.restrictions, repetitionCtx, target);
       if (!picked) continue;
       await insertPlannedMeal(db, householdId, date, slot.slotKey, profile.id, picked.itemType, picked.candidate.id, [
         { profileId: profile.id, multiplier: 1 },
@@ -688,8 +709,9 @@ export async function regenerateSlot(
       carbsG: profile.dailyTarget.carbsG - consumed.carbsG,
       fatG: profile.dailyTarget.fatG - consumed.fatG,
     };
+    const target = resolveSnackTarget(remaining, profile.dailyTarget.kcal, profile.slotOverrides.get(slot.id));
     const pool = ctx.snackItems.filter((item) => item.candidate.id !== meal.itemId);
-    picked = pickSnackForSlot(pool, profile.restrictions, repetitionCtx, remaining);
+    picked = pickSnackForSlot(pool, profile.restrictions, repetitionCtx, target);
   } else {
     const category = slot.slotKey === 'breakfast' ? 'breakfast' : 'lunch_dinner';
     const pool = ctx.mainItems.filter(
@@ -725,7 +747,10 @@ export async function regenerateSlot(
           .filter((p) => p.dailyTarget !== null)
           .map((p) => ({
             profileId: p.id,
-            multiplier: scalingMultiplier(p.dailyTarget!.kcal * slot.calorieShare, picked!.candidate.nutritionPerPortion.kcal),
+            multiplier: scalingMultiplier(
+              p.dailyTarget!.kcal * resolveSlotCalorieShare(slot.calorieShare, p.slotOverrides.get(slot.id)),
+              picked!.candidate.nutritionPerPortion.kcal,
+            ),
           }));
 
   await db.insert(plannedMealPortions).values(
@@ -778,7 +803,10 @@ export async function assignManualMeal(
           .filter((p) => p.dailyTarget !== null)
           .map((p) => ({
             profileId: p.id,
-            multiplier: scalingMultiplier(p.dailyTarget!.kcal * slot.calorieShare, nutrition.kcal),
+            multiplier: scalingMultiplier(
+              p.dailyTarget!.kcal * resolveSlotCalorieShare(slot.calorieShare, p.slotOverrides.get(slot.id)),
+              nutrition.kcal,
+            ),
           }));
 
   const meals = await loadMealsForDate(db, householdId, date);

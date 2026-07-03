@@ -108,6 +108,32 @@ export const mealSlotSettings = sqliteTable(
   (table) => [index('meal_slot_household_idx').on(table.householdId)],
 );
 
+/**
+ * Per-profile override of a household meal slot – lets each household member
+ * dial in their own share of daily calories (and, for snack slots, an
+ * explicit protein/fat target) instead of the household default. Absent row
+ * = fall back to `mealSlotSettings.calorieShare` / the remaining-target
+ * computation.
+ */
+export const profileSlotPortions = sqliteTable(
+  'profile_slot_portions',
+  {
+    ...meta,
+    profileId: text('profile_id')
+      .notNull()
+      .references(() => profiles.id),
+    slotId: text('slot_id')
+      .notNull()
+      .references(() => mealSlotSettings.id),
+    /** Fraction of the profile's daily calorie target assigned to this slot (0..1). */
+    calorieSharePercent: real('calorie_share_percent'),
+    /** Snack slots only: explicit grams target: carbs is then computed from the remaining kcal. */
+    proteinTargetG: real('protein_target_g'),
+    fatTargetG: real('fat_target_g'),
+  },
+  (table) => [index('profile_slot_portions_profile_idx').on(table.profileId)],
+);
+
 export const profiles = sqliteTable(
   'profiles',
   {

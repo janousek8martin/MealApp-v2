@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ManualAdjustmentCard, MacroOverridesCard } from '@/components/ProfileNutritionCards';
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
+import { ProfilePortionsCard } from '@/components/ProfilePortionsCard';
 import { TdciCard } from '@/components/TdciCard';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
@@ -224,6 +225,14 @@ function ProfileSections({ profile }: { profile: ProfileRow }) {
             {t('settings.fiberTarget')}: {Math.round(targets.fiberG)} g
           </Text>
         ) : null}
+      </AccordionCard>
+
+      <AccordionCard title={t('settings.slotPortions')}>
+        <ProfilePortionsCard
+          householdId={profile.householdId}
+          profileId={profile.id}
+          dailyTargetKcal={targets ? targets.adjustedTdciKcal : null}
+        />
       </AccordionCard>
     </>
   );

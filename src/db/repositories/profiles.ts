@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { newId } from '../id';
-import { bodyMetrics, profileRestrictions, profiles } from '../schema';
+import { bodyMetrics, profileRestrictions, profileSlotPortions, profiles } from '../schema';
 import { nowIso, todayIsoDate } from '../time';
 import type { AppDb } from '../types';
 
@@ -220,4 +220,64 @@ export async function updateProfileMacroOverrides(
       updatedAt: nowIso(),
     })
     .where(eq(profiles.id, profileId));
+}
+
+export async function getProfileSlotPortions(db: AppDb, profileId: string) {
+  return db
+    .select()
+    .from(profileSlotPortions)
+    .where(and(eq(profileSlotPortions.profileId, profileId), isNull(profileSlotPortions.deletedAt)));
+}
+
+export type ProfileSlotPortionPatch = {
+  calorieSharePercent?: number | null;
+  proteinTargetG?: number | null;
+  fatTargetG?: number | null;
+};
+
+/**
+ * Upserts a profile's override for one household meal slot. Any field left
+ * `undefined` keeps its previous value; pass `null` explicitly to clear a
+ * field back to "use the household/remaining-target default".
+ */
+export async function upsertProfileSlotPortion(
+  db: AppDb,
+  profileId: string,
+  slotId: string,
+  patch: ProfileSlotPortionPatch,
+): Promise<void> {
+  const now = nowIso();
+  const [existing] = await db
+    .select()
+    .from(profileSlotPortions)
+    .where(
+      and(
+        eq(profileSlotPortions.profileId, profileId),
+        eq(profileSlotPortions.slotId, slotId),
+        isNull(profileSlotPortions.deletedAt),
+      ),
+    );
+
+  if (existing) {
+    await db
+      .update(profileSlotPortions)
+      .set({
+        calorieSharePercent: patch.calorieSharePercent !== undefined ? patch.calorieSharePercent : existing.calorieSharePercent,
+        proteinTargetG: patch.proteinTargetG !== undefined ? patch.proteinTargetG : existing.proteinTargetG,
+        fatTargetG: patch.fatTargetG !== undefined ? patch.fatTargetG : existing.fatTargetG,
+        updatedAt: now,
+      })
+      .where(eq(profileSlotPortions.id, existing.id));
+  } else {
+    await db.insert(profileSlotPortions).values({
+      id: newId(),
+      createdAt: now,
+      updatedAt: now,
+      profileId,
+      slotId,
+      calorieSharePercent: patch.calorieSharePercent ?? null,
+      proteinTargetG: patch.proteinTargetG ?? null,
+      fatTargetG: patch.fatTargetG ?? null,
+    });
+  }
 }

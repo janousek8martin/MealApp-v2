@@ -39,3 +39,38 @@ export function pickClosestSnack<T>(
       : best,
   );
 }
+
+/** A profile's per-slot portion customization (P2-C); any field may be unset. */
+export type SlotPortionOverride = {
+  calorieSharePercent: number | null;
+  proteinTargetG: number | null;
+  fatTargetG: number | null;
+};
+
+/** Resolves the calorie share to scale a main-slot recipe by: the profile's own override if set, else the household default. */
+export function resolveSlotCalorieShare(householdShare: number, override: SlotPortionOverride | undefined): number {
+  return override?.calorieSharePercent ?? householdShare;
+}
+
+/**
+ * Resolves the target macros for a snack slot. With no override this is just
+ * "whatever remains of the daily target" (the default). Once the profile sets
+ * an explicit protein/fat (and optionally calorie-share) target for the slot,
+ * carbs are computed from whatever kcal is left after protein and fat, so the
+ * three macros plus kcal stay internally consistent.
+ */
+export function resolveSnackTarget(
+  remaining: MacroTarget,
+  dailyTargetKcal: number,
+  override: SlotPortionOverride | undefined,
+): MacroTarget {
+  const hasOverride =
+    override && (override.calorieSharePercent != null || override.proteinTargetG != null || override.fatTargetG != null);
+  if (!hasOverride) return remaining;
+
+  const kcal = override!.calorieSharePercent != null ? override!.calorieSharePercent * dailyTargetKcal : remaining.kcal;
+  const proteinG = override!.proteinTargetG ?? remaining.proteinG;
+  const fatG = override!.fatTargetG ?? remaining.fatG;
+  const carbsG = Math.max(0, (kcal - proteinG * 4 - fatG * 9) / 4);
+  return { kcal, proteinG, carbsG, fatG };
+}

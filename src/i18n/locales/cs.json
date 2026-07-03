@@ -428,6 +428,15 @@
     "nutritionSection": "TDCI a makra",
     "fiberTarget": "Cíl vlákniny",
     "mealTimes": "Časy jídel",
-    "mealTimesHint": "Zobrazí se, když jsou zapnuté připomínky jídel."
+    "mealTimesHint": "Zobrazí se, když jsou zapnuté připomínky jídel.",
+    "slotPortions": "Porce po slotech",
+    "slotPortionsHint": "Upravte, jak si tento profil rozvrhne denní kalorický cíl mezi jednotlivé sloty. Beze změny platí výchozí hodnota domácnosti.",
+    "percentOfTdci": "% z TDCI",
+    "proteinTargetLabel": "Bílkoviny",
+    "fatTargetLabel": "Tuky",
+    "carbsComputed": "Sacharidy (dopočet)",
+    "snackPresets": "Rychlé předvolby",
+    "useDefault": "Použít výchozí",
+    "savePortions": "Uložit porce"
   }
 }
