@@ -18,6 +18,8 @@ import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
 import { updateHouseholdSettings, updateMealSlotSetting } from '@/db/repositories/households';
 import { updateProfile } from '@/db/repositories/profiles';
+import { ageYears } from '@/domain/age';
+import { micronutrientRda } from '@/domain/micronutrients';
 import { defaultNotificationSettings, type NotificationSettings } from '@/db/types';
 import {
   useHousehold,
@@ -226,6 +228,15 @@ function ProfileSections({ profile }: { profile: ProfileRow }) {
             {t('settings.fiberTarget')}: {Math.round(targets.fiberG)} g
           </Text>
         ) : null}
+        {(() => {
+          const rda = micronutrientRda(profile.sex, ageYears(profile.birthDate));
+          return (
+            <Text style={styles.fiberInfo}>
+              {t('micros.ironMg')} {rda.ironMg} · {t('micros.vitaminDUg')} {rda.vitaminDUg} · {t('micros.b12Ug')}{' '}
+              {rda.b12Ug} · {t('micros.calciumMg')} {rda.calciumMg} · {t('micros.omega3G')} {rda.omega3G}
+            </Text>
+          );
+        })()}
       </AccordionCard>
 
       <AccordionCard title={t('settings.slotPortions')}>

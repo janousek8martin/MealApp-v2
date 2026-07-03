@@ -131,7 +131,10 @@ export function MealSlotCard({
           </Text>
           {scaled ? (
             <Text style={styles.kcal}>
-              {scaled.kcal} kcal · {scaled.proteinG}/{scaled.carbsG}/{scaled.fatG} g
+              {scaled.kcal} kcal · <Text style={styles.macroInitialProtein}>{t('macros.proteinInitial')}</Text>
+              {scaled.proteinG}/<Text style={styles.macroInitialCarbs}>{t('macros.carbsInitial')}</Text>
+              {scaled.carbsG}/<Text style={styles.macroInitialFat}>{t('macros.fatInitial')}</Text>
+              {scaled.fatG} g
             </Text>
           ) : null}
         </View>
@@ -271,6 +274,18 @@ function createStyles(colors: ColorTokens) {
       color: colors.textSecondary,
       fontSize: typography.small,
       marginTop: 2,
+    },
+    macroInitialProtein: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    macroInitialCarbs: {
+      color: colors.secondary,
+      fontWeight: '700',
+    },
+    macroInitialFat: {
+      color: colors.danger,
+      fontWeight: '700',
     },
     emptyText: {
       color: colors.textSecondary,

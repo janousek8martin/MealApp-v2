@@ -259,7 +259,10 @@
     "protein": "Protein",
     "carbs": "Carbs",
     "fat": "Fat",
-    "fiber": "Fiber"
+    "fiber": "Fiber",
+    "proteinInitial": "P",
+    "carbsInitial": "C",
+    "fatInitial": "F"
   },
   "budget": {
     "cheap": "Cheap",

@@ -608,11 +608,14 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
       const target = resolveSnackTarget(remaining, profile.dailyTarget.kcal, profile.slotOverrides.get(slot.id));
       const picked = pickSnackForSlot(ctx.snackItems, profile.restrictions, repetitionCtx, target);
       if (!picked) continue;
+      // Scaled (not fixed at 1x) so the day's planned-vs-target accuracy holds
+      // to within the approved ±100 kcal even when the closest DB match isn't exact.
+      const multiplier = scalingMultiplier(target.kcal, picked.candidate.nutritionPerPortion.kcal);
       await insertPlannedMeal(db, householdId, date, slot.slotKey, profile.id, picked.itemType, picked.candidate.id, [
-        { profileId: profile.id, multiplier: 1 },
+        { profileId: profile.id, multiplier },
       ]);
       repetitionCtx = recordPick(repetitionCtx, picked.candidate.id);
-      addConsumed(consumedSoFar, profile.id, picked.candidate.nutritionPerPortion, 1);
+      addConsumed(consumedSoFar, profile.id, picked.candidate.nutritionPerPortion, multiplier);
     }
   }
 }
@@ -699,6 +702,7 @@ export async function regenerateSlot(
   if (relevantProfiles.length === 0) return;
 
   let picked: GeneratorItem | null;
+  let snackTarget: MacroTotal | null = null;
   if (slot.kind === 'snack') {
     const profile = relevantProfiles[0];
     if (!profile.dailyTarget) return;
@@ -709,9 +713,9 @@ export async function regenerateSlot(
       carbsG: profile.dailyTarget.carbsG - consumed.carbsG,
       fatG: profile.dailyTarget.fatG - consumed.fatG,
     };
-    const target = resolveSnackTarget(remaining, profile.dailyTarget.kcal, profile.slotOverrides.get(slot.id));
+    snackTarget = resolveSnackTarget(remaining, profile.dailyTarget.kcal, profile.slotOverrides.get(slot.id));
     const pool = ctx.snackItems.filter((item) => item.candidate.id !== meal.itemId);
-    picked = pickSnackForSlot(pool, profile.restrictions, repetitionCtx, target);
+    picked = pickSnackForSlot(pool, profile.restrictions, repetitionCtx, snackTarget);
   } else {
     const category = slot.slotKey === 'breakfast' ? 'breakfast' : 'lunch_dinner';
     const pool = ctx.mainItems.filter(
@@ -742,7 +746,12 @@ export async function regenerateSlot(
 
   const newPortions =
     slot.kind === 'snack'
-      ? [{ profileId: relevantProfiles[0].id, multiplier: 1 }]
+      ? [
+          {
+            profileId: relevantProfiles[0].id,
+            multiplier: scalingMultiplier(snackTarget!.kcal, picked.candidate.nutritionPerPortion.kcal),
+          },
+        ]
       : relevantProfiles
           .filter((p) => p.dailyTarget !== null)
           .map((p) => ({

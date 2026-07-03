@@ -259,7 +259,10 @@
     "protein": "Bílkoviny",
     "carbs": "Sacharidy",
     "fat": "Tuky",
-    "fiber": "Vláknina"
+    "fiber": "Vláknina",
+    "proteinInitial": "B",
+    "carbsInitial": "S",
+    "fatInitial": "T"
   },
   "budget": {
     "cheap": "Levné",

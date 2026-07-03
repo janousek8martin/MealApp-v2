@@ -1,5 +1,8 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
+import { ageYears } from '../../domain/age';
+import { computeRecipeNutrition } from '../../domain/recipeNutrition';
+import { computeTargets } from '../../domain/targets';
 import { startOfWeek, weekDates } from '../../domain/week';
 import { createHouseholdWithDefaults } from '../repositories/households';
 import { upsertFood, upsertRecipe } from '../repositories/library';
@@ -11,9 +14,45 @@ import {
   setPortionStatus,
 } from '../repositories/plan';
 import { createProfile } from '../repositories/profiles';
-import { plannedMealPortions, plannedMeals, recipes } from '../schema';
+import { foods, plannedMealPortions, plannedMeals, profiles, recipeIngredients, recipes } from '../schema';
 import { seedIfEmpty } from '../seed';
 import { createTestDb } from '../testing/testDb';
+
+/** Sums a profile's planned kcal for one date, joining down to real recipe/food nutrition – mirrors the generator's own math for the accuracy check below. */
+async function sumPlannedKcal(db: ReturnType<typeof createTestDb>, householdId: string, profileId: string, date: string): Promise<number> {
+  const meals = await db.select().from(plannedMeals).where(and(eq(plannedMeals.householdId, householdId), eq(plannedMeals.date, date)));
+  const portions = await db
+    .select()
+    .from(plannedMealPortions)
+    .where(
+      and(
+        inArray(plannedMealPortions.plannedMealId, meals.map((m) => m.id)),
+        eq(plannedMealPortions.profileId, profileId),
+        isNull(plannedMealPortions.deletedAt),
+      ),
+    );
+
+  let total = 0;
+  for (const portion of portions) {
+    const meal = meals.find((m) => m.id === portion.plannedMealId)!;
+    if (meal.itemType === 'food') {
+      const [food] = await db.select().from(foods).where(eq(foods.id, meal.itemId));
+      total += food.kcalPer100 * portion.multiplier;
+    } else {
+      const [recipe] = await db.select().from(recipes).where(eq(recipes.id, meal.itemId));
+      const ingredientRows = await db.select().from(recipeIngredients).where(eq(recipeIngredients.recipeId, meal.itemId));
+      const withFoods = await Promise.all(
+        ingredientRows.map(async (ingredient) => {
+          const [food] = await db.select().from(foods).where(eq(foods.id, ingredient.foodId));
+          return { amount: ingredient.amount, food };
+        }),
+      );
+      const nutrition = computeRecipeNutrition(withFoods, recipe.servingsBase);
+      total += nutrition.kcal * portion.multiplier;
+    }
+  }
+  return total;
+}
 
 // A week comfortably in the future relative to any real test-run date, so
 // every date in it is unambiguously "not the past" for the read-only guard.
@@ -83,6 +122,34 @@ describe('plan generator (repository)', () => {
         expect(meal).toBeDefined();
         expect(meal!.profileId).toBe(profileId);
       }
+    }
+  });
+
+  it("keeps a full day's planned calories within ±100 kcal of the profile's daily target", async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    const profileId = await createAdult(db, householdId);
+    await seedIfEmpty(db);
+
+    await generateWeek(db, householdId, FUTURE_MONDAY, 777);
+
+    const [profile] = await db.select().from(profiles).where(eq(profiles.id, profileId));
+    const targets = computeTargets({
+      profileType: 'adult',
+      sex: profile.sex,
+      ageYears: ageYears(profile.birthDate),
+      heightCm: profile.heightCm,
+      weightKg: 80,
+      bodyFatPct: 20,
+      activityLevel: profile.activityLevel,
+      goal: 'maintain',
+      manualAdjustmentKcal: profile.tdciManualAdjustmentKcal,
+      fiberMode: 'efsa_min',
+    });
+
+    for (const date of weekDates(FUTURE_MONDAY)) {
+      const plannedKcal = await sumPlannedKcal(db, householdId, profileId, date);
+      expect(Math.abs(plannedKcal - targets.adjustedTdciKcal)).toBeLessThanOrEqual(100);
     }
   });
 
