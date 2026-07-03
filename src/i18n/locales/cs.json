@@ -110,8 +110,6 @@
     "stepOf": "Krok {{current}} z {{total}}",
     "compositionTitle": "Vaše domácnost",
     "compositionSubtitle": "Domácnost sdílí jeden jídelníček, jednu spíž a jeden nákupní seznam.",
-    "householdName": "Název domácnosti",
-    "householdPlaceholder": "např. Novákovi",
     "adults": "Dospělí",
     "children": "Děti",
     "preferencesTitle": "Nastavení domácnosti",

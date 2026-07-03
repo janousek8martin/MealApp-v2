@@ -9,7 +9,6 @@ import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { SwitchRow } from '@/components/ui/SwitchRow';
-import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
 import { createHouseholdWithDefaults, saveHouseholdPreferences, updateHouseholdSettings } from '@/db/repositories/households';
 import { createProfile } from '@/db/repositories/profiles';
@@ -70,7 +69,6 @@ export default function WizardScreen() {
   const recipes = useRecipes();
 
   const [step, setStep] = useState<Step>('composition');
-  const [householdName, setHouseholdName] = useState('');
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [householdId, setHouseholdId] = useState<string | null>(null);
@@ -86,9 +84,8 @@ export default function WizardScreen() {
   const totalMembers = adults + children;
 
   const goComposition = async () => {
-    const name = householdName.trim();
-    if (!name || totalMembers < 1) return;
-    const id = await createHouseholdWithDefaults(db, name);
+    if (totalMembers < 1) return;
+    const id = await createHouseholdWithDefaults(db, t('walkthrough.defaultHouseholdName'));
     setHouseholdId(id);
     setStep('preferences');
   };
@@ -141,18 +138,12 @@ export default function WizardScreen() {
             <View>
               <Text style={styles.title}>{t('wizard.compositionTitle')}</Text>
               <Text style={styles.subtitle}>{t('wizard.compositionSubtitle')}</Text>
-              <TextField
-                label={t('wizard.householdName')}
-                value={householdName}
-                onChangeText={setHouseholdName}
-                placeholder={t('wizard.householdPlaceholder')}
-              />
               <Stepper label={t('wizard.adults')} value={adults} onChange={setAdults} min={0} max={8} />
               <Stepper label={t('wizard.children')} value={children} onChange={setChildren} min={0} max={8} />
               <Button
                 label={t('common.continue')}
                 onPress={goComposition}
-                disabled={!householdName.trim() || totalMembers < 1}
+                disabled={totalMembers < 1}
                 style={styles.cta}
               />
             </View>

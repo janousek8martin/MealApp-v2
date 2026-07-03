@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Animated,
   FlatList,
   StyleSheet,
   Text,
@@ -68,15 +69,18 @@ export default function WalkthroughScreen() {
   const { width } = useWindowDimensions();
   const [pageIndex, setPageIndex] = useState(0);
   const listRef = useRef<FlatList>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
   const setWalkthroughSeen = useAppStore((s) => s.setWalkthroughSeen);
   const setActiveProfileId = useAppStore((s) => s.setActiveProfileId);
 
   const isLast = pageIndex === PAGES.length - 1;
 
-  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / width);
-    setPageIndex(index);
-  };
+  const onScroll = Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+    useNativeDriver: false,
+    listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      setPageIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+    },
+  });
 
   const goNext = () => {
     listRef.current?.scrollToIndex({ index: Math.min(pageIndex + 1, PAGES.length - 1) });
@@ -116,19 +120,30 @@ export default function WalkthroughScreen() {
       />
 
       <View style={styles.dots}>
-        {PAGES.map((page, index) => (
-          <View key={page.titleKey} style={[styles.dot, index === pageIndex && styles.dotActive]} />
-        ))}
+        {PAGES.map((page, index) => {
+          const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+          const dotWidth = scrollX.interpolate({
+            inputRange,
+            outputRange: [8, 20, 8],
+            extrapolate: 'clamp',
+          });
+          const dotColor = scrollX.interpolate({
+            inputRange,
+            outputRange: [colors.border, colors.primary, colors.border],
+            extrapolate: 'clamp',
+          });
+          return (
+            <Animated.View
+              key={page.titleKey}
+              style={[styles.dot, { width: dotWidth, backgroundColor: dotColor }]}
+            />
+          );
+        })}
       </View>
 
       <View style={styles.footer}>
         {isLast ? (
           <>
-            <Image
-              source={require('../assets/images/hero/onboarding-hero.png')}
-              style={styles.onboardingHero}
-              contentFit="cover"
-            />
             <Button label={t('walkthrough.setupHousehold')} onPress={startWizard} style={styles.footerButton} />
             <Button
               label={t('walkthrough.quickStart')}
@@ -183,24 +198,12 @@ function createStyles(colors: ColorTokens) {
       marginBottom: spacing.md,
     },
     dot: {
-      width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: colors.border,
-    },
-    dotActive: {
-      backgroundColor: colors.primary,
-      width: 20,
     },
     footer: {
       padding: spacing.lg,
       gap: spacing.sm,
-    },
-    onboardingHero: {
-      width: '100%',
-      height: 110,
-      borderRadius: radius.card,
-      marginBottom: spacing.xs,
     },
     footerButton: {
       width: '100%',

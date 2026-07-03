@@ -110,8 +110,6 @@
     "stepOf": "Step {{current}} of {{total}}",
     "compositionTitle": "Your household",
     "compositionSubtitle": "A household shares one meal plan, one pantry and one shopping list.",
-    "householdName": "Household name",
-    "householdPlaceholder": "e.g. The Smiths",
     "adults": "Adults",
     "children": "Children",
     "preferencesTitle": "Household preferences",
