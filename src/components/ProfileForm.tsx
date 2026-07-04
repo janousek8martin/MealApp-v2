@@ -448,7 +448,22 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
                 onChangeText={setGoalBodyFat}
                 keyboardType="decimal-pad"
                 suffix="%"
+                labelRight={
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setBodyFatChartVisible(true)}
+                    hitSlop={8}>
+                    <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+                  </Pressable>
+                }
               />
+              {sex ? (
+                <BodyFatCarousel
+                  sex={sex}
+                  value={goalBodyFatPct}
+                  onSelect={(value) => setGoalBodyFat(String(value))}
+                />
+              ) : null}
             </>
           ) : null}
           <ChipSelect

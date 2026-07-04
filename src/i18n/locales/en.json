@@ -296,7 +296,7 @@
     "hip": "Hip circumference",
     "result": "Estimated body fat",
     "use": "Use value",
-    "open": "Calculate from tape measurements (Navy method)"
+    "open": "Calculate from tape measurements"
   },
   "tdciMode": {
     "maintenance": "Maintenance calories",
