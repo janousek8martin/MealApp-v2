@@ -151,6 +151,8 @@ export const profiles = sqliteTable(
     activityLevel: text('activity_level', {
       enum: ['sedentary', 'light', 'moderate', 'active', 'very_active'],
     }).notNull(),
+    /** Chosen fine-grained multiplier within the activityLevel's 3-dot range; null = use the level's middle value. */
+    activityMultiplier: real('activity_multiplier'),
     goal: text('goal', { enum: ['lose', 'maintain', 'gain'] }).notNull().default('maintain'),
     goalWeightKg: real('goal_weight_kg'),
     goalBodyFatPct: real('goal_body_fat_pct'),
@@ -273,6 +275,8 @@ export const foods = sqliteTable('foods', {
   barcode: text('barcode'),
   /** Audit reference: 'usda:fdc/171287', 'nutridatabaze:123', 'user'. */
   source: text('source').notNull().default('user'),
+  /** Stable key from the seed data (e.g. 'mushrooms') – lets "avoid this food" preferences and curated avoid-lists reference a food across reinstalls, since the runtime id is a random UUID; null for user-added foods. */
+  seedKey: text('seed_key'),
 });
 
 export const foodRestrictions = sqliteTable(

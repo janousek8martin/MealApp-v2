@@ -36,15 +36,34 @@ describe('deriveRecipeTags', () => {
       { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] },
       { foodId: 'egg', allergens: ['eggs'], dietFlags: ['vegetarian'] },
     ]);
-    expect(tags.dietFlags).toEqual(['vegetarian']);
+    expect(tags.dietFlags).toEqual(expect.arrayContaining(['vegetarian']));
+    expect(tags.dietFlags).not.toContain('vegan');
   });
 
-  it('a recipe with a non-flagged ingredient (e.g. meat) supports no diets', () => {
+  it('a recipe with a non-flagged ingredient (e.g. meat) supports no curated diets', () => {
     const tags = deriveRecipeTags([
       { foodId: 'chicken', allergens: [], dietFlags: [] },
       { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] },
     ]);
-    expect(tags.dietFlags).toEqual([]);
+    expect(tags.dietFlags).not.toContain('vegetarian');
+    expect(tags.dietFlags).not.toContain('vegan');
+  });
+
+  it('derives gluten_free/dairy_free from allergens rather than requiring curated flags', () => {
+    const tags = deriveRecipeTags([
+      { foodId: 'chicken', allergens: [], dietFlags: [] },
+      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] },
+    ]);
+    expect(tags.dietFlags).toEqual(expect.arrayContaining(['gluten_free', 'dairy_free']));
+  });
+
+  it('drops gluten_free/dairy_free once any ingredient carries that allergen', () => {
+    const tags = deriveRecipeTags([
+      { foodId: 'bread', allergens: ['gluten'], dietFlags: ['vegetarian'] },
+      { foodId: 'milk', allergens: ['lactose'], dietFlags: ['vegetarian'] },
+    ]);
+    expect(tags.dietFlags).not.toContain('gluten_free');
+    expect(tags.dietFlags).not.toContain('dairy_free');
   });
 });
 
@@ -104,6 +123,22 @@ describe('isRecipeAllowedForProfiles', () => {
     expect(
       isRecipeAllowedForProfiles(candidate(), [{ ...noRestrictions, avoidedFoodIds: ['chicken'] }]),
     ).toBe(false);
+  });
+
+  it('rejects a high-carb recipe for a profile requiring low_carb', () => {
+    // 60g carbs * 4 = 240 kcal of 600 kcal = 40% > the 26% low-carb ceiling.
+    expect(
+      isRecipeAllowedForProfiles(candidate(), [{ ...noRestrictions, diets: ['low_carb'] }]),
+    ).toBe(false);
+  });
+
+  it('allows a low-carb recipe for a profile requiring low_carb', () => {
+    const grilledChicken = candidate({
+      nutritionPerPortion: { kcal: 400, proteinG: 50, carbsG: 10, fatG: 15, fiberG: 3 },
+    });
+    expect(
+      isRecipeAllowedForProfiles(grilledChicken, [{ ...noRestrictions, diets: ['low_carb'] }]),
+    ).toBe(true);
   });
 });
 

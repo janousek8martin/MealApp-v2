@@ -1,9 +1,10 @@
 import { eq, isNull } from 'drizzle-orm';
 
 import { newId } from '../id';
-import { createHouseholdWithDefaults, defaultSlots } from '../repositories/households';
+import { createHouseholdWithDefaults, defaultSlots, saveHouseholdPreferences } from '../repositories/households';
 import {
   foods,
+  householdAvoidedItems,
   householdSettings,
   households,
   mealSlotSettings,
@@ -57,6 +58,12 @@ describe('data layer', () => {
     expect(seededFoods.length).toBeGreaterThan(0);
     expect(seededRecipes.length).toBeGreaterThan(0);
 
+    // seedKey must persist so avoid-food groups (src/constants/options.ts)
+    // can resolve a stable seed key to the runtime food row across installs.
+    expect(seededFoods.every((f) => typeof f.seedKey === 'string' && f.seedKey.length > 0)).toBe(
+      true,
+    );
+
     const secondRun = await seedIfEmpty(db);
     expect(secondRun).toBe(false);
     expect((await db.select().from(foods)).length).toBe(seededFoods.length);
@@ -69,6 +76,30 @@ describe('data layer', () => {
         .where(eq(recipeIngredients.recipeId, recipe.id));
       expect(ingredients.length).toBeGreaterThan(0);
     }
+  });
+
+  it('saveHouseholdPreferences writes both recipe and food avoidance as itemType-discriminated rows', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test household');
+
+    await saveHouseholdPreferences(db, householdId, {
+      allergens: ['gluten'],
+      diets: ['vegetarian'],
+      avoidedRecipeIds: ['recipe-1'],
+      avoidedFoodIds: ['food-1', 'food-2'],
+      favoriteCuisines: ['czech'],
+    });
+
+    const rows = await db
+      .select()
+      .from(householdAvoidedItems)
+      .where(eq(householdAvoidedItems.householdId, householdId));
+
+    expect(rows.filter((r) => r.itemType === 'recipe').map((r) => r.itemId)).toEqual(['recipe-1']);
+    expect(rows.filter((r) => r.itemType === 'food').map((r) => r.itemId).sort()).toEqual([
+      'food-1',
+      'food-2',
+    ]);
   });
 
   it('enforces foreign keys', async () => {

@@ -9,20 +9,16 @@ import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { SwitchRow } from '@/components/ui/SwitchRow';
+import { ALLERGEN_KEYS, AVOID_FOOD_GROUPS, CUISINE_KEYS, DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { createHouseholdWithDefaults, saveHouseholdPreferences, updateHouseholdSettings } from '@/db/repositories/households';
 import { createProfile } from '@/db/repositories/profiles';
-import { useRecipes } from '@/hooks/library';
+import { useFoods } from '@/hooks/library';
 import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
-import { localizedName } from '@/utils/localized';
 
 type Step = 'composition' | 'preferences' | 'profile' | 'done';
-
-const ALLERGEN_KEYS = ['gluten', 'lactose', 'eggs', 'nuts', 'peanuts', 'fish', 'shellfish', 'soy'];
-const DIET_KEYS = ['vegetarian', 'vegan', 'pescatarian'];
-const CUISINE_KEYS = ['czech', 'mediterranean', 'italian', 'asian', 'mexican', 'american', 'other'];
 
 function Stepper({
   label,
@@ -66,7 +62,14 @@ export default function WizardScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const setActiveProfileId = useAppStore((state) => state.setActiveProfileId);
-  const recipes = useRecipes();
+  const foodRows = useFoods();
+  const foodIdBySeedKey = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const food of foodRows) {
+      if (food.seedKey) map.set(food.seedKey, food.id);
+    }
+    return map;
+  }, [foodRows]);
 
   const [step, setStep] = useState<Step>('composition');
   const [adults, setAdults] = useState(1);
@@ -78,7 +81,7 @@ export default function WizardScreen() {
   const [allergens, setAllergens] = useState<string[]>([]);
   const [diets, setDiets] = useState<string[]>([]);
   const [favoriteCuisines, setFavoriteCuisines] = useState<string[]>([]);
-  const [avoidRecipeIds, setAvoidRecipeIds] = useState<string[]>([]);
+  const [avoidFoodGroupKeys, setAvoidFoodGroupKeys] = useState<string[]>([]);
 
   const [profileIndex, setProfileIndex] = useState(0);
   const totalMembers = adults + children;
@@ -96,10 +99,15 @@ export default function WizardScreen() {
       defaultMaxRepetitionsPerWeek: maxReps,
       defaultAllowConsecutiveDays: allowConsecutive,
     });
+    const avoidedFoodIds = AVOID_FOOD_GROUPS.filter((group) => avoidFoodGroupKeys.includes(group.key))
+      .flatMap((group) => group.foodKeys)
+      .map((foodKey) => foodIdBySeedKey.get(foodKey))
+      .filter((id): id is string => !!id);
     await saveHouseholdPreferences(db, householdId, {
       allergens,
       diets,
-      avoidedRecipeIds: avoidRecipeIds,
+      avoidedRecipeIds: [],
+      avoidedFoodIds,
       favoriteCuisines,
     });
     setStep('profile');
@@ -154,44 +162,59 @@ export default function WizardScreen() {
               <Text style={styles.title}>{t('wizard.preferencesTitle')}</Text>
               <Text style={styles.subtitle}>{t('wizard.preferencesSubtitle')}</Text>
 
-              <Stepper label={t('settings.maxRepetitionsPerWeek')} value={maxReps} onChange={setMaxReps} min={1} max={7} />
-              <SwitchRow
-                label={t('settings.allowConsecutiveDays')}
-                hint={t('settings.allowConsecutiveDaysHint')}
-                value={allowConsecutive}
-                onChange={setAllowConsecutive}
-              />
+              <View style={styles.section}>
+                <Stepper label={t('settings.maxRepetitionsPerWeek')} value={maxReps} onChange={setMaxReps} min={1} max={7} />
+                <Text style={styles.sectionHint}>{t('wizard.maxRepetitionsHint')}</Text>
+                <SwitchRow
+                  label={t('settings.allowConsecutiveDays')}
+                  hint={t('settings.allowConsecutiveDaysHint')}
+                  value={allowConsecutive}
+                  onChange={setAllowConsecutive}
+                />
+              </View>
 
-              <ChipSelect
-                label={t('wizard.householdAllergens')}
-                multi
-                options={ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`) }))}
-                value={allergens}
-                onChange={setAllergens}
-              />
-              <ChipSelect
-                label={t('wizard.householdDiets')}
-                multi
-                options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`) }))}
-                value={diets}
-                onChange={setDiets}
-              />
-              <ChipSelect
-                label={t('wizard.favoriteCuisines')}
-                multi
-                options={CUISINE_KEYS.map((key) => ({ value: key, label: t(`cuisines.${key}`) }))}
-                value={favoriteCuisines}
-                onChange={setFavoriteCuisines}
-              />
-              {recipes.length > 0 ? (
+              <View style={styles.section}>
+                <ChipSelect
+                  label={t('wizard.householdAllergens')}
+                  multi
+                  options={ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`) }))}
+                  value={allergens}
+                  onChange={setAllergens}
+                />
+              </View>
+
+              <View style={styles.section}>
+                <ChipSelect
+                  label={t('wizard.householdDiets')}
+                  multi
+                  options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`) }))}
+                  value={diets}
+                  onChange={setDiets}
+                />
+              </View>
+
+              <View style={styles.section}>
+                <ChipSelect
+                  label={t('wizard.favoriteCuisines')}
+                  multi
+                  options={CUISINE_KEYS.map((key) => ({ value: key, label: t(`cuisines.${key}`) }))}
+                  value={favoriteCuisines}
+                  onChange={setFavoriteCuisines}
+                />
+              </View>
+
+              <View style={[styles.section, styles.sectionLast]}>
                 <ChipSelect
                   label={t('wizard.avoidMeals')}
                   multi
-                  options={recipes.map((recipe) => ({ value: recipe.id, label: localizedName(recipe) }))}
-                  value={avoidRecipeIds}
-                  onChange={setAvoidRecipeIds}
+                  options={AVOID_FOOD_GROUPS.map((group) => ({
+                    value: group.key,
+                    label: t(`avoidFoods.${group.key}`),
+                  }))}
+                  value={avoidFoodGroupKeys}
+                  onChange={setAvoidFoodGroupKeys}
                 />
-              ) : null}
+              </View>
 
               <Button label={t('common.continue')} onPress={goPreferences} style={styles.cta} />
             </View>
@@ -262,6 +285,23 @@ function createStyles(colors: ColorTokens) {
     },
     cta: {
       marginTop: spacing.md,
+    },
+    section: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingBottom: spacing.md,
+      marginBottom: spacing.md,
+    },
+    sectionLast: {
+      borderBottomWidth: 0,
+      paddingBottom: 0,
+      marginBottom: 0,
+    },
+    sectionHint: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      lineHeight: 18,
+      marginTop: -spacing.sm,
     },
     stepperRow: {
       flexDirection: 'row',

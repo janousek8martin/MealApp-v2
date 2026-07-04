@@ -8,9 +8,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LibraryCard } from '@/components/LibraryCard';
 import { LibraryFilterModal, type FilterSection } from '@/components/LibraryFilterModal';
+import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { softDeleteFood, softDeleteRecipe } from '@/db/repositories/library';
 import type { foods, recipes } from '@/db/schema';
+import { isLowCarbRecipe } from '@/domain/generator/filters';
 import { useActiveProfile, useHousehold } from '@/hooks/data';
 import {
   useFavoriteRecipeIds,
@@ -28,9 +30,12 @@ import { localizedName } from '@/utils/localized';
 type Segment = 'recipes' | 'foods';
 type RecipeFilter = 'all' | 'breakfast' | 'lunch_dinner' | 'snack' | 'side';
 
-const DIET_KEYS = ['vegetarian', 'vegan', 'pescatarian'];
-const ALLERGEN_KEYS = ['gluten', 'lactose', 'eggs', 'nuts', 'peanuts', 'fish', 'shellfish', 'soy'];
 const BUDGET_KEYS = ['cheap', 'average', 'expensive'] as const;
+/** Same 26%-of-calories-from-carbs rule as the generator (src/domain/generator/filters.ts), applied per 100g since that's scale-invariant anyway. */
+function isLowCarbFood(food: { kcalPer100: number; carbsPer100: number }): boolean {
+  if (food.kcalPer100 <= 0) return true;
+  return (food.carbsPer100 * 4) / food.kcalPer100 <= 0.26;
+}
 
 function toggleValue(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
@@ -117,7 +122,13 @@ export default function LibraryScreen() {
         .filter((recipe) => {
           if (recipeDiets.length === 0) return true;
           const derived = recipeTagsMap.get(recipe.id);
-          return recipeDiets.every((diet) => derived?.dietFlags.includes(diet));
+          return recipeDiets.every((diet) => {
+            if (diet === 'low_carb') {
+              const nutrition = recipeNutritionMap.get(recipe.id);
+              return !!nutrition && isLowCarbRecipe(nutrition);
+            }
+            return derived?.dietFlags.includes(diet);
+          });
         })
         .filter((recipe) => {
           if (recipeExcludeAllergens.length === 0) return true;
@@ -141,6 +152,7 @@ export default function LibraryScreen() {
       recipeDiets,
       recipeExcludeAllergens,
       recipeTagsMap,
+      recipeNutritionMap,
     ],
   );
 
@@ -152,7 +164,13 @@ export default function LibraryScreen() {
         .filter((food) => {
           if (foodDiets.length === 0) return true;
           const flags: string[] = food.dietFlagsJson ? JSON.parse(food.dietFlagsJson) : [];
-          return foodDiets.every((diet) => flags.includes(diet));
+          const allergens = foodAllergensMap.get(food.id) ?? [];
+          return foodDiets.every((diet) => {
+            if (diet === 'gluten_free') return !allergens.includes('gluten');
+            if (diet === 'dairy_free') return !allergens.includes('lactose');
+            if (diet === 'low_carb') return isLowCarbFood(food);
+            return flags.includes(diet);
+          });
         })
         .filter((food) => {
           if (foodExcludeAllergens.length === 0) return true;

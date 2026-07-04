@@ -8,6 +8,7 @@ import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { TextField } from '@/components/ui/TextField';
+import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
 import type { CreateProfileInput } from '@/db/repositories/profiles';
 import { validateGoals } from '@/domain/goals';
 import { useTheme } from '@/theme/ThemeContext';
@@ -24,9 +25,6 @@ type Props = {
   /** Prefills the form for editing an existing profile; omitted when creating a new one. */
   initialValue?: ProfileFormValue;
 };
-
-const ALLERGEN_KEYS = ['gluten', 'lactose', 'eggs', 'nuts', 'peanuts', 'fish', 'shellfish', 'soy'];
-const DIET_KEYS = ['vegetarian', 'vegan', 'pescatarian'];
 
 function parseNumber(value: string): number | null {
   const parsed = Number(value.replace(',', '.'));

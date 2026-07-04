@@ -97,6 +97,7 @@ export type HouseholdPreferencesInput = {
   allergens: string[];
   diets: string[];
   avoidedRecipeIds: string[];
+  avoidedFoodIds: string[];
   favoriteCuisines: string[];
 };
 
@@ -122,16 +123,13 @@ export async function saveHouseholdPreferences(
     );
   }
 
-  if (input.avoidedRecipeIds.length > 0) {
+  const avoidedItemRows = [
+    ...input.avoidedRecipeIds.map((itemId) => ({ itemType: 'recipe' as const, itemId })),
+    ...input.avoidedFoodIds.map((itemId) => ({ itemType: 'food' as const, itemId })),
+  ];
+  if (avoidedItemRows.length > 0) {
     await db.insert(householdAvoidedItems).values(
-      input.avoidedRecipeIds.map((itemId) => ({
-        id: newId(),
-        createdAt: now,
-        updatedAt: now,
-        householdId,
-        itemType: 'recipe' as const,
-        itemId,
-      })),
+      avoidedItemRows.map((row) => ({ id: newId(), createdAt: now, updatedAt: now, householdId, ...row })),
     );
   }
 

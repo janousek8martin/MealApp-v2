@@ -3,8 +3,22 @@ import type {
   DietRestrictions,
   IngredientFoodTags,
   RecipeCandidate,
+  RecipeNutritionPerPortion,
   RepetitionContext,
 } from './types';
+
+const GLUTEN_FREE = 'gluten_free';
+const DAIRY_FREE = 'dairy_free';
+/** Diet key handled separately below since it's derived from the recipe's aggregate nutrition, not an ingredient flag intersection. */
+const LOW_CARB = 'low_carb';
+
+/** gluten_free/dairy_free aren't curated per-food like vegetarian/vegan – they're always derivable from the allergens a food already carries. */
+function effectiveIngredientDietFlags(ingredient: IngredientFoodTags): string[] {
+  const flags = new Set(ingredient.dietFlags);
+  if (!ingredient.allergens.includes('gluten')) flags.add(GLUTEN_FREE);
+  if (!ingredient.allergens.includes('lactose')) flags.add(DAIRY_FREE);
+  return [...flags];
+}
 
 /**
  * Recipe-level tags are derived from ingredients, never stored: allergens are
@@ -17,10 +31,25 @@ export function deriveRecipeTags(ingredients: IngredientFoodTags[]): DerivedReci
 
   for (const ingredient of ingredients) {
     for (const allergen of ingredient.allergens) allergens.add(allergen);
-    diets = diets === null ? ingredient.dietFlags : diets.filter((d) => ingredient.dietFlags.includes(d));
+    const ingredientDiets = effectiveIngredientDietFlags(ingredient);
+    diets = diets === null ? ingredientDiets : diets.filter((d) => ingredientDiets.includes(d));
   }
 
   return { allergens: [...allergens], dietFlags: diets ?? [] };
+}
+
+/**
+ * A recipe counts as "low carb" when carbs supply under ~26% of its calories
+ * (looser than keto, in line with common low-carb-diet guidance) rather than
+ * a fixed gram threshold, so the check still makes sense after the generator
+ * scales the portion up or down for a profile's calorie target.
+ */
+const LOW_CARB_MAX_CARB_KCAL_SHARE = 0.26;
+
+/** Exported so the library screen's diet filter (UI, not the generator) can apply the identical rule. */
+export function isLowCarbRecipe(nutrition: RecipeNutritionPerPortion): boolean {
+  if (nutrition.kcal <= 0) return true;
+  return (nutrition.carbsG * 4) / nutrition.kcal <= LOW_CARB_MAX_CARB_KCAL_SHARE;
 }
 
 /**
@@ -33,10 +62,17 @@ export function isRecipeAllowedForProfiles(
 ): boolean {
   const tags = deriveRecipeTags(candidate.ingredients);
   const ingredientFoodIds = candidate.ingredients.map((i) => i.foodId);
+  const lowCarb = isLowCarbRecipe(candidate.nutritionPerPortion);
 
   return profiles.every((profile) => {
     if (tags.allergens.some((a) => profile.allergens.includes(a))) return false;
-    if (profile.diets.some((d) => !tags.dietFlags.includes(d))) return false;
+    for (const diet of profile.diets) {
+      if (diet === LOW_CARB) {
+        if (!lowCarb) return false;
+        continue;
+      }
+      if (!tags.dietFlags.includes(diet)) return false;
+    }
     if (profile.avoidedRecipeIds.includes(candidate.id)) return false;
     if (ingredientFoodIds.some((id) => profile.avoidedFoodIds.includes(id))) return false;
     return true;

@@ -8,14 +8,13 @@ import { PhotoPicker } from '@/components/PhotoPicker';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { TextField } from '@/components/ui/TextField';
+import { ALLERGEN_KEYS, MANUAL_DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { setPhoto, upsertFood } from '@/db/repositories/library';
 import { useFood, useFoodAllergens, usePhoto } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 
-const ALLERGEN_KEYS = ['gluten', 'lactose', 'eggs', 'nuts', 'peanuts', 'fish', 'shellfish', 'soy'];
-const DIET_KEYS = ['vegetarian', 'vegan', 'pescatarian'];
 const CATEGORY_KEYS = [
   'meat', 'fish', 'eggs', 'dairy', 'grains', 'legumes', 'bakery', 'vegetables', 'fruit',
   'nuts', 'seeds', 'fats', 'sweets', 'sweeteners', 'supplements', 'other',
@@ -212,7 +211,7 @@ export default function FoodEditScreen() {
         <ChipSelect
           label={t('foodEdit.dietFlags')}
           multi
-          options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`) }))}
+          options={MANUAL_DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`) }))}
           value={dietFlags}
           onChange={setDietFlags}
         />

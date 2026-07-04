@@ -49,6 +49,7 @@ export async function seedIfEmpty(
       storage: seed.storage,
       snackSuitable: seed.snackSuitable ?? false,
       source: seed.source ?? 'seed-draft',
+      seedKey: seed.key,
     });
 
     if (seed.allergens?.length) {
