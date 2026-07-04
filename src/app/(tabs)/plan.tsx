@@ -39,6 +39,7 @@ import {
   useRecipeNutritionMap,
   type SlotRow,
 } from '@/hooks/plan';
+import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { confirmDeleteMeal } from '@/utils/mealActions';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -74,6 +75,8 @@ export default function PlanScreen() {
   const activeProfile = useActiveProfile(household?.id);
   const today = todayIsoDate();
   const { width } = useWindowDimensions();
+  const scrollRef = useRef<ScrollView>(null);
+  const { onScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
 
   const [viewedMonday, setViewedMonday] = useState(() => startOfWeek(today));
   const [selectedDate, setSelectedDate] = useState(today);
@@ -217,7 +220,11 @@ export default function PlanScreen() {
       <Animated.View
         style={[styles.swipeArea, { transform: [{ translateX: slideAnim }] }]}
         {...panResponder.panHandlers}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.content}
+          onScroll={onScroll}
+          scrollEventThrottle={scrollEventThrottle}>
           {isPast ? <Text style={styles.pastNotice}>{t('planScreen.pastNotice')}</Text> : null}
 
           {activeProfile

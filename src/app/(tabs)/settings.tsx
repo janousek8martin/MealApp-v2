@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
@@ -31,6 +31,7 @@ import {
 } from '@/hooks/data';
 import type { ProfileRow } from '@/hooks/dataMapping';
 import { useAllMealSlots, type SlotRow } from '@/hooks/plan';
+import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { syncHouseholdNotifications } from '@/services/notifications';
 import { MAX_MAIN_NAV_ITEMS, useAppStore, type NavKey } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
@@ -416,11 +417,17 @@ export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const scrollRef = useRef<ScrollView>(null);
+  const { onScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
   const { household } = useHousehold();
   const settings = useHouseholdSettings(household?.id);
   const members = useProfiles(household?.id);
   const themeMode = useAppStore((s) => s.themeMode);
   const setThemeMode = useAppStore((s) => s.setThemeMode);
+  const restoreScrollEnabled = useAppStore((s) => s.restoreScrollEnabled);
+  const setRestoreScrollEnabled = useAppStore((s) => s.setRestoreScrollEnabled);
+  const restoreScrollTimeoutSec = useAppStore((s) => s.restoreScrollTimeoutSec);
+  const setRestoreScrollTimeoutSec = useAppStore((s) => s.setRestoreScrollTimeoutSec);
   const activeProfileId = useAppStore((s) => s.activeProfileId);
   const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>(undefined);
   const [kitchenUnitsVisible, setKitchenUnitsVisible] = useState(false);
@@ -459,7 +466,11 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.content}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}>
         <Text style={styles.heading}>{t('settings.title')}</Text>
 
         <ProfileSwitcherHeader
@@ -588,6 +599,34 @@ export default function SettingsScreen() {
 
         <AccordionCard title={t('settings.navigation')} subtitle={t('settings.navigationHint', { max: MAX_MAIN_NAV_ITEMS })}>
           <NavigationCard />
+        </AccordionCard>
+
+        <AccordionCard title={t('settings.scrollMemory')} subtitle={t('settings.scrollMemoryHint')}>
+          <SwitchRow
+            label={t('settings.scrollMemoryEnable')}
+            value={restoreScrollEnabled}
+            onChange={setRestoreScrollEnabled}
+          />
+          {restoreScrollEnabled ? (
+            <View style={styles.stepperRow}>
+              <Text style={styles.slotLabel}>{t('settings.scrollMemoryTimeout')}</Text>
+              <View style={styles.stepper}>
+                <Button
+                  variant="secondary"
+                  label="–"
+                  style={styles.stepperButton}
+                  onPress={() => setRestoreScrollTimeoutSec(Math.max(1, restoreScrollTimeoutSec - 1))}
+                />
+                <Text style={styles.stepperValue}>{restoreScrollTimeoutSec}s</Text>
+                <Button
+                  variant="secondary"
+                  label="+"
+                  style={styles.stepperButton}
+                  onPress={() => setRestoreScrollTimeoutSec(Math.min(10, restoreScrollTimeoutSec + 1))}
+                />
+              </View>
+            </View>
+          ) : null}
         </AccordionCard>
       </ScrollView>
 

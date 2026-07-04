@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { todayIsoDate } from '@/db/time';
 import { useHousehold } from '@/hooks/data';
 import { useFood } from '@/hooks/library';
 import { usePantryItems, type PantryItemRow } from '@/hooks/shopping';
+import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
@@ -49,6 +50,8 @@ export default function PantryScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const listRef = useRef<FlatList>(null);
+  const { onScroll, scrollEventThrottle } = useTabScrollRestore(listRef);
   const { household } = useHousehold();
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pendingFood, setPendingFood] = useState<FoodRow | null>(null);
@@ -81,6 +84,9 @@ export default function PantryScreen() {
       </View>
 
       <FlatList
+        ref={listRef}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
         contentContainerStyle={styles.list}
         data={pantryItems}
         keyExtractor={(item) => item.id}

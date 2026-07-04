@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ import {
   useLatestBodyMetric,
   useProfileTargets,
 } from '@/hooks/data';
+import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
@@ -33,6 +34,8 @@ export default function ProgressScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const scrollRef = useRef<ScrollView>(null);
+  const { onScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
   const targets = useProfileTargets(activeProfile);
@@ -76,7 +79,11 @@ export default function ProgressScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.content}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}>
         <Text style={styles.heading}>{t('tabs.progress')}</Text>
 
         {household ? <ProfileSwitcher householdId={household.id} /> : null}

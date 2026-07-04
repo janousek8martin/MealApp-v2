@@ -38,6 +38,15 @@ type AppState = {
   /** Light/dark theme; defaults to light so existing installs don't flip unexpectedly. */
   themeMode: 'light' | 'dark';
   setThemeMode: (mode: 'light' | 'dark') => void;
+  /**
+   * When off (default), every tab screen resets to the top on re-focus. When
+   * on, returning to a tab within `restoreScrollTimeoutSec` of leaving it
+   * restores the previous scroll position instead.
+   */
+  restoreScrollEnabled: boolean;
+  setRestoreScrollEnabled: (enabled: boolean) => void;
+  restoreScrollTimeoutSec: number;
+  setRestoreScrollTimeoutSec: (seconds: number) => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -51,11 +60,15 @@ export const useAppStore = create<AppState>()(
       setWalkthroughSeen: (seen) => set({ walkthroughSeen: seen }),
       themeMode: 'light',
       setThemeMode: (mode) => set({ themeMode: mode }),
+      restoreScrollEnabled: false,
+      setRestoreScrollEnabled: (enabled) => set({ restoreScrollEnabled: enabled }),
+      restoreScrollTimeoutSec: 1,
+      setRestoreScrollTimeoutSec: (seconds) => set({ restoreScrollTimeoutSec: seconds }),
     }),
     {
       name: 'mealapp-app-state',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 3,
+      version: 4,
       migrate: (persistedState, version) => {
         const state = persistedState as { mainNavKeys?: NavKey[] } & Record<string, unknown>;
         if (version < 2) {
@@ -65,6 +78,10 @@ export const useAppStore = create<AppState>()(
         }
         if (version < 3) {
           state.themeMode = 'light';
+        }
+        if (version < 4) {
+          state.restoreScrollEnabled = false;
+          state.restoreScrollTimeoutSec = 1;
         }
         return state as AppState;
       },

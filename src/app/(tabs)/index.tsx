@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,6 +41,7 @@ import {
   type SlotRow,
 } from '@/hooks/plan';
 import { usePantryItems, useShoppingItems } from '@/hooks/shopping';
+import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { confirmDeleteMeal } from '@/utils/mealActions';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -59,6 +60,8 @@ export default function TodayScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const scrollRef = useRef<ScrollView>(null);
+  const { onScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
   const targets = useProfileTargets(activeProfile);
@@ -127,7 +130,11 @@ export default function TodayScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.content}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}>
         <Text style={styles.heading}>{t('today.title')}</Text>
 
         {household ? (

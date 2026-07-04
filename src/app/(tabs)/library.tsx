@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ import {
   useRecipeTagsMap,
 } from '@/hooks/library';
 import { useRecipeNutritionMap } from '@/hooks/plan';
+import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
@@ -47,6 +48,8 @@ export default function LibraryScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const ACCENTS = useMemo(() => [colors.mint, colors.lime, colors.tealTint], [colors]);
+  const listRef = useRef<FlatList>(null);
+  const { onScroll, scrollEventThrottle } = useTabScrollRestore(listRef);
   const [segment, setSegment] = useState<Segment>('recipes');
   const [search, setSearch] = useState('');
   const [recipeFilter, setRecipeFilter] = useState<RecipeFilter>('all');
@@ -365,6 +368,9 @@ export default function LibraryScreen() {
 
       {segment === 'recipes' ? (
         <FlatList
+          ref={listRef}
+          onScroll={onScroll}
+          scrollEventThrottle={scrollEventThrottle}
           data={filteredRecipes}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
@@ -399,6 +405,9 @@ export default function LibraryScreen() {
         />
       ) : (
         <FlatList
+          ref={listRef}
+          onScroll={onScroll}
+          scrollEventThrottle={scrollEventThrottle}
           data={filteredFoods}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}

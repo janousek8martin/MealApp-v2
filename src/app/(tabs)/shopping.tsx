@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import {
 import { useHousehold } from '@/hooks/data';
 import { useFood } from '@/hooks/library';
 import { useShoppingItems, type ShoppingItemRow } from '@/hooks/shopping';
+import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
@@ -56,6 +57,8 @@ export default function ShoppingScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const listRef = useRef<FlatList>(null);
+  const { onScroll, scrollEventThrottle } = useTabScrollRestore(listRef);
   const { household } = useHousehold();
   const [generating, setGenerating] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -121,6 +124,9 @@ export default function ShoppingScreen() {
       {generating ? <ActivityIndicator color={colors.primary} style={styles.spinner} /> : null}
 
       <FlatList
+        ref={listRef}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
         contentContainerStyle={styles.list}
         data={[
           { key: 'weekly', title: t('shopping.weekly'), items: weeklyItems },
@@ -131,7 +137,7 @@ export default function ShoppingScreen() {
           section.items.length > 0 ? (
             <View>
               <Text style={styles.sectionTitle}>{section.title}</Text>
-              {section.items.map((item) => (
+              {section.items.map((item: ShoppingItemRow) => (
                 <ShoppingRow
                   key={item.id}
                   item={item}
