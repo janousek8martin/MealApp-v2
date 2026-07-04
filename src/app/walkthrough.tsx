@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
+  Easing,
   FlatList,
-  LayoutAnimation,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -76,16 +76,33 @@ export default function WalkthroughScreen() {
 
   const isLast = pageIndex === PAGES.length - 1;
 
+  // Footer grow/shrink + button cross-fade, driven explicitly instead of via
+  // LayoutAnimation – LayoutAnimation is unreliable (often a silent no-op) on
+  // Android with the New Architecture, which caused the old "one button just
+  // pops into existence" jump instead of a smooth transition.
+  const [buttonHeight, setButtonHeight] = useState<number | null>(null);
+  const footerAnim = useRef(new Animated.Value(isLast ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(footerAnim, {
+      toValue: isLast ? 1 : 0,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [isLast, footerAnim]);
+
+  const footerContentHeight = buttonHeight
+    ? footerAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [buttonHeight, buttonHeight * 2 + spacing.sm],
+      })
+    : undefined;
+
   const onScroll = Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
     useNativeDriver: false,
     listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-      if (newIndex !== pageIndex && (newIndex === PAGES.length - 1 || pageIndex === PAGES.length - 1)) {
-        // Smoothly grows/shrinks the footer and cross-fades its buttons when
-        // entering/leaving the last page, instead of the two CTA buttons
-        // just popping into existence.
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      }
       setPageIndex(newIndex);
     },
   });
@@ -150,8 +167,19 @@ export default function WalkthroughScreen() {
       </View>
 
       <View style={styles.footer}>
-        {isLast ? (
-          <>
+        <Animated.View style={footerContentHeight ? { height: footerContentHeight } : undefined}>
+          <Animated.View
+            pointerEvents={isLast ? 'none' : 'auto'}
+            onLayout={(event) => setButtonHeight((prev) => prev ?? event.nativeEvent.layout.height)}
+            style={[
+              styles.footerLayer,
+              { opacity: footerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) },
+            ]}>
+            <Button label={t('common.continue')} onPress={goNext} style={styles.footerButton} />
+          </Animated.View>
+          <Animated.View
+            pointerEvents={isLast ? 'auto' : 'none'}
+            style={[styles.footerLayer, { opacity: footerAnim }]}>
             <Button label={t('walkthrough.setupHousehold')} onPress={startWizard} style={styles.footerButton} />
             <Button
               label={t('walkthrough.quickStart')}
@@ -159,10 +187,8 @@ export default function WalkthroughScreen() {
               onPress={quickStart}
               style={styles.footerButton}
             />
-          </>
-        ) : (
-          <Button label={t('common.continue')} onPress={goNext} style={styles.footerButton} />
-        )}
+          </Animated.View>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );
@@ -211,6 +237,12 @@ function createStyles(colors: ColorTokens) {
     },
     footer: {
       padding: spacing.lg,
+    },
+    footerLayer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
       gap: spacing.sm,
     },
     footerButton: {

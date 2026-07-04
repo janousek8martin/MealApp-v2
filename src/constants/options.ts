@@ -83,4 +83,11 @@ export const AVOID_FOOD_GROUPS: { key: string; foodKeys: string[] }[] = [
   { key: 'peanutButter', foodKeys: ['peanut_butter'] },
   { key: 'darkChocolate', foodKeys: ['dark_chocolate'] },
   { key: 'honey', foodKeys: ['honey'] },
+  { key: 'apple', foodKeys: ['apple'] },
+  { key: 'pineapple', foodKeys: ['pineapple'] },
+  { key: 'cilantro', foodKeys: ['cilantro'] },
+  { key: 'liver', foodKeys: ['beef_liver'] },
+  { key: 'blueCheese', foodKeys: ['blue_cheese'] },
+  { key: 'shrimp', foodKeys: ['shrimp'] },
+  { key: 'raisins', foodKeys: ['raisins'] },
 ];

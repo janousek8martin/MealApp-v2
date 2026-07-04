@@ -170,7 +170,14 @@
     "almonds": "Mandle",
     "peanutButter": "Arašídové máslo",
     "darkChocolate": "Hořká čokoláda",
-    "honey": "Med"
+    "honey": "Med",
+    "apple": "Jablko",
+    "pineapple": "Ananas",
+    "cilantro": "Koriandr",
+    "liver": "Játra",
+    "blueCheese": "Modrý sýr",
+    "shrimp": "Krevety",
+    "raisins": "Rozinky"
   },
   "form": {
     "name": "Jméno",

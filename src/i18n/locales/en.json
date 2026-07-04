@@ -170,7 +170,14 @@
     "almonds": "Almonds",
     "peanutButter": "Peanut butter",
     "darkChocolate": "Dark chocolate",
-    "honey": "Honey"
+    "honey": "Honey",
+    "apple": "Apple",
+    "pineapple": "Pineapple",
+    "cilantro": "Cilantro",
+    "liver": "Liver",
+    "blueCheese": "Blue cheese",
+    "shrimp": "Shrimp",
+    "raisins": "Raisins"
   },
   "form": {
     "name": "Name",
