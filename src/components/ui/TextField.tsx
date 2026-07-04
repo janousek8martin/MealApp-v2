@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeContext';
@@ -13,6 +13,8 @@ type Props = {
   error?: string;
   suffix?: string;
   multiline?: boolean;
+  /** Optional adornment rendered at the end of the label row (e.g. an info-icon button). */
+  labelRight?: ReactNode;
 };
 
 export function TextField({
@@ -24,13 +26,17 @@ export function TextField({
   error,
   suffix,
   multiline,
+  labelRight,
 }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>{label}</Text>
+        {labelRight}
+      </View>
       <View style={[styles.inputRow, multiline && styles.inputRowMultiline, !!error && styles.inputError]}>
         <TextInput
           style={[styles.input, multiline && styles.inputMultiline]}
@@ -53,10 +59,15 @@ function createStyles(colors: ColorTokens) {
     container: {
       marginBottom: spacing.md,
     },
+    labelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xs,
+    },
     label: {
       color: colors.textSecondary,
       fontSize: typography.small,
-      marginBottom: spacing.xs,
       fontWeight: '600',
     },
     inputRow: {

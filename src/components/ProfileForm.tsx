@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { ActivityInfoModal } from '@/components/ActivityInfoModal';
 import { BodyFatCarousel } from '@/components/BodyFatCarousel';
 import { BodyFatChartModal } from '@/components/BodyFatChartModal';
+import { DateOfBirthPicker } from '@/components/DateOfBirthPicker';
 import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
@@ -14,6 +15,7 @@ import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
 import type { CreateProfileInput } from '@/db/repositories/profiles';
 import { ACTIVITY_MULTIPLIER_DOTS } from '@/domain/constants';
 import { validateGoals } from '@/domain/goals';
+import { cmToFeetInches, feetInchesToCm, kgToLbs, lbsToKg } from '@/domain/units';
 import { useTheme } from '@/theme/ThemeContext';
 import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 
@@ -25,6 +27,61 @@ function activityDotIndex(dots: readonly [number, number, number], multiplier: n
   if (multiplier === null) return 1;
   const index = dots.findIndex((value) => Math.abs(value - multiplier) < 0.001);
   return index === -1 ? 1 : index;
+}
+
+/** Small 2-option pill toggle used next to a field label to switch its unit system. */
+function UnitToggle({
+  value,
+  onChange,
+  labelA,
+  labelB,
+}: {
+  value: 'metric' | 'us';
+  onChange: (value: 'metric' | 'us') => void;
+  labelA: string;
+  labelB: string;
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createUnitToggleStyles(colors), [colors]);
+  return (
+    <View style={styles.row}>
+      <Pressable accessibilityRole="button" onPress={() => onChange('metric')} style={[styles.pill, value === 'metric' && styles.pillActive]}>
+        <Text style={[styles.pillLabel, value === 'metric' && styles.pillLabelActive]}>{labelA}</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => onChange('us')} style={[styles.pill, value === 'us' && styles.pillActive]}>
+        <Text style={[styles.pillLabel, value === 'us' && styles.pillLabelActive]}>{labelB}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function createUnitToggleStyles(colors: ColorTokens) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      gap: 4,
+    },
+    pill: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: 999,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    pillActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    pillLabel: {
+      color: colors.textSecondary,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    pillLabelActive: {
+      color: colors.onPrimary,
+    },
+  });
 }
 
 type Props = {
@@ -66,6 +123,18 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
   const [birthDate, setBirthDate] = useState(initialValue?.birthDate ?? '');
   const [height, setHeight] = useState(initialValue ? String(initialValue.heightCm) : '');
   const [weight, setWeight] = useState(initialValue ? String(initialValue.weightKg) : '');
+  const [heightUnit, setHeightUnit] = useState<'metric' | 'us'>('metric');
+  const [weightUnit, setWeightUnit] = useState<'metric' | 'us'>('metric');
+  const initialFeetInches = initialValue ? cmToFeetInches(initialValue.heightCm) : null;
+  const [heightFeet, setHeightFeet] = useState(
+    initialFeetInches ? String(initialFeetInches.feet) : '',
+  );
+  const [heightInches, setHeightInches] = useState(
+    initialFeetInches ? String(Math.round(initialFeetInches.inches * 10) / 10) : '',
+  );
+  const [weightUsInput, setWeightUsInput] = useState(
+    initialValue ? String(Math.round(kgToLbs(initialValue.weightKg) * 10) / 10) : '',
+  );
   const [bodyFat, setBodyFat] = useState(initialValue?.bodyFatPct !== undefined ? String(initialValue.bodyFatPct) : '');
   const [activityLevel, setActivityLevel] = useState<string | null>(initialValue?.activityLevel ?? null);
   const [activityMultiplier, setActivityMultiplier] = useState<number | null>(
@@ -177,29 +246,88 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
       />
       {submitted && sex === null ? <Text style={styles.error}>{t('form.required')}</Text> : null}
 
-      <TextField
+      <DateOfBirthPicker
         label={t('form.birthDate')}
         value={birthDate}
-        onChangeText={setBirthDate}
-        placeholder="1990-05-21"
+        onChange={setBirthDate}
         error={fieldError('birthDate')}
       />
-      <TextField
-        label={t('form.height')}
-        value={height}
-        onChangeText={setHeight}
-        keyboardType="decimal-pad"
-        suffix="cm"
-        error={fieldError('height')}
-      />
-      <TextField
-        label={t('form.weight')}
-        value={weight}
-        onChangeText={setWeight}
-        keyboardType="decimal-pad"
-        suffix="kg"
-        error={fieldError('weight')}
-      />
+
+      {heightUnit === 'metric' ? (
+        <TextField
+          label={t('form.height')}
+          value={height}
+          onChangeText={setHeight}
+          keyboardType="decimal-pad"
+          suffix="cm"
+          error={fieldError('height')}
+          labelRight={<UnitToggle value={heightUnit} onChange={setHeightUnit} labelA="cm" labelB="ft/in" />}
+        />
+      ) : (
+        <View>
+          <View style={styles.unitToggleRow}>
+            <Text style={styles.label}>{t('form.height')}</Text>
+            <UnitToggle value={heightUnit} onChange={setHeightUnit} labelA="cm" labelB="ft/in" />
+          </View>
+          <View style={styles.imperialRow}>
+            <View style={styles.imperialField}>
+              <TextField
+                label={t('form.feet')}
+                value={heightFeet}
+                onChangeText={(text) => {
+                  setHeightFeet(text);
+                  const feet = parseNumber(text) ?? 0;
+                  const inches = parseNumber(heightInches) ?? 0;
+                  setHeight(String(Math.round(feetInchesToCm(feet, inches) * 10) / 10));
+                }}
+                keyboardType="decimal-pad"
+                suffix="ft"
+              />
+            </View>
+            <View style={styles.imperialField}>
+              <TextField
+                label={t('form.inches')}
+                value={heightInches}
+                onChangeText={(text) => {
+                  setHeightInches(text);
+                  const feet = parseNumber(heightFeet) ?? 0;
+                  const inches = parseNumber(text) ?? 0;
+                  setHeight(String(Math.round(feetInchesToCm(feet, inches) * 10) / 10));
+                }}
+                keyboardType="decimal-pad"
+                suffix="in"
+              />
+            </View>
+          </View>
+          {fieldError('height') ? <Text style={styles.error}>{fieldError('height')}</Text> : null}
+        </View>
+      )}
+
+      {weightUnit === 'metric' ? (
+        <TextField
+          label={t('form.weight')}
+          value={weight}
+          onChangeText={setWeight}
+          keyboardType="decimal-pad"
+          suffix="kg"
+          error={fieldError('weight')}
+          labelRight={<UnitToggle value={weightUnit} onChange={setWeightUnit} labelA="kg" labelB="lb" />}
+        />
+      ) : (
+        <TextField
+          label={t('form.weight')}
+          value={weightUsInput}
+          onChangeText={(text) => {
+            setWeightUsInput(text);
+            const lbs = parseNumber(text);
+            if (lbs !== null) setWeight(String(Math.round(lbsToKg(lbs) * 10) / 10));
+          }}
+          keyboardType="decimal-pad"
+          suffix="lb"
+          error={fieldError('weight')}
+          labelRight={<UnitToggle value={weightUnit} onChange={setWeightUnit} labelA="kg" labelB="lb" />}
+        />
+      )}
 
       {!isChild ? (
         <>
@@ -210,6 +338,14 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
             keyboardType="decimal-pad"
             suffix="%"
             error={fieldError('bodyFat')}
+            labelRight={
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setBodyFatChartVisible(true)}
+                hitSlop={8}>
+                <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+              </Pressable>
+            }
           />
           {sex ? (
             <BodyFatCarousel
@@ -218,20 +354,12 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
               onSelect={(value) => setBodyFat(String(value))}
             />
           ) : null}
-          <View style={styles.bodyFatActions}>
-            <Button
-              label={t('navy.open')}
-              variant="secondary"
-              onPress={() => setNavyVisible(true)}
-              style={styles.bodyFatActionButton}
-            />
-            <Button
-              label={t('bodyFatChart.open')}
-              variant="secondary"
-              onPress={() => setBodyFatChartVisible(true)}
-              style={styles.bodyFatActionButton}
-            />
-          </View>
+          <Button
+            label={t('navy.open')}
+            variant="secondary"
+            onPress={() => setNavyVisible(true)}
+            style={styles.bodyFatActionButton}
+          />
         </>
       ) : null}
 
@@ -388,18 +516,31 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
 
 function createStyles(colors: ColorTokens) {
   return StyleSheet.create({
+    label: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
     error: {
       color: colors.danger,
       fontSize: typography.small,
       marginTop: -spacing.sm,
       marginBottom: spacing.sm,
     },
-    bodyFatActions: {
-      flexDirection: 'row',
-      gap: spacing.sm,
+    bodyFatActionButton: {
       marginBottom: spacing.md,
     },
-    bodyFatActionButton: {
+    unitToggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xs,
+    },
+    imperialRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    imperialField: {
       flex: 1,
     },
     activityDotsRow: {
