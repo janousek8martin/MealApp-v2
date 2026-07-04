@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
@@ -13,6 +13,7 @@ import { ALLERGEN_KEYS, AVOID_FOOD_GROUPS, CUISINE_KEYS, DIET_KEYS } from '@/con
 import { db } from '@/db/client';
 import { createHouseholdWithDefaults, saveHouseholdPreferences, updateHouseholdSettings } from '@/db/repositories/households';
 import { createProfile } from '@/db/repositories/profiles';
+import { checkCompositionMatch } from '@/domain/wizardComposition';
 import { useFoods } from '@/hooks/library';
 import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
@@ -84,12 +85,20 @@ export default function WizardScreen() {
   const [avoidFoodGroupKeys, setAvoidFoodGroupKeys] = useState<string[]>([]);
 
   const [profileIndex, setProfileIndex] = useState(0);
+  const [createdProfileTypes, setCreatedProfileTypes] = useState<Array<'adult' | 'child'>>([]);
   const totalMembers = adults + children;
+
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [step, profileIndex]);
 
   const goComposition = async () => {
     if (totalMembers < 1) return;
-    const id = await createHouseholdWithDefaults(db, t('walkthrough.defaultHouseholdName'));
-    setHouseholdId(id);
+    if (!householdId) {
+      const id = await createHouseholdWithDefaults(db, t('walkthrough.defaultHouseholdName'));
+      setHouseholdId(id);
+    }
     setStep('preferences');
   };
 
@@ -119,12 +128,37 @@ export default function WizardScreen() {
     if (profileIndex === 0) {
       setActiveProfileId(profileId);
     }
+    const thisType: 'adult' | 'child' = profileIndex < adults ? 'adult' : 'child';
+    const updatedTypes = [...createdProfileTypes, thisType];
+    setCreatedProfileTypes(updatedTypes);
+
     const next = profileIndex + 1;
     if (next >= totalMembers) {
-      setStep('done');
+      const check = checkCompositionMatch(updatedTypes, { adults, children });
+      if (!check.matches) {
+        Alert.alert(
+          t('wizard.compositionMismatchTitle'),
+          t('wizard.compositionMismatchMessage', {
+            actualAdults: check.adults,
+            actualChildren: check.children,
+            adults,
+            children,
+          }),
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('wizard.finishAnyway'), onPress: () => setStep('done') },
+          ],
+        );
+      } else {
+        setStep('done');
+      }
     } else {
       setProfileIndex(next);
     }
+  };
+
+  const backToComposition = () => {
+    setStep('composition');
   };
 
   const stepLabel =
@@ -139,8 +173,15 @@ export default function WizardScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {stepLabel ? <Text style={styles.stepLabel}>{stepLabel}</Text> : null}
+
+          {step === 'preferences' || step === 'profile' ? (
+            <Pressable accessibilityRole="button" onPress={backToComposition} style={styles.backRow} hitSlop={8}>
+              <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
+              <Text style={styles.backLabel}>{t('wizard.backToComposition')}</Text>
+            </Pressable>
+          ) : null}
 
           {step === 'composition' ? (
             <View>
@@ -270,6 +311,18 @@ function createStyles(colors: ColorTokens) {
       textTransform: 'uppercase',
       letterSpacing: 0.5,
       marginBottom: spacing.xs,
+    },
+    backRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      marginBottom: spacing.sm,
+    },
+    backLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '600',
+      marginLeft: 2,
     },
     title: {
       color: colors.text,
