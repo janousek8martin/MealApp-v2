@@ -22,8 +22,6 @@ import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 export type ProfileFormValue = Omit<CreateProfileInput, 'householdId'>;
 
-const ACTIVITY_DOT_KEYS = ['activityLow', 'activityMedium', 'activityHigh'] as const;
-
 const ACTIVITY_LEVEL_KEYS = ['sedentary', 'light', 'moderate', 'active', 'very_active'] as const;
 
 function activityDotIndex(dots: readonly [number, number, number], multiplier: number | null): number {
@@ -414,7 +412,7 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
                   onPress={() => setActivityMultiplier(value)}
                   style={styles.activityDotWrap}>
                   <View style={[styles.activityDot, selected && styles.activityDotSelected]} />
-                  <Text style={styles.activityDotLabel}>{t(`form.${ACTIVITY_DOT_KEYS[index]}`)}</Text>
+                  <Text style={styles.activityDotLabel}>{value}</Text>
                 </Pressable>
               );
             },
@@ -463,13 +461,30 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
             value={fitnessExperience}
             onChange={setFitnessExperience}
           />
-          <ChipSelect
-            label={t('form.workoutDays')}
-            multi
-            options={weekdayOptions(i18n.language)}
-            value={workoutDays}
-            onChange={setWorkoutDays}
-          />
+          <Text style={styles.weekdayLabel}>{t('form.workoutDays')}</Text>
+          <View style={styles.weekdayGrid}>
+            {weekdayOptions(i18n.language).map((day) => {
+              const selected = workoutDays.includes(day.value);
+              return (
+                <Pressable
+                  key={day.value}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() =>
+                    setWorkoutDays(
+                      selected
+                        ? workoutDays.filter((value) => value !== day.value)
+                        : [...workoutDays, day.value],
+                    )
+                  }
+                  style={[styles.weekdayChip, selected && styles.weekdayChipSelected]}>
+                  <Text style={[styles.weekdayChipLabel, selected && styles.weekdayChipLabelSelected]}>
+                    {day.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
           <Text style={styles.workoutDaysHint}>{t('form.workoutDaysHint')}</Text>
         </>
       ) : null}
@@ -618,6 +633,45 @@ function createStyles(colors: ColorTokens) {
     activityDotLabel: {
       color: colors.textSecondary,
       fontSize: typography.small,
+    },
+    weekdayLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '600',
+      marginBottom: spacing.xs,
+    },
+    weekdayGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    weekdayChip: {
+      width: '22%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.xs,
+      minHeight: 44,
+    },
+    weekdayChipSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    weekdayChipLabel: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '500',
+      textAlign: 'center',
+      textTransform: 'capitalize',
+    },
+    weekdayChipLabelSelected: {
+      color: colors.onPrimary,
     },
     workoutDaysHint: {
       color: colors.textSecondary,
