@@ -18,11 +18,13 @@ import { ACTIVITY_MULTIPLIER_DOTS } from '@/domain/constants';
 import { validateGoals } from '@/domain/goals';
 import { cmToFeetInches, feetInchesToCm, kgToLbs, lbsToKg } from '@/domain/units';
 import { useTheme } from '@/theme/ThemeContext';
-import { spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 export type ProfileFormValue = Omit<CreateProfileInput, 'householdId'>;
 
 const ACTIVITY_DOT_KEYS = ['activityLow', 'activityMedium', 'activityHigh'] as const;
+
+const ACTIVITY_LEVEL_KEYS = ['sedentary', 'light', 'moderate', 'active', 'very_active'] as const;
 
 function activityDotIndex(dots: readonly [number, number, number], multiplier: number | null): number {
   if (multiplier === null) return 1;
@@ -364,21 +366,35 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
         </>
       ) : null}
 
-      <ChipSelect
-        label={t('form.activity')}
-        options={[
-          { value: 'sedentary', label: t('activity.sedentary') },
-          { value: 'light', label: t('activity.light') },
-          { value: 'moderate', label: t('activity.moderate') },
-          { value: 'active', label: t('activity.active') },
-          { value: 'very_active', label: t('activity.very_active') },
-        ]}
-        value={activityLevel}
-        onChange={(value) => {
-          setActivityLevel(value);
-          setActivityMultiplier(null);
-        }}
-      />
+      <View style={styles.activityHeaderRow}>
+        <Text style={styles.label}>{t('form.activity')}</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setActivityInfoVisible(true)}
+          hitSlop={8}>
+          <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+        </Pressable>
+      </View>
+      <View style={styles.activityGrid}>
+        {ACTIVITY_LEVEL_KEYS.map((value) => {
+          const selected = activityLevel === value;
+          return (
+            <Pressable
+              key={value}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              onPress={() => {
+                setActivityLevel(value);
+                setActivityMultiplier(null);
+              }}
+              style={[styles.activityChip, selected && styles.activityChipSelected]}>
+              <Text style={[styles.activityChipLabel, selected && styles.activityChipLabelSelected]}>
+                {t(`activity.${value}`)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
       {submitted && activityLevel === null ? (
         <Text style={styles.error}>{t('form.required')}</Text>
       ) : null}
@@ -403,13 +419,6 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
               );
             },
           )}
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setActivityInfoVisible(true)}
-            hitSlop={8}
-            style={styles.activityInfoButton}>
-            <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
-          </Pressable>
         </View>
       ) : null}
 
@@ -544,9 +553,48 @@ function createStyles(colors: ColorTokens) {
     imperialField: {
       flex: 1,
     },
+    activityHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xs,
+    },
+    activityGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    activityChip: {
+      width: '48%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      minHeight: 48,
+    },
+    activityChipSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    activityChipLabel: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '500',
+      textAlign: 'center',
+    },
+    activityChipLabelSelected: {
+      color: colors.onPrimary,
+    },
     activityDotsRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: spacing.md,
       marginTop: -spacing.xs,
       marginBottom: spacing.md,
@@ -570,9 +618,6 @@ function createStyles(colors: ColorTokens) {
     activityDotLabel: {
       color: colors.textSecondary,
       fontSize: typography.small,
-    },
-    activityInfoButton: {
-      marginLeft: 'auto',
     },
     workoutDaysHint: {
       color: colors.textSecondary,
