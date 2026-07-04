@@ -197,8 +197,9 @@
     "weightRange": "Enter a weight of 10–300 kg",
     "bodyFatRange": "Enter a value of 2–70 %",
     "goalWeightConflict": "With a lower target body fat, the goal weight cannot exceed the current weight.",
-    "showActivityInfo": "Show explanations",
-    "hideActivityInfo": "Hide explanations"
+    "activityLow": "Low",
+    "activityMedium": "Medium",
+    "activityHigh": "High"
   },
   "activity": {
     "sedentary": "Sedentary",

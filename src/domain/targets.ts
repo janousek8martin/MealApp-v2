@@ -25,6 +25,8 @@ export type TargetsInput = {
   weightKg: number;
   bodyFatPct?: number;
   activityLevel: ActivityLevel;
+  /** Fine-grained override within activityLevel's 3-dot scale; null/undefined = level midpoint. */
+  activityMultiplier?: number | null;
   goal: 'lose' | 'maintain' | 'gain';
   goalBodyFatPct?: number;
   /** Drives the muscle-gain surplus %, when `surplusKcal` isn't explicitly overridden. */
@@ -99,7 +101,7 @@ export function computeTargets(input: TargetsInput): TargetsResult {
 
   // --- adults: Mifflin-St Jeor → TDEE → goal-specific TDCI ----------------
   const bmr = mifflinStJeorBmr(input);
-  const tdeeKcal = tdee(bmr, input.activityLevel);
+  const tdeeKcal = tdee(bmr, input.activityLevel, input.activityMultiplier);
 
   let mode: TargetsResult['mode'] = 'maintenance';
   let baseTdci = tdeeKcal;

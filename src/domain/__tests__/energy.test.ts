@@ -1,3 +1,4 @@
+import { ACTIVITY_MULTIPLIER_DOTS, type ActivityLevel } from '../constants';
 import { activityMultiplier, eerChildKcal, mifflinStJeorBmr, tdee } from '../energy';
 
 describe('Mifflin-St Jeor BMR', () => {
@@ -28,6 +29,22 @@ describe('TDEE', () => {
 
   it('multiplies BMR by the coefficient', () => {
     expect(tdee(1780, 'moderate')).toBeCloseTo(2759, 5);
+  });
+
+  it('uses the level midpoint when no fine-grained override is given', () => {
+    expect(tdee(1780, 'moderate', null)).toBeCloseTo(tdee(1780, 'moderate'), 5);
+    expect(tdee(1780, 'moderate', undefined)).toBeCloseTo(tdee(1780, 'moderate'), 5);
+  });
+
+  it('uses the profile-chosen fine-grained multiplier when given, overriding the level default', () => {
+    // 'active' midpoint is 1.725, but the profile picked the low dot (1.675).
+    expect(tdee(1780, 'active', 1.675)).toBeCloseTo(1780 * 1.675, 5);
+  });
+
+  it('the medium dot of every 3-dot scale equals that level\'s own coefficient', () => {
+    for (const level of Object.keys(ACTIVITY_MULTIPLIER_DOTS) as ActivityLevel[]) {
+      expect(ACTIVITY_MULTIPLIER_DOTS[level][1]).toBeCloseTo(activityMultiplier(level), 5);
+    }
   });
 });
 

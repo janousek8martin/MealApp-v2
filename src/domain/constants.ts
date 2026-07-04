@@ -15,6 +15,20 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
   very_active: 1.9,
 };
 
+/**
+ * Fine-grained Low/Medium/High sub-multipliers within each activity level
+ * (±0.05 around that level's ACTIVITY_MULTIPLIERS midpoint), so a profile can
+ * pick a specific point on the scale instead of just the level. The middle
+ * value of each tuple always equals ACTIVITY_MULTIPLIERS[level].
+ */
+export const ACTIVITY_MULTIPLIER_DOTS: Record<ActivityLevel, readonly [number, number, number]> = {
+  sedentary: [1.15, 1.2, 1.25],
+  light: [1.325, 1.375, 1.425],
+  moderate: [1.5, 1.55, 1.6],
+  active: [1.675, 1.725, 1.775],
+  very_active: [1.85, 1.9, 1.95],
+};
+
 /** ISSN ranges, g per kg of lean body mass per day. Defaults are the midpoints. */
 export const PROTEIN_PER_KG_LBM = {
   normalRange: [1.4, 2.0] as const,

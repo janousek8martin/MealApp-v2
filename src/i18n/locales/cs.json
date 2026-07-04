@@ -197,8 +197,9 @@
     "weightRange": "Zadejte váhu 10–300 kg",
     "bodyFatRange": "Zadejte hodnotu 2–70 %",
     "goalWeightConflict": "Při nižším cílovém % tuku nemůže být cílová váha vyšší než aktuální.",
-    "showActivityInfo": "Zobrazit vysvětlivky",
-    "hideActivityInfo": "Skrýt vysvětlivky"
+    "activityLow": "Nižší",
+    "activityMedium": "Střední",
+    "activityHigh": "Vyšší"
   },
   "activity": {
     "sedentary": "Sedavý",

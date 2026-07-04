@@ -17,8 +17,13 @@ export function activityMultiplier(level: ActivityLevel): number {
   return ACTIVITY_MULTIPLIERS[level];
 }
 
-export function tdee(bmrKcal: number, level: ActivityLevel): number {
-  return bmrKcal * activityMultiplier(level);
+/**
+ * `overrideMultiplier` is the profile's chosen point on the level's 3-dot
+ * Low/Medium/High scale (see ACTIVITY_MULTIPLIER_DOTS); null/undefined falls
+ * back to the level's own midpoint, i.e. the pre-existing behavior.
+ */
+export function tdee(bmrKcal: number, level: ActivityLevel, overrideMultiplier?: number | null): number {
+  return bmrKcal * (overrideMultiplier ?? activityMultiplier(level));
 }
 
 export type EerChildInput = {

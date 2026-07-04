@@ -1,7 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { ActivityInfoModal } from '@/components/ActivityInfoModal';
 import { BodyFatCarousel } from '@/components/BodyFatCarousel';
 import { BodyFatChartModal } from '@/components/BodyFatChartModal';
 import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
@@ -10,13 +12,20 @@ import { ChipSelect } from '@/components/ui/ChipSelect';
 import { TextField } from '@/components/ui/TextField';
 import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
 import type { CreateProfileInput } from '@/db/repositories/profiles';
+import { ACTIVITY_MULTIPLIER_DOTS } from '@/domain/constants';
 import { validateGoals } from '@/domain/goals';
 import { useTheme } from '@/theme/ThemeContext';
 import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 export type ProfileFormValue = Omit<CreateProfileInput, 'householdId'>;
 
-const ACTIVITY_LEVELS = ['sedentary', 'light', 'moderate', 'active', 'very_active'] as const;
+const ACTIVITY_DOT_KEYS = ['activityLow', 'activityMedium', 'activityHigh'] as const;
+
+function activityDotIndex(dots: readonly [number, number, number], multiplier: number | null): number {
+  if (multiplier === null) return 1;
+  const index = dots.findIndex((value) => Math.abs(value - multiplier) < 0.001);
+  return index === -1 ? 1 : index;
+}
 
 type Props = {
   submitLabel: string;
@@ -59,6 +68,9 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
   const [weight, setWeight] = useState(initialValue ? String(initialValue.weightKg) : '');
   const [bodyFat, setBodyFat] = useState(initialValue?.bodyFatPct !== undefined ? String(initialValue.bodyFatPct) : '');
   const [activityLevel, setActivityLevel] = useState<string | null>(initialValue?.activityLevel ?? null);
+  const [activityMultiplier, setActivityMultiplier] = useState<number | null>(
+    initialValue?.activityMultiplier ?? null,
+  );
   const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>(initialValue?.goal ?? 'maintain');
   const [goalWeight, setGoalWeight] = useState(
     initialValue?.goalWeightKg !== undefined ? String(initialValue.goalWeightKg) : '',
@@ -126,6 +138,7 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
       weightKg,
       bodyFatPct: bodyFatPct ?? undefined,
       activityLevel: activityLevel as ProfileFormValue['activityLevel'],
+      activityMultiplier,
       goal: isChild ? 'maintain' : goal,
       goalWeightKg: isChild ? undefined : (goalWeightKg ?? undefined),
       goalBodyFatPct: isChild ? undefined : (goalBodyFatPct ?? undefined),
@@ -232,27 +245,42 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
           { value: 'very_active', label: t('activity.very_active') },
         ]}
         value={activityLevel}
-        onChange={setActivityLevel}
+        onChange={(value) => {
+          setActivityLevel(value);
+          setActivityMultiplier(null);
+        }}
       />
       {submitted && activityLevel === null ? (
         <Text style={styles.error}>{t('form.required')}</Text>
       ) : null}
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => setActivityInfoVisible((prev) => !prev)}
-        style={styles.infoToggle}>
-        <Text style={styles.infoToggleLabel}>
-          {activityInfoVisible ? t('form.hideActivityInfo') : t('form.showActivityInfo')}
-        </Text>
-      </Pressable>
-      {activityInfoVisible ? (
-        <View style={styles.infoCard}>
-          {ACTIVITY_LEVELS.map((level) => (
-            <Text key={level} style={styles.infoLine}>
-              <Text style={styles.infoLineLabel}>{t(`activity.${level}`)}: </Text>
-              {t(`activityInfo.${level}`)}
-            </Text>
-          ))}
+      {activityLevel ? (
+        <View style={styles.activityDotsRow}>
+          {ACTIVITY_MULTIPLIER_DOTS[activityLevel as keyof typeof ACTIVITY_MULTIPLIER_DOTS].map(
+            (value, index) => {
+              const selected = activityDotIndex(
+                ACTIVITY_MULTIPLIER_DOTS[activityLevel as keyof typeof ACTIVITY_MULTIPLIER_DOTS],
+                activityMultiplier,
+              ) === index;
+              return (
+                <Pressable
+                  key={index}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => setActivityMultiplier(value)}
+                  style={styles.activityDotWrap}>
+                  <View style={[styles.activityDot, selected && styles.activityDotSelected]} />
+                  <Text style={styles.activityDotLabel}>{t(`form.${ACTIVITY_DOT_KEYS[index]}`)}</Text>
+                </Pressable>
+              );
+            },
+          )}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setActivityInfoVisible(true)}
+            hitSlop={8}
+            style={styles.activityInfoButton}>
+            <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+          </Pressable>
         </View>
       ) : null}
 
@@ -353,6 +381,7 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
         sex={sex ?? 'male'}
         onClose={() => setBodyFatChartVisible(false)}
       />
+      <ActivityInfoModal visible={activityInfoVisible} onClose={() => setActivityInfoVisible(false)} />
     </View>
   );
 }
@@ -373,32 +402,35 @@ function createStyles(colors: ColorTokens) {
     bodyFatActionButton: {
       flex: 1,
     },
-    infoToggle: {
-      alignSelf: 'flex-start',
-      marginBottom: spacing.sm,
-    },
-    infoToggleLabel: {
-      color: colors.primary,
-      fontSize: typography.small,
-      fontWeight: '600',
-    },
-    infoCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing.sm + 2,
+    activityDotsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginTop: -spacing.xs,
       marginBottom: spacing.md,
     },
-    infoLine: {
+    activityDotWrap: {
+      alignItems: 'center',
+      gap: 4,
+    },
+    activityDot: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    activityDotSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    activityDotLabel: {
       color: colors.textSecondary,
       fontSize: typography.small,
-      lineHeight: 18,
-      marginBottom: spacing.xs,
     },
-    infoLineLabel: {
-      color: colors.text,
-      fontWeight: '700',
+    activityInfoButton: {
+      marginLeft: 'auto',
     },
     workoutDaysHint: {
       color: colors.textSecondary,
