@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Animated,
   FlatList,
+  LayoutAnimation,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -78,7 +79,14 @@ export default function WalkthroughScreen() {
   const onScroll = Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
     useNativeDriver: false,
     listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      setPageIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+      const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+      if (newIndex !== pageIndex && (newIndex === PAGES.length - 1 || pageIndex === PAGES.length - 1)) {
+        // Smoothly grows/shrinks the footer and cross-fades its buttons when
+        // entering/leaving the last page, instead of the two CTA buttons
+        // just popping into existence.
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      }
+      setPageIndex(newIndex);
     },
   });
 
