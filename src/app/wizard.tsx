@@ -9,6 +9,7 @@ import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { SwitchRow } from '@/components/ui/SwitchRow';
+import { ALLERGEN_ICONS, AVOID_FOOD_ICONS, CUISINE_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, AVOID_FOOD_GROUPS, CUISINE_KEYS, DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { createHouseholdWithDefaults, saveHouseholdPreferences, updateHouseholdSettings } from '@/db/repositories/households';
@@ -218,7 +219,7 @@ export default function WizardScreen() {
                 <ChipSelect
                   label={t('wizard.householdAllergens')}
                   multi
-                  options={ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`) }))}
+                  options={ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`), icon: ALLERGEN_ICONS[key] }))}
                   value={allergens}
                   onChange={setAllergens}
                 />
@@ -228,7 +229,7 @@ export default function WizardScreen() {
                 <ChipSelect
                   label={t('wizard.householdDiets')}
                   multi
-                  options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`) }))}
+                  options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`), icon: DIET_ICONS[key] }))}
                   value={diets}
                   onChange={setDiets}
                 />
@@ -238,7 +239,7 @@ export default function WizardScreen() {
                 <ChipSelect
                   label={t('wizard.favoriteCuisines')}
                   multi
-                  options={CUISINE_KEYS.map((key) => ({ value: key, label: t(`cuisines.${key}`) }))}
+                  options={CUISINE_KEYS.map((key) => ({ value: key, label: t(`cuisines.${key}`), icon: CUISINE_ICONS[key] }))}
                   value={favoriteCuisines}
                   onChange={setFavoriteCuisines}
                 />
@@ -251,6 +252,7 @@ export default function WizardScreen() {
                   options={AVOID_FOOD_GROUPS.map((group) => ({
                     value: group.key,
                     label: t(`avoidFoods.${group.key}`),
+                    icon: AVOID_FOOD_ICONS[group.key],
                   }))}
                   value={avoidFoodGroupKeys}
                   onChange={setAvoidFoodGroupKeys}

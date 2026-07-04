@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LibraryCard } from '@/components/LibraryCard';
 import { LibraryFilterModal, type FilterSection } from '@/components/LibraryFilterModal';
+import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { softDeleteFood, softDeleteRecipe } from '@/db/repositories/library';
@@ -88,11 +89,11 @@ export default function LibraryScreen() {
   }, [recipeRows, t]);
 
   const dietOptions = useMemo(
-    () => DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`) })),
+    () => DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`), icon: DIET_ICONS[key] })),
     [t],
   );
   const allergenOptions = useMemo(
-    () => ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`) })),
+    () => ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`), icon: ALLERGEN_ICONS[key] })),
     [t],
   );
   const budgetOptions = useMemo(

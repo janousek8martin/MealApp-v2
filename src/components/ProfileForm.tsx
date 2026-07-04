@@ -11,6 +11,7 @@ import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { TextField } from '@/components/ui/TextField';
+import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
 import type { CreateProfileInput } from '@/db/repositories/profiles';
 import { ACTIVITY_MULTIPLIER_DOTS } from '@/domain/constants';
@@ -467,14 +468,14 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
       <ChipSelect
         label={t('form.allergens')}
         multi
-        options={ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`) }))}
+        options={ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`), icon: ALLERGEN_ICONS[key] }))}
         value={allergens}
         onChange={setAllergens}
       />
       <ChipSelect
         label={t('form.diets')}
         multi
-        options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`) }))}
+        options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`), icon: DIET_ICONS[key] }))}
         value={diets}
         onChange={setDiets}
       />

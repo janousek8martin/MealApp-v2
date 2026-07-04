@@ -8,6 +8,7 @@ import { PhotoPicker } from '@/components/PhotoPicker';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { TextField } from '@/components/ui/TextField';
+import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, MANUAL_DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { setPhoto, upsertFood } from '@/db/repositories/library';
@@ -204,14 +205,14 @@ export default function FoodEditScreen() {
         <ChipSelect
           label={t('form.allergens')}
           multi
-          options={ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`) }))}
+          options={ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`), icon: ALLERGEN_ICONS[key] }))}
           value={allergens}
           onChange={setAllergens}
         />
         <ChipSelect
           label={t('foodEdit.dietFlags')}
           multi
-          options={MANUAL_DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`) }))}
+          options={MANUAL_DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`), icon: DIET_ICONS[key] }))}
           value={dietFlags}
           onChange={setDietFlags}
         />

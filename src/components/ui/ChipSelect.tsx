@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, type ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
-export type ChipOption = { value: string; label: string };
+export type ChipOption = { value: string; label: string; icon?: ImageSourcePropType };
 
 type SingleProps = {
   label: string;
@@ -56,6 +56,7 @@ export function ChipSelect(props: Props) {
               accessibilityState={{ selected }}
               onPress={() => toggle(option.value)}
               style={[styles.chip, selected && styles.chipSelected]}>
+              {option.icon ? <Image source={option.icon} style={styles.chipIcon} /> : null}
               <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>
                 {option.label}
               </Text>
@@ -84,12 +85,20 @@ function createStyles(colors: ColorTokens) {
       gap: spacing.sm,
     },
     chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
       borderRadius: radius.chip,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface,
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
+    },
+    chipIcon: {
+      width: 18,
+      height: 18,
+      marginRight: spacing.xs,
+      resizeMode: 'contain',
     },
     chipSelected: {
       backgroundColor: colors.primary,
