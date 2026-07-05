@@ -18,6 +18,7 @@ import { FoodPickerModal } from '@/components/FoodPickerModal';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { MealSlotCard } from '@/components/MealSlotCard';
 import { ProfileSwitcher } from '@/components/ProfileSwitcher';
+import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
 import {
@@ -39,6 +40,7 @@ import {
   useRecipeNutritionMap,
   type SlotRow,
 } from '@/hooks/plan';
+import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { confirmDeleteMeal } from '@/utils/mealActions';
 import { useTheme } from '@/theme/ThemeContext';
@@ -76,7 +78,8 @@ export default function PlanScreen() {
   const today = todayIsoDate();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
-  const { onScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
+  const { onScroll: onRestoreScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
+  const scrollHint = useScrollDownHint(scrollRef);
 
   const [viewedMonday, setViewedMonday] = useState(() => startOfWeek(today));
   const [selectedDate, setSelectedDate] = useState(today);
@@ -223,7 +226,12 @@ export default function PlanScreen() {
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={styles.content}
-          onScroll={onScroll}
+          onScroll={(e) => {
+            onRestoreScroll(e);
+            scrollHint.onScroll(e);
+          }}
+          onContentSizeChange={scrollHint.onContentSizeChange}
+          onLayout={scrollHint.onLayout}
           scrollEventThrottle={scrollEventThrottle}>
           {isPast ? <Text style={styles.pastNotice}>{t('planScreen.pastNotice')}</Text> : null}
 
@@ -257,6 +265,13 @@ export default function PlanScreen() {
             : null}
         </ScrollView>
       </Animated.View>
+
+      <ScrollDownHintButton
+        visible={scrollHint.visible}
+        onPressIn={scrollHint.onPressIn}
+        onPressOut={scrollHint.onPressOut}
+        bottomOffset={90}
+      />
 
       <View style={styles.footer}>
         {generating ? <ActivityIndicator style={styles.spinner} color={colors.primary} /> : null}

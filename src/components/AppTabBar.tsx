@@ -11,7 +11,7 @@ import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 type IconName = keyof typeof Ionicons.glyphMap;
 
 const NAV_META: Record<NavKey, { icon: IconName; labelKey: string }> = {
-  index: { icon: 'sunny', labelKey: 'tabs.home' },
+  index: { icon: 'home', labelKey: 'tabs.home' },
   plan: { icon: 'calendar', labelKey: 'tabs.plan' },
   library: { icon: 'restaurant', labelKey: 'tabs.library' },
   shopping: { icon: 'cart', labelKey: 'tabs.shopping' },

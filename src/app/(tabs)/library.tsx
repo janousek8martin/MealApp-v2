@@ -7,6 +7,7 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LibraryCard } from '@/components/LibraryCard';
+import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { LibraryFilterModal, type FilterSection } from '@/components/LibraryFilterModal';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
@@ -24,6 +25,7 @@ import {
   useRecipeTagsMap,
 } from '@/hooks/library';
 import { useRecipeNutritionMap } from '@/hooks/plan';
+import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -49,7 +51,8 @@ export default function LibraryScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const ACCENTS = useMemo(() => [colors.mint, colors.lime, colors.tealTint], [colors]);
   const listRef = useRef<FlatList>(null);
-  const { onScroll, scrollEventThrottle } = useTabScrollRestore(listRef);
+  const { onScroll: onRestoreScroll, scrollEventThrottle } = useTabScrollRestore(listRef);
+  const scrollHint = useScrollDownHint(listRef);
   const [segment, setSegment] = useState<Segment>('recipes');
   const [search, setSearch] = useState('');
   const [recipeFilter, setRecipeFilter] = useState<RecipeFilter>('all');
@@ -369,7 +372,12 @@ export default function LibraryScreen() {
       {segment === 'recipes' ? (
         <FlatList
           ref={listRef}
-          onScroll={onScroll}
+          onScroll={(e) => {
+            onRestoreScroll(e);
+            scrollHint.onScroll(e);
+          }}
+          onContentSizeChange={scrollHint.onContentSizeChange}
+          onLayout={scrollHint.onLayout}
           scrollEventThrottle={scrollEventThrottle}
           data={filteredRecipes}
           keyExtractor={(item) => item.id}
@@ -406,7 +414,12 @@ export default function LibraryScreen() {
       ) : (
         <FlatList
           ref={listRef}
-          onScroll={onScroll}
+          onScroll={(e) => {
+            onRestoreScroll(e);
+            scrollHint.onScroll(e);
+          }}
+          onContentSizeChange={scrollHint.onContentSizeChange}
+          onLayout={scrollHint.onLayout}
           scrollEventThrottle={scrollEventThrottle}
           data={filteredFoods}
           keyExtractor={(item) => item.id}
@@ -444,6 +457,12 @@ export default function LibraryScreen() {
         onClose={() => setFilterModalVisible(false)}
         onReset={resetFilters}
         sections={filterSections}
+      />
+
+      <ScrollDownHintButton
+        visible={scrollHint.visible}
+        onPressIn={scrollHint.onPressIn}
+        onPressOut={scrollHint.onPressOut}
       />
     </SafeAreaView>
   );

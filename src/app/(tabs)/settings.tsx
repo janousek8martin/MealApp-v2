@@ -7,6 +7,7 @@ import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KitchenUnitsModal } from '@/components/KitchenUnitsModal';
+import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { ManualAdjustmentCard, MacroOverridesCard } from '@/components/ProfileNutritionCards';
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { ProfilePortionsCard } from '@/components/ProfilePortionsCard';
@@ -31,6 +32,7 @@ import {
 } from '@/hooks/data';
 import type { ProfileRow } from '@/hooks/dataMapping';
 import { useAllMealSlots, type SlotRow } from '@/hooks/plan';
+import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { syncHouseholdNotifications } from '@/services/notifications';
 import { MAX_MAIN_NAV_ITEMS, useAppStore, type NavKey } from '@/stores/appStore';
@@ -418,7 +420,8 @@ export default function SettingsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const scrollRef = useRef<ScrollView>(null);
-  const { onScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
+  const { onScroll: onRestoreScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
+  const scrollHint = useScrollDownHint(scrollRef);
   const { household } = useHousehold();
   const settings = useHouseholdSettings(household?.id);
   const members = useProfiles(household?.id);
@@ -469,7 +472,12 @@ export default function SettingsScreen() {
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.content}
-        onScroll={onScroll}
+        onScroll={(e) => {
+          onRestoreScroll(e);
+          scrollHint.onScroll(e);
+        }}
+        onContentSizeChange={scrollHint.onContentSizeChange}
+        onLayout={scrollHint.onLayout}
         scrollEventThrottle={scrollEventThrottle}>
         <Text style={styles.heading}>{t('settings.title')}</Text>
 
@@ -629,6 +637,12 @@ export default function SettingsScreen() {
           ) : null}
         </AccordionCard>
       </ScrollView>
+
+      <ScrollDownHintButton
+        visible={scrollHint.visible}
+        onPressIn={scrollHint.onPressIn}
+        onPressOut={scrollHint.onPressOut}
+      />
 
       <KitchenUnitsModal visible={kitchenUnitsVisible} onClose={() => setKitchenUnitsVisible(false)} />
     </SafeAreaView>

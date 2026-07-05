@@ -6,6 +6,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
+import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
@@ -14,6 +15,7 @@ import { todayIsoDate } from '@/db/time';
 import { useHousehold } from '@/hooks/data';
 import { useFood } from '@/hooks/library';
 import { usePantryItems, type PantryItemRow } from '@/hooks/shopping';
+import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -51,7 +53,8 @@ export default function PantryScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const listRef = useRef<FlatList>(null);
-  const { onScroll, scrollEventThrottle } = useTabScrollRestore(listRef);
+  const { onScroll: onRestoreScroll, scrollEventThrottle } = useTabScrollRestore(listRef);
+  const scrollHint = useScrollDownHint(listRef);
   const { household } = useHousehold();
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pendingFood, setPendingFood] = useState<FoodRow | null>(null);
@@ -85,7 +88,12 @@ export default function PantryScreen() {
 
       <FlatList
         ref={listRef}
-        onScroll={onScroll}
+        onScroll={(e) => {
+          onRestoreScroll(e);
+          scrollHint.onScroll(e);
+        }}
+        onContentSizeChange={scrollHint.onContentSizeChange}
+        onLayout={scrollHint.onLayout}
         scrollEventThrottle={scrollEventThrottle}
         contentContainerStyle={styles.list}
         data={pantryItems}
@@ -133,6 +141,12 @@ export default function PantryScreen() {
           </View>
         </View>
       ) : null}
+
+      <ScrollDownHintButton
+        visible={scrollHint.visible}
+        onPressIn={scrollHint.onPressIn}
+        onPressOut={scrollHint.onPressOut}
+      />
     </SafeAreaView>
   );
 }

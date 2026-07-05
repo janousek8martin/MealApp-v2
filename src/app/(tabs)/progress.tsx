@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
 import { ProfileSwitcher } from '@/components/ProfileSwitcher';
+import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { TdciCard } from '@/components/TdciCard';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
@@ -21,6 +22,7 @@ import {
   useLatestBodyMetric,
   useProfileTargets,
 } from '@/hooks/data';
+import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -35,7 +37,8 @@ export default function ProgressScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const scrollRef = useRef<ScrollView>(null);
-  const { onScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
+  const { onScroll: onRestoreScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
+  const scrollHint = useScrollDownHint(scrollRef);
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
   const targets = useProfileTargets(activeProfile);
@@ -82,7 +85,12 @@ export default function ProgressScreen() {
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.content}
-        onScroll={onScroll}
+        onScroll={(e) => {
+          onRestoreScroll(e);
+          scrollHint.onScroll(e);
+        }}
+        onContentSizeChange={scrollHint.onContentSizeChange}
+        onLayout={scrollHint.onLayout}
         scrollEventThrottle={scrollEventThrottle}>
         <Text style={styles.heading}>{t('tabs.progress')}</Text>
 
@@ -157,6 +165,12 @@ export default function ProgressScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <ScrollDownHintButton
+        visible={scrollHint.visible}
+        onPressIn={scrollHint.onPressIn}
+        onPressOut={scrollHint.onPressOut}
+      />
 
       {activeProfile ? (
         <NavyCalculatorModal

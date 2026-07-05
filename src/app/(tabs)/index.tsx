@@ -7,12 +7,12 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal } from '@/components/FoodPickerModal';
+import { HomeHeroCard } from '@/components/HomeHeroCard';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { MealSlotCard } from '@/components/MealSlotCard';
 import { NextMealCard } from '@/components/NextMealCard';
-import { ProfileDropdownChip } from '@/components/ProfileDropdownChip';
+import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
-import { TdciCard } from '@/components/TdciCard';
 import { db } from '@/db/client';
 import {
   addMealExtra,
@@ -41,6 +41,7 @@ import {
   type SlotRow,
 } from '@/hooks/plan';
 import { usePantryItems, useShoppingItems } from '@/hooks/shopping';
+import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { confirmDeleteMeal } from '@/utils/mealActions';
 import { useTheme } from '@/theme/ThemeContext';
@@ -61,7 +62,8 @@ export default function TodayScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const scrollRef = useRef<ScrollView>(null);
-  const { onScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
+  const { onScroll: onRestoreScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
+  const scrollHint = useScrollDownHint(scrollRef);
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
   const targets = useProfileTargets(activeProfile);
@@ -104,7 +106,6 @@ export default function TodayScreen() {
   const profilePortionsToday = activeProfile
     ? portionsForDate.filter((row) => row.portion.profileId === activeProfile.id)
     : [];
-  const planned = activeProfile ? sumNutrition(profilePortionsToday) : null;
   const eaten = activeProfile
     ? sumNutrition(profilePortionsToday.filter((row) => row.portion.status === 'eaten'))
     : null;
@@ -133,65 +134,56 @@ export default function TodayScreen() {
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.content}
-        onScroll={onScroll}
+        onScroll={(e) => {
+          onRestoreScroll(e);
+          scrollHint.onScroll(e);
+        }}
+        onContentSizeChange={scrollHint.onContentSizeChange}
+        onLayout={scrollHint.onLayout}
         scrollEventThrottle={scrollEventThrottle}>
         <Text style={styles.heading}>{t('today.title')}</Text>
 
-        {household ? (
-          <View style={styles.profileRow}>
-            <ProfileDropdownChip householdId={household.id} />
-            {activeProfile ? (
-              <Pressable
-                accessibilityRole="button"
-                style={styles.profileLink}
-                onPress={() => router.push({ pathname: '/profile/[id]', params: { id: activeProfile.id } })}>
-                <Ionicons name="settings-outline" size={14} color={colors.primary} />
-                <Text style={styles.profileLinkLabel}>{t('today.editProfile')}</Text>
-              </Pressable>
-            ) : null}
-          </View>
+        {household && activeProfile && targets ? (
+          <HomeHeroCard
+            householdId={household.id}
+            targets={targets}
+            eatenKcal={eaten?.kcal ?? 0}
+            targetKcal={dailyTargets?.kcal ?? 0}
+            onEditProfile={() => router.push({ pathname: '/profile/[id]', params: { id: activeProfile.id } })}
+          />
         ) : null}
-
-        {activeProfile && targets ? <TdciCard name={activeProfile.name} targets={targets} /> : null}
 
         <View style={styles.quickRow}>
           <Pressable
             accessibilityRole="button"
             style={styles.quickCard}
             onPress={() => router.push('/shopping')}>
-            <Ionicons name="cart-outline" size={20} color={colors.primary} />
-            <Text style={styles.quickValue}>{shoppingRemaining}</Text>
+            <View style={styles.quickTopRow}>
+              <Ionicons name="cart-outline" size={16} color={colors.primary} />
+              <Text style={styles.quickValue}>{shoppingRemaining}</Text>
+            </View>
             <Text style={styles.quickLabel}>{t('today.shoppingRemaining')}</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             style={styles.quickCard}
             onPress={() => router.push('/pantry')}>
-            <Ionicons name="file-tray-stacked-outline" size={20} color={colors.primary} />
-            <Text style={styles.quickValue}>{pantryExpiringSoon}</Text>
+            <View style={styles.quickTopRow}>
+              <Ionicons name="file-tray-stacked-outline" size={16} color={colors.primary} />
+              <Text style={styles.quickValue}>{pantryExpiringSoon}</Text>
+            </View>
             <Text style={styles.quickLabel}>{t('today.pantryExpiring')}</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             style={styles.quickCard}
             onPress={() => router.push('/progress')}>
-            <Ionicons name="trending-up-outline" size={20} color={colors.primary} />
-            <Text style={styles.quickValueSmall}>{t('today.logWeight')}</Text>
+            <View style={styles.quickTopRow}>
+              <Ionicons name="trending-up-outline" size={16} color={colors.primary} />
+            </View>
+            <Text style={styles.quickLabel}>{t('today.logWeight')}</Text>
           </Pressable>
         </View>
-
-        {activeProfile && dailyTargets && planned && eaten ? (
-          <View style={styles.fitCard}>
-            <Text style={styles.fitTitle}>{t('today.fitTitle')}</Text>
-            <Text style={styles.fitLine}>
-              {t('today.fitSummaryFull', {
-                eaten: Math.round(eaten.kcal),
-                planned: Math.round(planned.kcal),
-                target: Math.round(dailyTargets.kcal),
-              })}
-            </Text>
-          </View>
-        ) : null}
 
         {nextMealEntry?.meal ? (
           <NextMealCard slotLabel={t(`slots.${nextMealEntry.slot.slotKey}`)} meal={nextMealEntry.meal} />
@@ -247,6 +239,12 @@ export default function TodayScreen() {
         ) : null}
       </ScrollView>
 
+      <ScrollDownHintButton
+        visible={scrollHint.visible}
+        onPressIn={scrollHint.onPressIn}
+        onPressOut={scrollHint.onPressOut}
+      />
+
       {pickerSlot && household && activeProfile ? (
         <MealPickerModal
           visible
@@ -290,40 +288,6 @@ function createStyles(colors: ColorTokens) {
       fontWeight: '800',
       marginBottom: spacing.sm,
     },
-    fitCard: {
-      backgroundColor: colors.surface,
-      borderRadius: radius.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing.md,
-      marginTop: spacing.md,
-    },
-    fitTitle: {
-      color: colors.text,
-      fontSize: typography.small,
-      fontWeight: '700',
-      marginBottom: 2,
-    },
-    fitLine: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
-    },
-    profileRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: spacing.sm,
-    },
-    profileLink: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-    },
-    profileLinkLabel: {
-      color: colors.primary,
-      fontSize: typography.small,
-      fontWeight: '600',
-    },
     mealList: {
       marginTop: spacing.md,
     },
@@ -338,20 +302,20 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.card,
       borderWidth: 1,
       borderColor: colors.border,
-      padding: spacing.md,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm,
       alignItems: 'flex-start',
       gap: 2,
+    },
+    quickTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
     },
     quickValue: {
       color: colors.text,
       fontSize: typography.subtitle,
       fontWeight: '800',
-    },
-    quickValueSmall: {
-      color: colors.text,
-      fontSize: typography.body,
-      fontWeight: '700',
-      marginTop: spacing.xs,
     },
     quickLabel: {
       color: colors.textSecondary,
