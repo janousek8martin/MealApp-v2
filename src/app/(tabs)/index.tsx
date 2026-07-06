@@ -252,18 +252,21 @@ function createStyles(colors: ColorTokens) {
       marginTop: spacing.sm,
     },
     quickCard: {
+      minHeight: 72,
       backgroundColor: colors.surface,
       borderRadius: radius.card,
       borderWidth: 1,
       borderColor: colors.border,
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.sm,
-      alignItems: 'flex-start',
+      alignItems: 'center',
+      justifyContent: 'center',
       gap: 2,
     },
     quickTopRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: spacing.xs,
     },
     quickValue: {
@@ -274,6 +277,7 @@ function createStyles(colors: ColorTokens) {
     quickLabel: {
       color: colors.textSecondary,
       fontSize: typography.small,
+      textAlign: 'center',
     },
     emptyState: {
       backgroundColor: colors.surface,
