@@ -121,6 +121,15 @@ export function findMealForProfileInSlot(
   return findMealForTrack(meals, slot.slotKey, profile.sharesMainMeals ? null : profile.id);
 }
 
+/** The track a newly assigned/regenerated meal should land on for this slot (null = the shared row). */
+export function targetProfileIdForSlot(
+  slot: SlotRow,
+  profile: { id: string; sharesMainMeals: boolean },
+): string | null {
+  if (slot.kind === 'snack') return profile.id;
+  return profile.sharesMainMeals ? null : profile.id;
+}
+
 /** meal+portion pairs for every planned meal on a date – the basis for the daily fit indicator. */
 export function usePortionsForDate(householdId: string | undefined, date: string) {
   const { data } = useLiveQuery(

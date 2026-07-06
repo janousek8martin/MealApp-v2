@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
@@ -17,40 +17,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal } from '@/components/FoodPickerModal';
 import { MealPickerModal } from '@/components/MealPickerModal';
-import { MealSlotCard } from '@/components/MealSlotCard';
-import { ProfileSwitcher } from '@/components/ProfileSwitcher';
+import { PlanDayList } from '@/components/PlanDayList';
+import { ProfileDropdownChip } from '@/components/ProfileDropdownChip';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
-import {
-  addMealExtra,
-  assignManualMeal,
-  generateWeek,
-  regenerateDay,
-  regenerateSlot,
-  removeMealExtra,
-  setPortionStatus,
-} from '@/db/repositories/plan';
+import { addMealExtra, assignManualMeal, generateWeek, regenerateDay } from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
+import { jumpDirection, paneDates, weekJumpTarget, type PagerTransition } from '@/domain/planPager';
 import { addDays, startOfWeek, weekDates } from '@/domain/week';
 import { useActiveProfile, useHousehold } from '@/hooks/data';
 import {
-  findMealForProfileInSlot,
+  targetProfileIdForSlot,
   useMealSlots,
-  useMealsForDate,
   useRecipeNutritionMap,
   type SlotRow,
 } from '@/hooks/plan';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
-import { confirmDeleteMeal } from '@/utils/mealActions';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
-
-function targetProfileIdForSlot(slot: SlotRow, profile: { id: string; sharesMainMeals: boolean }): string | null {
-  if (slot.kind === 'snack') return profile.id;
-  return profile.sharesMainMeals ? null : profile.id;
-}
 
 function weekdayShort(dateIso: string, language: string): string {
   const [y, m, d] = dateIso.split('-').map(Number);
@@ -69,6 +55,9 @@ function monthTitle(dateIso: string, language: string): string {
 }
 
 const SWIPE_THRESHOLD = 60;
+const DAY_STRIP_GAP = spacing.xs;
+/** Height of the animated "jump to today" row: top margin + button. */
+const TODAY_ROW_HEIGHT = spacing.sm + 34;
 
 export default function PlanScreen() {
   const { t, i18n } = useTranslation();
@@ -84,10 +73,14 @@ export default function PlanScreen() {
 
   const [viewedMonday, setViewedMonday] = useState(() => startOfWeek(today));
   const [selectedDate, setSelectedDate] = useState(today);
+  const [transition, setTransition] = useState<PagerTransition | null>(null);
   const [pickerSlot, setPickerSlot] = useState<SlotRow | null>(null);
   const [extraMealId, setExtraMealId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<'week' | 'day' | null>(null);
   const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>({});
+
+  const slide = useRef(new Animated.Value(0)).current;
+  const isAnimating = useRef(false);
 
   // Jumping in from Home's "Upravit" forces today's date and opens that
   // slot's card, even if this tab was left on a different day/collapsed
@@ -95,17 +88,18 @@ export default function PlanScreen() {
   const params = useLocalSearchParams<{ date?: string; expandSlot?: string }>();
   useEffect(() => {
     if (params.date) {
+      setTransition(null);
+      slide.setValue(0);
+      isAnimating.current = false;
       setSelectedDate(params.date);
       setViewedMonday(startOfWeek(params.date));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.date]);
-
-  const slideAnim = useRef(new Animated.Value(0)).current;
 
   const dates = useMemo(() => weekDates(viewedMonday), [viewedMonday]);
 
   const slots = useMealSlots(household?.id);
-  const meals = useMealsForDate(household?.id, selectedDate);
   const recipeNutritionMap = useRecipeNutritionMap();
 
   useEffect(() => {
@@ -115,45 +109,66 @@ export default function PlanScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.expandSlot, slots]);
 
-  const isPast = selectedDate < today;
+  // The date the UI should already highlight: mid-transition that's the
+  // incoming day, so the pill/today-button/chip colors move in parallel with
+  // the sliding content instead of waiting for the commit.
+  const visualDate = transition?.date ?? selectedDate;
 
-  const goToWeek = (mondayIso: string) => {
-    setViewedMonday(mondayIso);
-    setSelectedDate(mondayIso);
+  // Reset the pager offset only *after* the commit render is on screen –
+  // resetting inside the animation callback would show the old middle pane
+  // for one frame before React re-keys the panes.
+  useLayoutEffect(() => {
+    slide.setValue(0);
+    isAnimating.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
+
+  const commit = (target: string) => {
+    setSelectedDate(target);
+    const targetMonday = startOfWeek(target);
+    setViewedMonday((prev) => (prev === targetMonday ? prev : targetMonday));
+    setTransition(null);
   };
 
-  const changeDay = (delta: 1 | -1) => {
-    Animated.timing(slideAnim, {
-      toValue: delta === 1 ? -width : width,
-      duration: 180,
-      useNativeDriver: false,
-    }).start(() => {
-      slideAnim.setValue(0);
-      const nextDate = addDays(selectedDate, delta);
-      setSelectedDate(nextDate);
-      const nextMonday = startOfWeek(nextDate);
-      if (nextMonday !== viewedMonday) setViewedMonday(nextMonday);
+  const animateTo = (target: string) => {
+    if (isAnimating.current) return;
+    const dir = jumpDirection(selectedDate, target);
+    if (dir === 0) return;
+    isAnimating.current = true;
+    const targetMonday = startOfWeek(target);
+    if (targetMonday !== viewedMonday) setViewedMonday(targetMonday);
+    setTransition({ date: target, dir });
+    // One frame's grace so a freshly mounted incoming pane can run its
+    // SQLite query before it starts sliding into view.
+    requestAnimationFrame(() => {
+      Animated.timing(slide, {
+        toValue: dir === 1 ? -width : width,
+        duration: 220,
+        useNativeDriver: false,
+      }).start(() => commit(target));
     });
   };
 
   // Recreated whenever selectedDate/viewedMonday/width change so its
   // onPanResponderRelease closure never reads stale values – a bare useRef
-  // here would freeze `changeDay` (and the state it captures) at mount time.
+  // here would freeze `animateTo` (and the state it captures) at mount time.
   const panResponder = useMemo(
     () =>
       PanResponder.create({
         // Capture (not bubble) so this claims clearly-horizontal gestures
         // before the child ScrollView's own touch handling can swallow them.
         onMoveShouldSetPanResponderCapture: (_, gesture) =>
-          Math.abs(gesture.dx) > 15 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5,
-        onPanResponderMove: Animated.event([null, { dx: slideAnim }], { useNativeDriver: false }),
+          !isAnimating.current &&
+          Math.abs(gesture.dx) > 15 &&
+          Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5,
+        onPanResponderMove: Animated.event([null, { dx: slide }], { useNativeDriver: false }),
         onPanResponderRelease: (_, gesture) => {
           if (gesture.dx <= -SWIPE_THRESHOLD) {
-            changeDay(1);
+            animateTo(addDays(selectedDate, 1));
           } else if (gesture.dx >= SWIPE_THRESHOLD) {
-            changeDay(-1);
+            animateTo(addDays(selectedDate, -1));
           } else {
-            Animated.spring(slideAnim, { toValue: 0, useNativeDriver: false }).start();
+            Animated.spring(slide, { toValue: 0, useNativeDriver: false }).start();
           }
         },
       }),
@@ -161,10 +176,35 @@ export default function PlanScreen() {
     [selectedDate, viewedMonday, width],
   );
 
-  const jumpToToday = () => {
-    setSelectedDate(today);
-    setViewedMonday(startOfWeek(today));
-  };
+  // --- Animated selected-day pill -----------------------------------------
+  const [stripWidth, setStripWidth] = useState(0);
+  const chipWidth = stripWidth > 0 ? (stripWidth - 6 * DAY_STRIP_GAP) / 7 : 0;
+  const visualIndex = dates.indexOf(visualDate);
+  const pillX = useRef(new Animated.Value(0)).current;
+  const pillPlaced = useRef(false);
+  useEffect(() => {
+    if (visualIndex < 0 || chipWidth <= 0) return;
+    const target = visualIndex * (chipWidth + DAY_STRIP_GAP);
+    if (!pillPlaced.current) {
+      pillX.setValue(target);
+      pillPlaced.current = true;
+    } else {
+      Animated.spring(pillX, { toValue: target, friction: 9, tension: 80, useNativeDriver: true }).start();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visualIndex, chipWidth]);
+
+  // --- Animated "jump to today" row ----------------------------------------
+  const showToday = visualDate !== today;
+  const todayAnim = useRef(new Animated.Value(showToday ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.timing(todayAnim, {
+      toValue: showToday ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showToday]);
 
   const generateWeekAction = async () => {
     if (!household) return;
@@ -186,109 +226,127 @@ export default function PlanScreen() {
     }
   };
 
+  const panes = paneDates(selectedDate, transition ?? undefined);
+  const isPast = selectedDate < today;
+  // Rendering slid one pane to the left keeps the middle (selected) pane in
+  // view; the clamp stops a long manual drag from pulling past the side panes.
+  const clampedSlide = slide.interpolate({
+    inputRange: [-width, width],
+    outputRange: [-width, width],
+    extrapolate: 'clamp',
+  });
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {household ? (
+        <View style={styles.profileRow}>
+          <ProfileDropdownChip householdId={household.id} />
+        </View>
+      ) : null}
+
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
           style={styles.weekNavButton}
-          onPress={() => goToWeek(addDays(viewedMonday, -7))}>
+          onPress={() => animateTo(weekJumpTarget(selectedDate, -1))}>
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
         <Text style={styles.monthTitle}>{monthTitle(viewedMonday, i18n.language)}</Text>
         <Pressable
           accessibilityRole="button"
           style={styles.weekNavButton}
-          onPress={() => goToWeek(addDays(viewedMonday, 7))}>
+          onPress={() => animateTo(weekJumpTarget(selectedDate, 1))}>
           <Ionicons name="chevron-forward" size={20} color={colors.text} />
         </Pressable>
       </View>
 
-      <View style={styles.weekStrip}>
-        {dates.map((date) => {
-          const day = Number(date.split('-')[2]);
-          const isToday = date === today;
-          const isSelected = date === selectedDate;
-          return (
-            <Pressable
-              key={date}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              onPress={() => setSelectedDate(date)}
-              style={[styles.dayChip, isSelected && styles.dayChipSelected, isToday && !isSelected && styles.dayChipToday]}>
-              <Text style={[styles.dayWeekday, isSelected && styles.dayTextSelected]}>
-                {weekdayShort(date, i18n.language)}
-              </Text>
-              <Text style={[styles.dayNumber, isSelected && styles.dayTextSelected]}>{day}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={styles.subHeaderRow}>
-        {household ? (
-          <View style={styles.profileSwitcherRow}>
-            <ProfileSwitcher householdId={household.id} />
-          </View>
-        ) : (
-          <View />
-        )}
-        {selectedDate !== today ? (
-          <Pressable accessibilityRole="button" style={styles.todayButton} onPress={jumpToToday}>
-            <Text style={styles.todayButtonLabel}>{t('planScreen.jumpToToday')}</Text>
-          </Pressable>
-        ) : null}
+      <View style={styles.weekStripWrap}>
+        <View
+          style={styles.weekStrip}
+          onLayout={(event) => setStripWidth(event.nativeEvent.layout.width)}>
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.dayPill,
+              {
+                width: chipWidth,
+                opacity: visualIndex >= 0 && chipWidth > 0 ? 1 : 0,
+                transform: [{ translateX: pillX }],
+              },
+            ]}
+          />
+          {dates.map((date) => {
+            const day = Number(date.split('-')[2]);
+            const isToday = date === today;
+            const isSelected = date === visualDate;
+            return (
+              <Pressable
+                key={date}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                onPress={() => animateTo(date)}
+                style={[styles.dayChip, isToday && !isSelected && styles.dayChipToday]}>
+                <Text style={[styles.dayWeekday, isSelected && styles.dayTextSelected]}>
+                  {weekdayShort(date, i18n.language)}
+                </Text>
+                <Text style={[styles.dayNumber, isSelected && styles.dayTextSelected]}>{day}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       <Animated.View
-        style={[styles.swipeArea, { transform: [{ translateX: slideAnim }] }]}
-        {...panResponder.panHandlers}>
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.content}
-          onScroll={(e) => {
-            onRestoreScroll(e);
-            scrollHint.onScroll(e);
-          }}
-          onContentSizeChange={scrollHint.onContentSizeChange}
-          onLayout={scrollHint.onLayout}
-          scrollEventThrottle={scrollEventThrottle}>
-          {isPast ? <Text style={styles.pastNotice}>{t('planScreen.pastNotice')}</Text> : null}
-
-          {activeProfile
-            ? slots.map((slot) => {
-                const meal = findMealForProfileInSlot(meals, slot, activeProfile);
-                const trackProfileId = meal?.profileId ?? targetProfileIdForSlot(slot, activeProfile);
-                return (
-                  <MealSlotCard
-                    key={slot.id}
-                    slotLabel={t(`slots.${slot.slotKey}`)}
-                    meal={meal}
-                    activeProfileId={activeProfile.id}
-                    recipeNutritionMap={recipeNutritionMap}
-                    disabled={isPast}
-                    expanded={!!expandedSlots[slot.id]}
-                    onToggleExpand={() =>
-                      setExpandedSlots((prev) => ({ ...prev, [slot.id]: !prev[slot.id] }))
-                    }
-                    onSwap={() => {
-                      if (!household) return;
-                      void regenerateSlot(db, household.id, selectedDate, slot.slotKey, trackProfileId);
-                    }}
-                    onAddMeal={() => setPickerSlot(slot)}
-                    onDeleteMeal={() => {
-                      if (!household || !meal) return;
-                      void confirmDeleteMeal(t, household.id, meal);
-                    }}
-                    onAddExtra={() => meal && setExtraMealId(meal.id)}
-                    onRemoveExtra={(extraId) => void removeMealExtra(db, extraId)}
-                    onSetStatus={(portionId, status) => void setPortionStatus(db, portionId, status)}
-                  />
-                );
-              })
-            : null}
-        </ScrollView>
+        style={[
+          styles.todayWrap,
+          {
+            height: todayAnim.interpolate({ inputRange: [0, 1], outputRange: [0, TODAY_ROW_HEIGHT] }),
+            opacity: todayAnim,
+          },
+        ]}
+        pointerEvents={showToday ? 'auto' : 'none'}>
+        <Pressable accessibilityRole="button" style={styles.todayButton} onPress={() => animateTo(today)}>
+          <Text style={styles.todayButtonLabel}>{t('planScreen.jumpToToday')}</Text>
+        </Pressable>
       </Animated.View>
+
+      <View style={styles.pagerClip}>
+        {household && activeProfile ? (
+          <Animated.View
+            style={[
+              styles.pagerRow,
+              { width: width * 3, marginLeft: -width, transform: [{ translateX: clampedSlide }] },
+            ]}
+            {...panResponder.panHandlers}>
+            {panes.map((paneDate) => (
+              <PlanDayList
+                key={paneDate}
+                date={paneDate}
+                isActive={paneDate === selectedDate}
+                width={width}
+                householdId={household.id}
+                activeProfile={activeProfile}
+                slots={slots}
+                recipeNutritionMap={recipeNutritionMap}
+                expandedSlots={expandedSlots}
+                onToggleExpand={(slotId) =>
+                  setExpandedSlots((prev) => ({ ...prev, [slotId]: !prev[slotId] }))
+                }
+                onPickMeal={setPickerSlot}
+                onAddExtra={setExtraMealId}
+                scrollRef={scrollRef}
+                onScroll={(e) => {
+                  onRestoreScroll(e);
+                  scrollHint.onScroll(e);
+                }}
+                onContentSizeChange={scrollHint.onContentSizeChange}
+                onLayout={scrollHint.onLayout}
+                scrollEventThrottle={scrollEventThrottle}
+              />
+            ))}
+          </Animated.View>
+        ) : null}
+      </View>
 
       <ScrollDownHintButton
         visible={scrollHint.visible}
@@ -351,6 +409,12 @@ function createStyles(colors: ColorTokens) {
       flex: 1,
       backgroundColor: colors.background,
     },
+    profileRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.sm,
+    },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -373,29 +437,35 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.subtitle,
       fontWeight: '700',
     },
-    weekStrip: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
+    weekStripWrap: {
       paddingHorizontal: spacing.md,
       marginTop: spacing.sm,
-      gap: spacing.xs,
     },
-    subHeaderRow: {
+    weekStrip: {
       flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      gap: DAY_STRIP_GAP,
+    },
+    dayPill: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 0,
+      borderRadius: radius.input,
+      backgroundColor: colors.primary,
+    },
+    todayWrap: {
+      overflow: 'hidden',
       paddingHorizontal: spacing.md,
     },
-    profileSwitcherRow: {
-      flex: 1,
-    },
     todayButton: {
+      marginTop: spacing.sm,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.primary,
       borderRadius: radius.chip,
-      paddingVertical: spacing.xs + 2,
-      paddingHorizontal: spacing.sm + 2,
     },
     todayButtonLabel: {
       color: colors.primary,
@@ -409,11 +479,7 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.input,
       borderWidth: 1,
       borderColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-    dayChipSelected: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
+      backgroundColor: 'transparent',
     },
     dayChipToday: {
       borderColor: colors.primary,
@@ -433,12 +499,14 @@ function createStyles(colors: ColorTokens) {
     dayTextSelected: {
       color: colors.onPrimary,
     },
-    swipeArea: {
+    pagerClip: {
       flex: 1,
+      overflow: 'hidden',
+      marginTop: spacing.xs,
     },
-    content: {
-      padding: spacing.md,
-      paddingBottom: spacing.xl,
+    pagerRow: {
+      flex: 1,
+      flexDirection: 'row',
     },
     footer: {
       padding: spacing.md,
@@ -455,11 +523,6 @@ function createStyles(colors: ColorTokens) {
     },
     spinner: {
       marginBottom: spacing.sm,
-    },
-    pastNotice: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
-      marginBottom: spacing.md,
     },
   });
 }
