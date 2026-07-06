@@ -9,7 +9,7 @@ type ScrollableRef = {
 };
 
 const TAP_NUDGE_PX = 180;
-const HOLD_STEP_PX = 12;
+const HOLD_STEP_PX = 26;
 const HOLD_INTERVAL_MS = 16;
 /** Below this press duration, treat it as a tap (one nudge) rather than a hold (continuous scroll). */
 const HOLD_DELAY_MS = 220;
@@ -35,9 +35,9 @@ export function useScrollDownHint(ref: RefObject<ScrollableRef | null>) {
   }, []);
 
   const scrollTo = useCallback(
-    (next: number) => {
-      ref.current?.scrollTo?.({ y: next, animated: true });
-      ref.current?.scrollToOffset?.({ offset: next, animated: true });
+    (next: number, animated: boolean) => {
+      ref.current?.scrollTo?.({ y: next, animated });
+      ref.current?.scrollToOffset?.({ offset: next, animated });
     },
     [ref],
   );
@@ -50,9 +50,14 @@ export function useScrollDownHint(ref: RefObject<ScrollableRef | null>) {
   }, []);
 
   const step = useCallback(
-    (delta: number) => {
+    (delta: number, animated: boolean) => {
       const next = clampScrollOffset(offset.current + delta, layoutHeight.current, contentHeight.current);
-      scrollTo(next);
+      // Each repeated hold-tick must jump immediately (animated: false) – firing
+      // a new native scroll *animation* every 16ms means each one gets
+      // interrupted by the next before it can build up speed, which is what
+      // made holding feel sluggish even though the math (px per tick) looked
+      // fine. The 60fps tick rate alone already reads as smooth motion.
+      scrollTo(next, animated);
       if (next === offset.current) {
         stopHolding();
       }
@@ -91,7 +96,7 @@ export function useScrollDownHint(ref: RefObject<ScrollableRef | null>) {
     isHolding.current = false;
     pressTimer.current = setTimeout(() => {
       isHolding.current = true;
-      holdInterval.current = setInterval(() => step(HOLD_STEP_PX), HOLD_INTERVAL_MS);
+      holdInterval.current = setInterval(() => step(HOLD_STEP_PX, false), HOLD_INTERVAL_MS);
     }, HOLD_DELAY_MS);
   }, [step]);
 
@@ -103,7 +108,7 @@ export function useScrollDownHint(ref: RefObject<ScrollableRef | null>) {
     if (isHolding.current) {
       stopHolding();
     } else {
-      step(TAP_NUDGE_PX);
+      step(TAP_NUDGE_PX, true);
     }
     isHolding.current = false;
   }, [step, stopHolding]);

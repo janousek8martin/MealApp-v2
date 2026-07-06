@@ -6,22 +6,13 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { FoodPickerModal } from '@/components/FoodPickerModal';
 import { HomeHeroCard } from '@/components/HomeHeroCard';
-import { MealPickerModal } from '@/components/MealPickerModal';
 import { MealSlotCard } from '@/components/MealSlotCard';
 import { NextMealCard } from '@/components/NextMealCard';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
-import {
-  addMealExtra,
-  assignManualMeal,
-  generateWeek,
-  regenerateSlot,
-  removeMealExtra,
-  setPortionStatus,
-} from '@/db/repositories/plan';
+import { generateWeek, setPortionStatus } from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
 import { startOfWeek } from '@/domain/week';
 import {
@@ -38,23 +29,16 @@ import {
   useMealsForDate,
   usePortionsForDate,
   useRecipeNutritionMap,
-  type SlotRow,
 } from '@/hooks/plan';
 import { usePantryItems, useShoppingItems } from '@/hooks/shopping';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
-import { confirmDeleteMeal } from '@/utils/mealActions';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 function currentHHMM(): string {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function targetProfileIdForSlot(slot: SlotRow, profile: { id: string; sharesMainMeals: boolean }): string | null {
-  if (slot.kind === 'snack') return profile.id;
-  return profile.sharesMainMeals ? null : profile.id;
 }
 
 export default function TodayScreen() {
@@ -81,8 +65,7 @@ export default function TodayScreen() {
   const pantryItems = usePantryItems(household?.id);
   const pantryExpiringSoon = pantryItems.filter((item) => item.expiresAt !== null && item.expiresAt <= today).length;
 
-  const [pickerSlot, setPickerSlot] = useState<SlotRow | null>(null);
-  const [extraMealId, setExtraMealId] = useState<string | null>(null);
+  const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>({});
   const [generating, setGenerating] = useState(false);
 
   const hasAnyMeal = meals.length > 0;
@@ -212,25 +195,21 @@ export default function TodayScreen() {
           <View style={styles.mealList}>
             {slots.map((slot) => {
               const meal = findMealForProfileInSlot(meals, slot, activeProfile);
-              const trackProfileId = meal?.profileId ?? targetProfileIdForSlot(slot, activeProfile);
               return (
                 <MealSlotCard
                   key={slot.id}
+                  variant="compact"
                   slotLabel={t(`slots.${slot.slotKey}`)}
                   meal={meal}
                   activeProfileId={activeProfile.id}
                   recipeNutritionMap={recipeNutritionMap}
-                  onSwap={() => {
-                    if (!household) return;
-                    void regenerateSlot(db, household.id, today, slot.slotKey, trackProfileId);
-                  }}
-                  onAddMeal={() => setPickerSlot(slot)}
-                  onDeleteMeal={() => {
-                    if (!household || !meal) return;
-                    void confirmDeleteMeal(t, household.id, meal);
-                  }}
-                  onAddExtra={() => meal && setExtraMealId(meal.id)}
-                  onRemoveExtra={(extraId) => void removeMealExtra(db, extraId)}
+                  expanded={!!expandedSlots[slot.id]}
+                  onToggleExpand={() =>
+                    setExpandedSlots((prev) => ({ ...prev, [slot.id]: !prev[slot.id] }))
+                  }
+                  onEdit={() =>
+                    router.push({ pathname: '/plan', params: { date: today, expandSlot: slot.slotKey } })
+                  }
                   onSetStatus={(portionId, status) => void setPortionStatus(db, portionId, status)}
                 />
               );
@@ -244,30 +223,6 @@ export default function TodayScreen() {
         onPressIn={scrollHint.onPressIn}
         onPressOut={scrollHint.onPressOut}
       />
-
-      {pickerSlot && household && activeProfile ? (
-        <MealPickerModal
-          visible
-          category={pickerSlot.slotKey === 'breakfast' ? 'breakfast' : pickerSlot.kind === 'snack' ? 'snack' : 'lunch_dinner'}
-          onClose={() => setPickerSlot(null)}
-          onPick={({ itemType, itemId }) => {
-            const trackProfileId = targetProfileIdForSlot(pickerSlot, activeProfile);
-            void assignManualMeal(db, household.id, today, pickerSlot.slotKey, trackProfileId, itemType, itemId);
-            setPickerSlot(null);
-          }}
-        />
-      ) : null}
-
-      {extraMealId ? (
-        <FoodPickerModal
-          visible
-          onClose={() => setExtraMealId(null)}
-          onPick={(food) => {
-            void addMealExtra(db, extraMealId, 'food', food.id);
-            setExtraMealId(null);
-          }}
-        />
-      ) : null}
     </SafeAreaView>
   );
 }
@@ -297,7 +252,6 @@ function createStyles(colors: ColorTokens) {
       marginTop: spacing.md,
     },
     quickCard: {
-      flex: 1,
       backgroundColor: colors.surface,
       borderRadius: radius.card,
       borderWidth: 1,

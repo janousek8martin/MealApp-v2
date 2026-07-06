@@ -76,10 +76,16 @@ export default function WalkthroughScreen() {
 
   const isLast = pageIndex === PAGES.length - 1;
 
-  // Footer grow/shrink + button cross-fade, driven explicitly instead of via
-  // LayoutAnimation – LayoutAnimation is unreliable (often a silent no-op) on
-  // Android with the New Architecture, which caused the old "one button just
-  // pops into existence" jump instead of a smooth transition.
+  // Button cross-fade, driven explicitly instead of via LayoutAnimation –
+  // LayoutAnimation is unreliable (often a silent no-op) on Android with the
+  // New Architecture, which caused the old "one button just pops into
+  // existence" jump instead of a smooth transition.
+  //
+  // The footer's box height is reserved at its maximum (two-button) size from
+  // the very first page and never animated – only opacity cross-fades inside
+  // it. This keeps the FlatList's available height constant across every
+  // page, so the illustration/title/body don't shift vertically when the
+  // last page's footer would otherwise grow taller.
   const [buttonHeight, setButtonHeight] = useState<number | null>(null);
   const footerAnim = useRef(new Animated.Value(isLast ? 1 : 0)).current;
 
@@ -92,12 +98,7 @@ export default function WalkthroughScreen() {
     }).start();
   }, [isLast, footerAnim]);
 
-  const footerContentHeight = buttonHeight
-    ? footerAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [buttonHeight, buttonHeight * 2 + spacing.sm],
-      })
-    : undefined;
+  const footerContentHeight = buttonHeight ? buttonHeight * 2 + spacing.sm : undefined;
 
   const onScroll = Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
     useNativeDriver: false,
@@ -240,7 +241,7 @@ function createStyles(colors: ColorTokens) {
     },
     footerLayer: {
       position: 'absolute',
-      top: 0,
+      bottom: 0,
       left: 0,
       right: 0,
       gap: spacing.sm,

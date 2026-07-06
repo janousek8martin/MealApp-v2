@@ -24,6 +24,8 @@ export type ProfileFormValue = Omit<CreateProfileInput, 'householdId'>;
 
 const ACTIVITY_LEVEL_KEYS = ['sedentary', 'light', 'moderate', 'active', 'very_active'] as const;
 
+const ACTIVITY_DOT_KEYS = ['activityLow', 'activityMedium', 'activityHigh'] as const;
+
 function activityDotIndex(dots: readonly [number, number, number], multiplier: number | null): number {
   if (multiplier === null) return 1;
   const index = dots.findIndex((value) => Math.abs(value - multiplier) < 0.001);
@@ -412,7 +414,8 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
                   onPress={() => setActivityMultiplier(value)}
                   style={styles.activityDotWrap}>
                   <View style={[styles.activityDot, selected && styles.activityDotSelected]} />
-                  <Text style={styles.activityDotLabel}>{value}</Text>
+                  <Text style={styles.activityDotValue}>{value}</Text>
+                  <Text style={styles.activityDotLabel}>{t(`form.${ACTIVITY_DOT_KEYS[index]}`)}</Text>
                 </Pressable>
               );
             },
@@ -625,7 +628,7 @@ function createStyles(colors: ColorTokens) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: spacing.md,
+      gap: spacing.xl,
       marginTop: -spacing.xs,
       marginBottom: spacing.md,
     },
@@ -644,6 +647,11 @@ function createStyles(colors: ColorTokens) {
     activityDotSelected: {
       backgroundColor: colors.primary,
       borderColor: colors.primary,
+    },
+    activityDotValue: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '600',
     },
     activityDotLabel: {
       color: colors.textSecondary,

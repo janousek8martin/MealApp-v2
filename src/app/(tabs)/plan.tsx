@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useRef, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
@@ -86,6 +87,18 @@ export default function PlanScreen() {
   const [pickerSlot, setPickerSlot] = useState<SlotRow | null>(null);
   const [extraMealId, setExtraMealId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<'week' | 'day' | null>(null);
+  const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>({});
+
+  // Jumping in from Home's "Upravit" forces today's date and opens that
+  // slot's card, even if this tab was left on a different day/collapsed
+  // state from a previous visit (tab screens stay mounted across switches).
+  const params = useLocalSearchParams<{ date?: string; expandSlot?: string }>();
+  useEffect(() => {
+    if (params.date) {
+      setSelectedDate(params.date);
+      setViewedMonday(startOfWeek(params.date));
+    }
+  }, [params.date]);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -94,6 +107,13 @@ export default function PlanScreen() {
   const slots = useMealSlots(household?.id);
   const meals = useMealsForDate(household?.id, selectedDate);
   const recipeNutritionMap = useRecipeNutritionMap();
+
+  useEffect(() => {
+    if (!params.expandSlot) return;
+    const slot = slots.find((s) => s.slotKey === params.expandSlot);
+    if (slot) setExpandedSlots((prev) => ({ ...prev, [slot.id]: true }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.expandSlot, slots]);
 
   const isPast = selectedDate < today;
 
@@ -247,6 +267,10 @@ export default function PlanScreen() {
                     activeProfileId={activeProfile.id}
                     recipeNutritionMap={recipeNutritionMap}
                     disabled={isPast}
+                    expanded={!!expandedSlots[slot.id]}
+                    onToggleExpand={() =>
+                      setExpandedSlots((prev) => ({ ...prev, [slot.id]: !prev[slot.id] }))
+                    }
                     onSwap={() => {
                       if (!household) return;
                       void regenerateSlot(db, household.id, selectedDate, slot.slotKey, trackProfileId);

@@ -208,7 +208,10 @@
     "heightRange": "Zadejte výšku 60–230 cm",
     "weightRange": "Zadejte váhu 10–300 kg",
     "bodyFatRange": "Zadejte hodnotu 2–70 %",
-    "goalWeightConflict": "Při nižším cílovém % tuku nemůže být cílová váha vyšší než aktuální."
+    "goalWeightConflict": "Při nižším cílovém % tuku nemůže být cílová váha vyšší než aktuální.",
+    "activityLow": "Nižší",
+    "activityMedium": "Střední",
+    "activityHigh": "Vyšší"
   },
   "activity": {
     "sedentary": "Sedavý",
@@ -419,6 +422,7 @@
     "noMeal": "Žádné jídlo naplánováno",
     "addMeal": "+ Přidat jídlo",
     "viewRecipe": "Zobrazit recept",
+    "edit": "Upravit",
     "swap": "Vyměnit",
     "addExtra": "Přidat",
     "eaten": "Snědeno",

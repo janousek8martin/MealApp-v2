@@ -208,7 +208,10 @@
     "heightRange": "Enter a height of 60–230 cm",
     "weightRange": "Enter a weight of 10–300 kg",
     "bodyFatRange": "Enter a value of 2–70 %",
-    "goalWeightConflict": "With a lower target body fat, the goal weight cannot exceed the current weight."
+    "goalWeightConflict": "With a lower target body fat, the goal weight cannot exceed the current weight.",
+    "activityLow": "Low",
+    "activityMedium": "Medium",
+    "activityHigh": "High"
   },
   "activity": {
     "sedentary": "Sedentary",
@@ -419,6 +422,7 @@
     "noMeal": "No meal planned",
     "addMeal": "+ Add meal",
     "viewRecipe": "View recipe",
+    "edit": "Edit",
     "swap": "Swap",
     "addExtra": "Add",
     "eaten": "Eaten",

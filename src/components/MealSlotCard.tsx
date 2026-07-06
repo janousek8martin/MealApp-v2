@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -19,12 +19,22 @@ type Props = {
   meal: MealRow | undefined;
   activeProfileId: string;
   recipeNutritionMap: Map<string, RecipeNutrition>;
-  onSwap: () => void;
-  onAddMeal: () => void;
-  onDeleteMeal: () => void;
-  onAddExtra: () => void;
-  onRemoveExtra: (extraId: string) => void;
+  expanded: boolean;
+  onToggleExpand: () => void;
   onSetStatus: (portionId: string, status: 'planned' | 'eaten' | 'skipped') => void;
+  /**
+   * 'full' (Plan screen): view/swap/add-extra/delete + eaten/not-eaten.
+   * 'compact' (Home screen): view/edit (jumps to Plan) + eaten/not-eaten only
+   * – swap, add-extra and delete all live on the Plan screen instead.
+   */
+  variant?: 'full' | 'compact';
+  onSwap?: () => void;
+  onAddMeal?: () => void;
+  onDeleteMeal?: () => void;
+  onAddExtra?: () => void;
+  onRemoveExtra?: (extraId: string) => void;
+  /** Compact variant only: jumps to the Plan screen for this slot. */
+  onEdit?: () => void;
   /** Disables regeneration (swap/add) for past dates; eaten/not-eaten can still be set retroactively. */
   disabled?: boolean;
 };
@@ -55,18 +65,22 @@ export function MealSlotCard({
   meal,
   activeProfileId,
   recipeNutritionMap,
+  expanded,
+  onToggleExpand,
+  variant = 'full',
   onSwap,
   onAddMeal,
   onDeleteMeal,
   onAddExtra,
   onRemoveExtra,
+  onEdit,
   onSetStatus,
   disabled,
 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [expanded, setExpanded] = useState(false);
+  const isCompact = variant === 'compact';
 
   const recipe = useRecipe(meal?.itemType === 'recipe' ? meal.itemId : undefined);
   const food = useFood(meal?.itemType === 'food' ? meal.itemId : undefined);
@@ -81,6 +95,11 @@ export function MealSlotCard({
         <Text style={styles.slotLabel}>{slotLabel}</Text>
         {disabled ? (
           <Text style={styles.emptyText}>{t('todayMeal.noMeal')}</Text>
+        ) : isCompact ? (
+          <Pressable accessibilityRole="button" style={styles.addButton} onPress={onEdit}>
+            <Ionicons name="create-outline" size={18} color={colors.primary} />
+            <Text style={styles.addButtonLabel}>{t('todayMeal.edit')}</Text>
+          </Pressable>
         ) : (
           <Pressable accessibilityRole="button" style={styles.addButton} onPress={onAddMeal}>
             <Ionicons name="add" size={18} color={colors.primary} />
@@ -118,7 +137,7 @@ export function MealSlotCard({
       <Pressable
         accessibilityRole="button"
         style={styles.header}
-        onPress={() => setExpanded((prev) => !prev)}>
+        onPress={onToggleExpand}>
         {photo ? (
           <Image source={{ uri: photo.uri }} style={styles.thumb} contentFit="cover" />
         ) : (
@@ -155,10 +174,10 @@ export function MealSlotCard({
             </View>
           ) : null}
 
-          {extras.length > 0 ? (
+          {!isCompact && extras.length > 0 ? (
             <View style={styles.extrasList}>
               {extras.map((extra) => (
-                <ExtraRow key={extra.id} extra={extra} onRemove={() => onRemoveExtra(extra.id)} />
+                <ExtraRow key={extra.id} extra={extra} onRemove={() => onRemoveExtra?.(extra.id)} />
               ))}
             </View>
           ) : null}
@@ -168,7 +187,12 @@ export function MealSlotCard({
               <Ionicons name="restaurant-outline" size={16} color={colors.primary} />
               <Text style={styles.actionLabel}>{t('todayMeal.viewRecipe')}</Text>
             </Pressable>
-            {!disabled ? (
+            {isCompact ? (
+              <Pressable accessibilityRole="button" style={styles.actionButton} onPress={onEdit}>
+                <Ionicons name="create-outline" size={16} color={colors.primary} />
+                <Text style={styles.actionLabel}>{t('todayMeal.edit')}</Text>
+              </Pressable>
+            ) : !disabled ? (
               <>
                 <Pressable accessibilityRole="button" style={styles.actionButton} onPress={onSwap}>
                   <Ionicons name="shuffle-outline" size={16} color={colors.primary} />
@@ -202,7 +226,7 @@ export function MealSlotCard({
                   {t('todayMeal.notEaten')}
                 </Text>
               </Pressable>
-              {!disabled ? (
+              {!isCompact && !disabled ? (
                 <Pressable accessibilityRole="button" style={styles.deleteButton} onPress={onDeleteMeal} hitSlop={8}>
                   <Ionicons name="trash-outline" size={16} color={colors.danger} />
                 </Pressable>
