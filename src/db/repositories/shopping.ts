@@ -1,6 +1,12 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
-import { computeShoppingNeeds, sumWeeklyNeeds, type FoodShelfInfo, type PlannedMealIngredientNeed } from '@/domain/shopping';
+import {
+  computeShoppingNeeds,
+  deductFromPantryBatches,
+  sumWeeklyNeeds,
+  type FoodShelfInfo,
+  type PlannedMealIngredientNeed,
+} from '@/domain/shopping';
 import { addDays, startOfWeek, weekDates } from '@/domain/week';
 
 import { newId } from '../id';
@@ -235,6 +241,71 @@ export async function addPantryItem(db: AppDb, householdId: string, input: Pantr
     purchasedAt: todayIsoDate(),
     expiresAt,
   });
+}
+
+export type IngredientNeed = { foodId: string; amount: number };
+
+/**
+ * Ingredient needs for a single meal instance, scaled by its portion
+ * multiplier – the same "one portion ≈ 100 base units" approximation used
+ * for standalone snack foods in the weekly shopping aggregation.
+ */
+export async function mealIngredientNeeds(
+  db: AppDb,
+  meal: { itemType: string; itemId: string },
+  multiplier: number,
+): Promise<IngredientNeed[]> {
+  if (multiplier <= 0) return [];
+  if (meal.itemType === 'recipe') {
+    const ingredients = await db
+      .select()
+      .from(recipeIngredients)
+      .where(and(eq(recipeIngredients.recipeId, meal.itemId), isNull(recipeIngredients.deletedAt)));
+    return ingredients.map((ingredient) => ({ foodId: ingredient.foodId, amount: ingredient.amount * multiplier }));
+  }
+  return [{ foodId: meal.itemId, amount: 100 * multiplier }];
+}
+
+/** Deducts ingredient needs from pantry stock (FIFO by expiry) when a meal is marked eaten. */
+export async function deductPantryForConsumption(
+  db: AppDb,
+  householdId: string,
+  needs: IngredientNeed[],
+): Promise<void> {
+  const now = nowIso();
+  for (const need of needs) {
+    if (need.amount <= 0) continue;
+    const batches = await db
+      .select()
+      .from(pantryItems)
+      .where(
+        and(
+          eq(pantryItems.householdId, householdId),
+          eq(pantryItems.foodId, need.foodId),
+          isNull(pantryItems.deletedAt),
+        ),
+      );
+    const updates = deductFromPantryBatches(batches, need.amount);
+    for (const update of updates) {
+      if (update.quantity <= 0) {
+        await db.update(pantryItems).set({ deletedAt: now, updatedAt: now }).where(eq(pantryItems.id, update.id));
+      } else {
+        await db.update(pantryItems).set({ quantity: update.quantity, updatedAt: now }).where(eq(pantryItems.id, update.id));
+      }
+    }
+  }
+}
+
+/** Reverses a consumption deduction (a meal was un-marked as eaten) by adding the amounts back as fresh pantry batches. */
+export async function restockPantryForConsumption(
+  db: AppDb,
+  householdId: string,
+  needs: IngredientNeed[],
+): Promise<void> {
+  for (const need of needs) {
+    if (need.amount <= 0) continue;
+    await addPantryItem(db, householdId, { foodId: need.foodId, quantity: need.amount });
+  }
 }
 
 export async function updatePantryItem(

@@ -72,3 +72,29 @@ export function computeShoppingNeeds(
   }
   return result;
 }
+
+export type PantryBatch = { id: string; quantity: number; expiresAt: string | null };
+
+/**
+ * FIFO-deducts `needed` units of one food from its pantry batches, soonest-
+ * expiring first (batches with no expiry date are used last, same ordering
+ * pantry screens display). Running out of stock simply stops early – eating
+ * more than what's in the pantry isn't an error, it just deducts what's there.
+ */
+export function deductFromPantryBatches(batches: PantryBatch[], needed: number): { id: string; quantity: number }[] {
+  const sorted = [...batches].sort((a, b) => {
+    if (a.expiresAt === null) return b.expiresAt === null ? 0 : 1;
+    if (b.expiresAt === null) return -1;
+    return a.expiresAt.localeCompare(b.expiresAt);
+  });
+  const updates: { id: string; quantity: number }[] = [];
+  let remaining = needed;
+  for (const batch of sorted) {
+    if (remaining <= 0) break;
+    const take = Math.min(batch.quantity, remaining);
+    if (take <= 0) continue;
+    updates.push({ id: batch.id, quantity: batch.quantity - take });
+    remaining -= take;
+  }
+  return updates;
+}

@@ -1,8 +1,10 @@
 import {
   computeShoppingNeeds,
+  deductFromPantryBatches,
   MONTHLY_SHELF_LIFE_THRESHOLD_DAYS,
   sumWeeklyNeeds,
   type FoodShelfInfo,
+  type PantryBatch,
 } from '../shopping';
 
 describe('sumWeeklyNeeds', () => {
@@ -74,5 +76,52 @@ describe('computeShoppingNeeds', () => {
       new Map(),
     );
     expect(needs[0].horizon).toBe('weekly');
+  });
+});
+
+describe('deductFromPantryBatches', () => {
+  it('takes from a single batch that covers the need', () => {
+    const batches: PantryBatch[] = [{ id: 'a', quantity: 500, expiresAt: '2026-08-01' }];
+    expect(deductFromPantryBatches(batches, 300)).toEqual([{ id: 'a', quantity: 200 }]);
+  });
+
+  it('draws from the soonest-expiring batch first', () => {
+    const batches: PantryBatch[] = [
+      { id: 'later', quantity: 200, expiresAt: '2026-09-01' },
+      { id: 'sooner', quantity: 200, expiresAt: '2026-08-01' },
+    ];
+    expect(deductFromPantryBatches(batches, 100)).toEqual([{ id: 'sooner', quantity: 100 }]);
+  });
+
+  it('spills over into the next batch once the first is exhausted', () => {
+    const batches: PantryBatch[] = [
+      { id: 'first', quantity: 100, expiresAt: '2026-08-01' },
+      { id: 'second', quantity: 200, expiresAt: '2026-09-01' },
+    ];
+    expect(deductFromPantryBatches(batches, 250)).toEqual([
+      { id: 'first', quantity: 0 },
+      { id: 'second', quantity: 50 },
+    ]);
+  });
+
+  it('uses batches with no expiry date last', () => {
+    const batches: PantryBatch[] = [
+      { id: 'no-expiry', quantity: 100, expiresAt: null },
+      { id: 'expiring', quantity: 50, expiresAt: '2026-08-01' },
+    ];
+    expect(deductFromPantryBatches(batches, 120)).toEqual([
+      { id: 'expiring', quantity: 0 },
+      { id: 'no-expiry', quantity: 30 },
+    ]);
+  });
+
+  it('deducts only what is available when the need exceeds total stock', () => {
+    const batches: PantryBatch[] = [{ id: 'a', quantity: 50, expiresAt: null }];
+    expect(deductFromPantryBatches(batches, 300)).toEqual([{ id: 'a', quantity: 0 }]);
+  });
+
+  it('returns no updates when there is nothing to deduct', () => {
+    const batches: PantryBatch[] = [{ id: 'a', quantity: 50, expiresAt: null }];
+    expect(deductFromPantryBatches(batches, 0)).toEqual([]);
   });
 });

@@ -5,7 +5,7 @@ import { startOfWeek } from '../../domain/week';
 import { newId } from '../id';
 import { createHouseholdWithDefaults } from '../repositories/households';
 import { upsertFood, upsertRecipe } from '../repositories/library';
-import { assignManualMeal, generateWeek } from '../repositories/plan';
+import { assignManualMeal, generateWeek, setPortionStatus } from '../repositories/plan';
 import { createProfile } from '../repositories/profiles';
 import {
   addManualShoppingItem,
@@ -16,7 +16,7 @@ import {
   setShoppingItemChecked,
   updatePantryItem,
 } from '../repositories/shopping';
-import { pantryItems, recipes, shoppingListItems } from '../schema';
+import { pantryItems, plannedMealPortions, plannedMeals, recipes, shoppingListItems } from '../schema';
 import { seedIfEmpty } from '../seed';
 import { createTestDb } from '../testing/testDb';
 
@@ -235,6 +235,68 @@ describe('shopping list generator (repository)', () => {
       .from(pantryItems)
       .where(and(eq(pantryItems.id, row.id), isNull(pantryItems.deletedAt)));
     expect(remaining).toHaveLength(0);
+  });
+
+  it('marking a meal eaten deducts its ingredients from pantry stock, and un-marking it restocks them', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    const profileId = await createAdult(db, householdId);
+
+    const kefirId = await upsertFood(db, {
+      nameCs: 'Kefír',
+      nameEn: 'Kefir',
+      category: 'dairy',
+      baseUnit: 'ml',
+      kcalPer100: 60,
+      proteinPer100: 3.3,
+      carbsPer100: 4,
+      fatPer100: 3.5,
+      budget: 'cheap',
+      shelfLifeDays: 10,
+      snackSuitable: true,
+      dietFlags: ['vegetarian'],
+      allergens: ['lactose'],
+    });
+    await upsertRecipe(db, {
+      nameCs: 'Kefírové smoothie',
+      nameEn: 'Kefir smoothie',
+      category: 'snack',
+      isSide: false,
+      budget: 'cheap',
+      servingsBase: 1,
+      ingredients: [{ foodId: kefirId, amount: 300 }],
+    });
+    const smoothie = (await db.select().from(recipes)).find((r) => r.nameEn === 'Kefir smoothie')!;
+
+    await addPantryItem(db, householdId, { foodId: kefirId, quantity: 500 });
+
+    // Snack-slot portions always get multiplier 1, so the deducted amount is exactly the recipe's ingredient amount.
+    await assignManualMeal(db, householdId, FUTURE_MONDAY, 'snack_morning', profileId, 'recipe', smoothie.id);
+    const [meal] = await db
+      .select()
+      .from(plannedMeals)
+      .where(and(eq(plannedMeals.householdId, householdId), eq(plannedMeals.slotKey, 'snack_morning')));
+    const [portion] = await db
+      .select()
+      .from(plannedMealPortions)
+      .where(eq(plannedMealPortions.plannedMealId, meal.id));
+
+    await setPortionStatus(db, portion.id, 'eaten');
+
+    const [afterEaten] = await db
+      .select()
+      .from(pantryItems)
+      .where(and(eq(pantryItems.foodId, kefirId), isNull(pantryItems.deletedAt)));
+    expect(afterEaten.quantity).toBe(200);
+
+    await setPortionStatus(db, portion.id, 'planned');
+
+    const afterUndo = await db
+      .select()
+      .from(pantryItems)
+      .where(and(eq(pantryItems.foodId, kefirId), isNull(pantryItems.deletedAt)));
+    const totalAfterUndo = afterUndo.reduce((sum, row) => sum + row.quantity, 0);
+    expect(totalAfterUndo).toBe(500);
   });
 
   it('removeShoppingItem soft-deletes the row', async () => {

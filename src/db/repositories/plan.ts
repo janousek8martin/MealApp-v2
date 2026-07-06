@@ -16,6 +16,7 @@ import { addDays, previousDay, startOfWeek, weekDates } from '@/domain/week';
 import { applyWorkoutDayCycling } from '@/domain/workoutDays';
 
 import { newId } from '../id';
+import { deductPantryForConsumption, mealIngredientNeeds, restockPantryForConsumption } from './shopping';
 import {
   bodyMetrics,
   foodRestrictions,
@@ -652,15 +653,34 @@ export async function regenerateDay(
 // Swap & portion status
 // ---------------------------------------------------------------------------
 
+/** Marking a portion eaten deducts its ingredients from pantry stock; un-marking it restocks them. */
 export async function setPortionStatus(
   db: AppDb,
   portionId: string,
   status: 'planned' | 'eaten' | 'skipped',
 ): Promise<void> {
+  const [portion] = await db.select().from(plannedMealPortions).where(eq(plannedMealPortions.id, portionId));
+  if (!portion) return;
+  const previousStatus = portion.status;
+
   await db
     .update(plannedMealPortions)
     .set({ status, updatedAt: nowIso() })
     .where(eq(plannedMealPortions.id, portionId));
+
+  const becameEaten = status === 'eaten' && previousStatus !== 'eaten';
+  const wasEaten = previousStatus === 'eaten' && status !== 'eaten';
+  if (!becameEaten && !wasEaten) return;
+
+  const [meal] = await db.select().from(plannedMeals).where(eq(plannedMeals.id, portion.plannedMealId));
+  if (!meal) return;
+
+  const needs = await mealIngredientNeeds(db, meal, portion.multiplier);
+  if (becameEaten) {
+    await deductPantryForConsumption(db, meal.householdId, needs);
+  } else {
+    await restockPantryForConsumption(db, meal.householdId, needs);
+  }
 }
 
 /** Regenerates a single slot/track, excluding its current recipe from the candidate pool. Locked (eaten) slots are left untouched. */
