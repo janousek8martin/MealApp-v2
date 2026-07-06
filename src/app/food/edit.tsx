@@ -45,6 +45,11 @@ export default function FoodEditScreen() {
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
   const [fiber, setFiber] = useState('');
+  const [ironMg, setIronMg] = useState('');
+  const [vitaminDUg, setVitaminDUg] = useState('');
+  const [b12Ug, setB12Ug] = useState('');
+  const [calciumMg, setCalciumMg] = useState('');
+  const [omega3G, setOmega3G] = useState('');
   const [budget, setBudget] = useState<'cheap' | 'average' | 'expensive'>('average');
   const [shelfLifeDays, setShelfLifeDays] = useState('');
   const [storage, setStorage] = useState<string | null>(null);
@@ -67,6 +72,14 @@ export default function FoodEditScreen() {
     setCarbs(String(existing.carbsPer100));
     setFat(String(existing.fatPer100));
     setFiber(existing.fiberPer100 !== null ? String(existing.fiberPer100) : '');
+    const micronutrients = existing.micronutrientsJson
+      ? (JSON.parse(existing.micronutrientsJson) as Record<string, number>)
+      : {};
+    setIronMg(micronutrients.ironMg !== undefined ? String(micronutrients.ironMg) : '');
+    setVitaminDUg(micronutrients.vitaminDUg !== undefined ? String(micronutrients.vitaminDUg) : '');
+    setB12Ug(micronutrients.b12Ug !== undefined ? String(micronutrients.b12Ug) : '');
+    setCalciumMg(micronutrients.calciumMg !== undefined ? String(micronutrients.calciumMg) : '');
+    setOmega3G(micronutrients.omega3G !== undefined ? String(micronutrients.omega3G) : '');
     setBudget(existing.budget);
     setShelfLifeDays(existing.shelfLifeDays !== null ? String(existing.shelfLifeDays) : '');
     setStorage(existing.storage);
@@ -104,6 +117,13 @@ export default function FoodEditScreen() {
         carbsPer100: num(carbs)!,
         fatPer100: num(fat)!,
         fiberPer100: num(fiber),
+        micronutrients: {
+          ironMg: num(ironMg),
+          vitaminDUg: num(vitaminDUg),
+          b12Ug: num(b12Ug),
+          calciumMg: num(calciumMg),
+          omega3G: num(omega3G),
+        },
         budget,
         shelfLifeDays: num(shelfLifeDays),
         storage: (storage ?? null) as 'pantry' | 'fridge' | 'freezer' | null,
@@ -163,6 +183,13 @@ export default function FoodEditScreen() {
         <TextField label={t('macros.carbs')} value={carbs} onChangeText={setCarbs} keyboardType="decimal-pad" suffix="g" />
         <TextField label={t('macros.fat')} value={fat} onChangeText={setFat} keyboardType="decimal-pad" suffix="g" />
         <TextField label={t('macros.fiber')} value={fiber} onChangeText={setFiber} keyboardType="decimal-pad" suffix="g" />
+
+        <Text style={styles.section}>{t('foodDetail.micronutrients')}</Text>
+        <TextField label={t('micros.ironMg')} value={ironMg} onChangeText={setIronMg} keyboardType="decimal-pad" />
+        <TextField label={t('micros.vitaminDUg')} value={vitaminDUg} onChangeText={setVitaminDUg} keyboardType="decimal-pad" />
+        <TextField label={t('micros.b12Ug')} value={b12Ug} onChangeText={setB12Ug} keyboardType="decimal-pad" />
+        <TextField label={t('micros.calciumMg')} value={calciumMg} onChangeText={setCalciumMg} keyboardType="decimal-pad" />
+        <TextField label={t('micros.omega3G')} value={omega3G} onChangeText={setOmega3G} keyboardType="decimal-pad" />
 
         <ChipSelect
           label={t('foodEdit.budget')}

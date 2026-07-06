@@ -12,8 +12,8 @@ type Props = {
   photoUri?: string | null;
   /** Fallback block color when there is no photo yet. */
   accent?: string;
-  badge?: string;
   favorite?: boolean;
+  /** All tags shown in one wrapping row at the bottom of the card (budget included). */
   tags?: string[];
   onPress: () => void;
   /** When provided, a long-press on the card reveals a delete (trash) button. */
@@ -26,7 +26,6 @@ export function LibraryCard({
   subtitle,
   photoUri,
   accent,
-  badge,
   favorite,
   tags,
   onPress,
@@ -59,7 +58,7 @@ export function LibraryCard({
         </Text>
         {tags && tags.length > 0 ? (
           <View style={styles.tagRow}>
-            {tags.slice(0, 3).map((tag) => (
+            {tags.map((tag) => (
               <View key={tag} style={styles.tag}>
                 <Text style={styles.tagLabel} numberOfLines={1}>
                   {tag}
@@ -80,10 +79,6 @@ export function LibraryCard({
           hitSlop={8}>
           <Ionicons name="trash-outline" size={18} color={colors.danger} />
         </Pressable>
-      ) : badge ? (
-        <View style={styles.badge}>
-          <Text style={styles.badgeLabel}>{badge}</Text>
-        </View>
       ) : null}
     </Pressable>
   );
@@ -125,17 +120,6 @@ function createStyles(colors: ColorTokens) {
       color: colors.textSecondary,
       fontSize: typography.small,
       marginTop: 2,
-    },
-    badge: {
-      backgroundColor: colors.lime,
-      borderRadius: radius.chip,
-      paddingVertical: 2,
-      paddingHorizontal: spacing.sm,
-    },
-    badgeLabel: {
-      color: colors.text,
-      fontSize: typography.small,
-      fontWeight: '600',
     },
     tagRow: {
       flexDirection: 'row',

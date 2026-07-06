@@ -10,8 +10,10 @@ import { PhotoPicker } from '@/components/PhotoPicker';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { TextField } from '@/components/ui/TextField';
+import { CUISINE_KEYS, RECIPE_TAG_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { setPhoto, upsertRecipe } from '@/db/repositories/library';
+import { computeRecipeNutrition } from '@/domain/recipeNutrition';
 import { useFoods, usePhoto, useRecipe, useRecipeIngredients } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -46,6 +48,8 @@ export default function RecipeEditScreen() {
   const [nameEn, setNameEn] = useState('');
   const [category, setCategory] = useState<(typeof RECIPE_CATEGORIES)[number]>('lunch_dinner');
   const [isSide, setIsSide] = useState(false);
+  const [cuisine, setCuisine] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
   const [budget, setBudget] = useState<'cheap' | 'average' | 'expensive'>('average');
   const [servingsBase, setServingsBase] = useState('1');
   const [prepTimeMinutes, setPrepTimeMinutes] = useState('');
@@ -63,6 +67,8 @@ export default function RecipeEditScreen() {
     setNameEn(existing.nameEn);
     setCategory(existing.category);
     setIsSide(existing.isSide);
+    setCuisine(existing.cuisine);
+    setTags(existing.tagsJson ? (JSON.parse(existing.tagsJson) as string[]) : []);
     setBudget(existing.budget);
     setServingsBase(String(existing.servingsBase));
     setPrepTimeMinutes(existing.prepTimeMinutes !== null ? String(existing.prepTimeMinutes) : '');
@@ -92,6 +98,16 @@ export default function RecipeEditScreen() {
     setIngredients((prev) => prev.map((entry) => (entry.foodId === foodId ? { ...entry, amount } : entry)));
   };
 
+  const nutritionPreview = useMemo(() => {
+    const withFood = ingredients.flatMap((entry) => {
+      const food = foodById.get(entry.foodId);
+      const amount = num(entry.amount);
+      return food && amount !== null ? [{ amount, food }] : [];
+    });
+    if (withFood.length === 0) return null;
+    return computeRecipeNutrition(withFood, num(servingsBase) ?? 1);
+  }, [ingredients, foodById, servingsBase]);
+
   const canSave =
     nameCs.trim() !== '' &&
     nameEn.trim() !== '' &&
@@ -110,6 +126,8 @@ export default function RecipeEditScreen() {
         instructionsEn: instructionsEn.trim() || null,
         category,
         isSide,
+        cuisine,
+        tags,
         budget,
         servingsBase: num(servingsBase)!,
         prepTimeMinutes: int(prepTimeMinutes),
@@ -149,6 +167,20 @@ export default function RecipeEditScreen() {
             thumbColor={colors.surface}
           />
         </View>
+
+        <ChipSelect
+          label={t('recipeEdit.cuisine')}
+          options={CUISINE_KEYS.map((key) => ({ value: key, label: t(`cuisines.${key}`) }))}
+          value={cuisine}
+          onChange={setCuisine}
+        />
+        <ChipSelect
+          label={t('recipeEdit.tags')}
+          multi
+          options={RECIPE_TAG_KEYS.map((key) => ({ value: key, label: t(`recipeTags.${key}`) }))}
+          value={tags}
+          onChange={setTags}
+        />
 
         <ChipSelect
           label={t('recipeEdit.budget')}
@@ -205,6 +237,30 @@ export default function RecipeEditScreen() {
           <Ionicons name="add" size={18} color={colors.primary} />
           <Text style={styles.addIngredientLabel}>{t('recipeEdit.addIngredient')}</Text>
         </Pressable>
+
+        {nutritionPreview ? (
+          <>
+            <Text style={styles.section}>{t('recipeEdit.nutritionPreview')}</Text>
+            <View style={styles.nutritionCard}>
+              <View style={styles.nutritionItem}>
+                <Text style={styles.nutritionValue}>{Math.round(nutritionPreview.kcal)}</Text>
+                <Text style={styles.nutritionLabel}>kcal</Text>
+              </View>
+              <View style={styles.nutritionItem}>
+                <Text style={styles.nutritionValue}>{Math.round(nutritionPreview.proteinG)} g</Text>
+                <Text style={styles.nutritionLabel}>{t('macros.protein')}</Text>
+              </View>
+              <View style={styles.nutritionItem}>
+                <Text style={styles.nutritionValue}>{Math.round(nutritionPreview.carbsG)} g</Text>
+                <Text style={styles.nutritionLabel}>{t('macros.carbs')}</Text>
+              </View>
+              <View style={styles.nutritionItem}>
+                <Text style={styles.nutritionValue}>{Math.round(nutritionPreview.fatG)} g</Text>
+                <Text style={styles.nutritionLabel}>{t('macros.fat')}</Text>
+              </View>
+            </View>
+          </>
+        ) : null}
 
         <TextField
           label={t('recipeEdit.instructionsCs')}
@@ -309,6 +365,28 @@ function createStyles(colors: ColorTokens) {
       color: colors.primary,
       fontSize: typography.body,
       fontWeight: '600',
+    },
+    nutritionCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    nutritionItem: {
+      alignItems: 'center',
+    },
+    nutritionValue: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+    },
+    nutritionLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
     },
     actions: {
       flexDirection: 'row',

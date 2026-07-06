@@ -9,6 +9,14 @@ import type { AppDb } from '../types';
 // Foods
 // ---------------------------------------------------------------------------
 
+export type MicronutrientsInput = {
+  ironMg?: number | null;
+  vitaminDUg?: number | null;
+  b12Ug?: number | null;
+  calciumMg?: number | null;
+  omega3G?: number | null;
+};
+
 export type FoodInput = {
   nameCs: string;
   nameEn: string;
@@ -21,6 +29,7 @@ export type FoodInput = {
   carbsPer100: number;
   fatPer100: number;
   fiberPer100?: number | null;
+  micronutrients?: MicronutrientsInput;
   budget: 'cheap' | 'average' | 'expensive';
   shelfLifeDays?: number | null;
   storage?: 'pantry' | 'fridge' | 'freezer' | null;
@@ -28,6 +37,14 @@ export type FoodInput = {
   dietFlags: string[];
   allergens: string[];
 };
+
+/** Serializes only the micronutrients the user actually filled in – an omitted field stays unknown, never becomes 0. */
+function serializeMicronutrients(input?: MicronutrientsInput): string | null {
+  if (!input) return null;
+  const entries = Object.entries(input).filter(([, value]) => value !== null && value !== undefined);
+  if (entries.length === 0) return null;
+  return JSON.stringify(Object.fromEntries(entries));
+}
 
 export async function upsertFood(db: AppDb, input: FoodInput, foodId?: string): Promise<string> {
   const now = nowIso();
@@ -44,6 +61,7 @@ export async function upsertFood(db: AppDb, input: FoodInput, foodId?: string): 
     carbsPer100: input.carbsPer100,
     fatPer100: input.fatPer100,
     fiberPer100: input.fiberPer100 ?? null,
+    micronutrientsJson: serializeMicronutrients(input.micronutrients),
     budget: input.budget,
     shelfLifeDays: input.shelfLifeDays ?? null,
     storage: input.storage ?? null,
@@ -93,6 +111,8 @@ export type RecipeInput = {
   instructionsEn?: string | null;
   category: 'breakfast' | 'lunch_dinner' | 'snack';
   isSide: boolean;
+  cuisine?: string | null;
+  tags?: string[];
   budget: 'cheap' | 'average' | 'expensive';
   servingsBase: number;
   prepTimeMinutes?: number | null;
@@ -111,6 +131,8 @@ export async function upsertRecipe(db: AppDb, input: RecipeInput, recipeId?: str
     instructionsEn: input.instructionsEn ?? null,
     category: input.category,
     isSide: input.isSide,
+    cuisine: input.cuisine ?? null,
+    tagsJson: input.tags && input.tags.length > 0 ? JSON.stringify(input.tags) : null,
     budget: input.budget,
     servingsBase: input.servingsBase,
     prepTimeMinutes: input.prepTimeMinutes ?? null,

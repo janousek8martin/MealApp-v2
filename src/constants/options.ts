@@ -35,6 +35,22 @@ export const MANUAL_DIET_KEYS = ['vegetarian', 'vegan', 'pescatarian'] as const;
  */
 export const DIET_KEYS = [...MANUAL_DIET_KEYS, 'gluten_free', 'dairy_free', 'low_carb'] as const;
 
+/** Free-form recipe tags offered when editing a recipe (see i18n recipeTags.*). */
+export const RECIPE_TAG_KEYS = [
+  'sweet',
+  'savoury',
+  'no_cook',
+  'mediterranean',
+  'fish',
+  'czech',
+  'batch_friendly',
+  'vegan',
+  'vegetarian',
+  'quick',
+  'protein',
+  'fat',
+] as const;
+
 export const CUISINE_KEYS = [
   'czech',
   'mediterranean',

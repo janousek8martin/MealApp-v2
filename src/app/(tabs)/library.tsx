@@ -402,9 +402,8 @@ export default function LibraryScreen() {
                 subtitle={nutrition ? `${categoryLabel} · ${Math.round(nutrition.kcal)} kcal` : categoryLabel}
                 photoUri={photoMap.get(`recipe:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
-                badge={t(`budget.${item.budget}`)}
                 favorite={favoriteIds.has(item.id)}
-                tags={tags.map((tag) => t(`recipeTags.${tag}`))}
+                tags={[t(`budget.${item.budget}`), ...tags.map((tag) => t(`recipeTags.${tag}`))]}
                 onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: item.id } })}
                 onDelete={() => confirmDeleteRecipe(item)}
               />
@@ -442,8 +441,7 @@ export default function LibraryScreen() {
                 subtitle={`${Math.round(item.kcalPer100)} kcal / 100 ${item.baseUnit === 'piece' ? 'g' : item.baseUnit}`}
                 photoUri={photoMap.get(`food:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
-                badge={t(`budget.${item.budget}`)}
-                tags={dietFlags.map((flag) => t(`diets.${flag}`))}
+                tags={[t(`budget.${item.budget}`), ...dietFlags.map((flag) => t(`diets.${flag}`))]}
                 onPress={() => router.push({ pathname: '/food/[id]', params: { id: item.id } })}
                 onDelete={() => confirmDeleteFood(item)}
               />
