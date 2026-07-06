@@ -102,7 +102,6 @@ export function MealSlotCard({
           </Pressable>
         ) : (
           <Pressable accessibilityRole="button" style={styles.addButton} onPress={onAddMeal}>
-            <Ionicons name="add" size={18} color={colors.primary} />
             <Text style={styles.addButtonLabel}>{t('todayMeal.addMeal')}</Text>
           </Pressable>
         )}

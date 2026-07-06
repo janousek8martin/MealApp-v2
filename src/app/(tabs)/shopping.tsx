@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -71,11 +72,11 @@ export default function ShoppingScreen() {
   const shoppingItems = useShoppingItems(household?.id);
 
   const weeklyItems = useMemo(
-    () => shoppingItems.filter((i) => i.horizon === 'weekly').sort((a, b) => Number(a.checked) - Number(b.checked)),
+    () => shoppingItems.filter((i) => i.horizon === 'weekly'),
     [shoppingItems],
   );
   const monthlyItems = useMemo(
-    () => shoppingItems.filter((i) => i.horizon === 'monthly').sort((a, b) => Number(a.checked) - Number(b.checked)),
+    () => shoppingItems.filter((i) => i.horizon === 'monthly'),
     [shoppingItems],
   );
 
@@ -125,6 +126,15 @@ export default function ShoppingScreen() {
         <Button label={t('shopping.addItem')} onPress={() => setPickerVisible(true)} style={styles.actionButton} />
       </View>
       {generating ? <ActivityIndicator color={colors.primary} style={styles.spinner} /> : null}
+
+      <Pressable
+        accessibilityRole="button"
+        style={styles.pantryLink}
+        onPress={() => router.push('/pantry')}>
+        <Ionicons name="file-tray-stacked-outline" size={16} color={colors.primary} />
+        <Text style={styles.pantryLinkLabel}>{t('shopping.goToPantry')}</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+      </Pressable>
 
       <FlatList
         ref={listRef}
@@ -234,6 +244,19 @@ function createStyles(colors: ColorTokens) {
     },
     spinner: {
       marginTop: spacing.sm,
+    },
+    pantryLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.sm,
+    },
+    pantryLinkLabel: {
+      color: colors.primary,
+      fontSize: typography.body,
+      fontWeight: '600',
     },
     list: {
       padding: spacing.md,

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -85,6 +86,15 @@ export default function PantryScreen() {
       <View style={styles.actionsRow}>
         <Button label={t('shopping.addItem')} onPress={() => setPickerVisible(true)} style={styles.actionButton} />
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        style={styles.shoppingLink}
+        onPress={() => router.push('/shopping')}>
+        <Ionicons name="cart-outline" size={16} color={colors.primary} />
+        <Text style={styles.shoppingLinkLabel}>{t('shopping.goToShoppingList')}</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+      </Pressable>
 
       <FlatList
         ref={listRef}
@@ -174,6 +184,19 @@ function createStyles(colors: ColorTokens) {
     },
     actionButton: {
       flex: 1,
+    },
+    shoppingLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.sm,
+    },
+    shoppingLinkLabel: {
+      color: colors.primary,
+      fontSize: typography.body,
+      fontWeight: '600',
     },
     list: {
       padding: spacing.md,

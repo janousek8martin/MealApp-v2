@@ -75,7 +75,9 @@
     "emptyList": "Nákupní seznam je zatím prázdný.",
     "emptyPantry": "Spíž je zatím prázdná.",
     "quantity": "Množství ({{unit}})",
-    "expiresOn": "spotřebovat do {{date}}"
+    "expiresOn": "spotřebovat do {{date}}",
+    "goToPantry": "Zásoby (spíž)",
+    "goToShoppingList": "Nákupní seznam"
   },
   "progress": {
     "logWeight": "Zapsat váhu",

@@ -75,7 +75,9 @@
     "emptyList": "The shopping list is empty for now.",
     "emptyPantry": "The pantry is empty for now.",
     "quantity": "Quantity ({{unit}})",
-    "expiresOn": "use by {{date}}"
+    "expiresOn": "use by {{date}}",
+    "goToPantry": "Pantry stock",
+    "goToShoppingList": "Shopping list"
   },
   "progress": {
     "logWeight": "Log weight",
