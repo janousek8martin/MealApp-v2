@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -8,8 +9,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ProfileDropdownChip } from '@/components/ProfileDropdownChip';
 import { ProgressRing } from '@/components/ProgressRing';
 import type { TargetsResult } from '@/domain/targets';
+import { useFood, usePhoto, useRecipe } from '@/hooks/library';
+import type { MealRow } from '@/hooks/plan';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { localizedName } from '@/utils/localized';
 
 type Props = {
   householdId: string;
@@ -17,14 +21,46 @@ type Props = {
   eatenKcal: number;
   targetKcal: number;
   onEditProfile: () => void;
+  nextMeal?: { slotLabel: string; meal: MealRow };
 };
 
+function NextMealRow({ slotLabel, meal, colors, styles }: { slotLabel: string; meal: MealRow; colors: ColorTokens; styles: ReturnType<typeof createStyles> }) {
+  const { t } = useTranslation();
+  const recipe = useRecipe(meal.itemType === 'recipe' ? meal.itemId : undefined);
+  const food = useFood(meal.itemType === 'food' ? meal.itemId : undefined);
+  const photo = usePhoto(meal.itemType, meal.itemId);
+  const name = recipe ? localizedName(recipe) : food ? localizedName(food) : '';
+
+  const openDetail = () => {
+    if (meal.itemType === 'recipe') router.push({ pathname: '/recipe/[id]', params: { id: meal.itemId } });
+    else router.push({ pathname: '/food/[id]', params: { id: meal.itemId } });
+  };
+
+  return (
+    <Pressable accessibilityRole="button" style={styles.nextMealRow} onPress={openDetail}>
+      {photo ? (
+        <Image source={{ uri: photo.uri }} style={styles.nextMealThumb} contentFit="cover" />
+      ) : (
+        <View style={[styles.nextMealThumb, styles.nextMealThumbPlaceholder]} />
+      )}
+      <View style={styles.nextMealTextCol}>
+        <Text style={styles.nextMealTitle}>{t('today.nextMealTitle')}</Text>
+        <Text style={styles.nextMealName} numberOfLines={1}>
+          {slotLabel} · {name}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.mint} />
+    </Pressable>
+  );
+}
+
 /**
- * Home screen's hero card – merges the profile selector and "edit profile"
- * link into the same card as the live TDCI, macros, and today's
- * eaten-vs-target ring, instead of a separate row floating above it.
+ * Home screen's hero card – merges the profile selector, "edit profile"
+ * link, and next-meal shortcut into the same card as the live TDCI, macros,
+ * and today's eaten-vs-target ring, instead of separate rows/cards floating
+ * around it.
  */
-export function HomeHeroCard({ householdId, targets, eatenKcal, targetKcal, onEditProfile }: Props) {
+export function HomeHeroCard({ householdId, targets, eatenKcal, targetKcal, onEditProfile, nextMeal }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -88,6 +124,10 @@ export function HomeHeroCard({ householdId, targets, eatenKcal, targetKcal, onEd
           </View>
         ))}
       </View>
+
+      {nextMeal ? (
+        <NextMealRow slotLabel={nextMeal.slotLabel} meal={nextMeal.meal} colors={colors} styles={styles} />
+      ) : null}
     </LinearGradient>
   );
 }
@@ -96,7 +136,7 @@ function createStyles(colors: ColorTokens) {
   return StyleSheet.create({
     card: {
       borderRadius: radius.card,
-      padding: spacing.lg,
+      padding: spacing.md,
       overflow: 'hidden',
     },
     heroTexture: {
@@ -111,7 +151,7 @@ function createStyles(colors: ColorTokens) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: spacing.md,
+      marginBottom: spacing.sm,
     },
     editProfileLink: {
       flexDirection: 'row',
@@ -167,10 +207,10 @@ function createStyles(colors: ColorTokens) {
     macrosRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginTop: spacing.lg,
+      marginTop: spacing.md,
       backgroundColor: 'rgba(244, 241, 232, 0.12)',
       borderRadius: radius.input,
-      padding: spacing.md,
+      padding: spacing.sm,
     },
     macro: {
       alignItems: 'center',
@@ -185,6 +225,39 @@ function createStyles(colors: ColorTokens) {
       color: colors.mint,
       fontSize: typography.small,
       marginTop: 2,
+    },
+    nextMealRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+      backgroundColor: 'rgba(244, 241, 232, 0.12)',
+      borderRadius: radius.input,
+      padding: spacing.sm,
+    },
+    nextMealThumb: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.card - 12,
+    },
+    nextMealThumbPlaceholder: {
+      backgroundColor: 'rgba(244, 241, 232, 0.25)',
+    },
+    nextMealTextCol: {
+      flex: 1,
+    },
+    nextMealTitle: {
+      color: colors.mint,
+      fontSize: 10,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    nextMealName: {
+      color: colors.onPrimary,
+      fontSize: typography.small,
+      fontWeight: '700',
+      marginTop: 1,
     },
   });
 }

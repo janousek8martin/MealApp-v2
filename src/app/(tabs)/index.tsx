@@ -8,7 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HomeHeroCard } from '@/components/HomeHeroCard';
 import { MealSlotCard } from '@/components/MealSlotCard';
-import { NextMealCard } from '@/components/NextMealCard';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
@@ -133,6 +132,11 @@ export default function TodayScreen() {
             eatenKcal={eaten?.kcal ?? 0}
             targetKcal={dailyTargets?.kcal ?? 0}
             onEditProfile={() => router.push({ pathname: '/profile/[id]', params: { id: activeProfile.id } })}
+            nextMeal={
+              nextMealEntry?.meal
+                ? { slotLabel: t(`slots.${nextMealEntry.slot.slotKey}`), meal: nextMealEntry.meal }
+                : undefined
+            }
           />
         ) : null}
 
@@ -167,10 +171,6 @@ export default function TodayScreen() {
             <Text style={styles.quickLabel}>{t('today.logWeight')}</Text>
           </Pressable>
         </View>
-
-        {nextMealEntry?.meal ? (
-          <NextMealCard slotLabel={t(`slots.${nextMealEntry.slot.slotKey}`)} meal={nextMealEntry.meal} />
-        ) : null}
 
         {!hasAnyMeal ? (
           <View style={styles.emptyState}>
@@ -249,7 +249,7 @@ function createStyles(colors: ColorTokens) {
     quickRow: {
       flexDirection: 'row',
       gap: spacing.sm,
-      marginTop: spacing.md,
+      marginTop: spacing.sm,
     },
     quickCard: {
       backgroundColor: colors.surface,

@@ -413,9 +413,9 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
                   accessibilityState={{ selected }}
                   onPress={() => setActivityMultiplier(value)}
                   style={styles.activityDotWrap}>
+                  <Text style={styles.activityDotLabel}>{t(`form.${ACTIVITY_DOT_KEYS[index]}`)}</Text>
                   <View style={[styles.activityDot, selected && styles.activityDotSelected]} />
                   <Text style={styles.activityDotValue}>{value}</Text>
-                  <Text style={styles.activityDotLabel}>{t(`form.${ACTIVITY_DOT_KEYS[index]}`)}</Text>
                 </Pressable>
               );
             },
