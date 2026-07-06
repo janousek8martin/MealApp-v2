@@ -76,7 +76,6 @@
     "emptyPantry": "Spíž je zatím prázdná.",
     "quantity": "Množství ({{unit}})",
     "expiresOn": "spotřebovat do {{date}}",
-    "goToPantry": "Zásoby (spíž)",
     "goToShoppingList": "Nákupní seznam"
   },
   "progress": {

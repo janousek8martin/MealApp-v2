@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
@@ -60,7 +59,7 @@ export default function ShoppingScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const listRef = useRef<FlatList>(null);
+  const listRef = useRef<ScrollView>(null);
   const { onScroll: onRestoreScroll, scrollEventThrottle } = useTabScrollRestore(listRef);
   const scrollHint = useScrollDownHint(listRef);
   const { household } = useHousehold();
@@ -70,6 +69,7 @@ export default function ShoppingScreen() {
   const [quantity, setQuantity] = useState('');
 
   const shoppingItems = useShoppingItems(household?.id);
+  const sectionOffsets = useRef<{ weekly: number; monthly: number }>({ weekly: 0, monthly: 0 });
 
   const weeklyItems = useMemo(
     () => shoppingItems.filter((i) => i.horizon === 'weekly'),
@@ -79,6 +79,10 @@ export default function ShoppingScreen() {
     () => shoppingItems.filter((i) => i.horizon === 'monthly'),
     [shoppingItems],
   );
+
+  const scrollToSection = (key: 'weekly' | 'monthly') => {
+    listRef.current?.scrollTo({ y: sectionOffsets.current[key], animated: true });
+  };
 
   const generateList = async () => {
     if (!household) return;
@@ -127,16 +131,28 @@ export default function ShoppingScreen() {
       </View>
       {generating ? <ActivityIndicator color={colors.primary} style={styles.spinner} /> : null}
 
-      <Pressable
-        accessibilityRole="button"
-        style={styles.pantryLink}
-        onPress={() => router.push('/pantry')}>
-        <Ionicons name="file-tray-stacked-outline" size={16} color={colors.primary} />
-        <Text style={styles.pantryLinkLabel}>{t('shopping.goToPantry')}</Text>
-        <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-      </Pressable>
+      <View style={styles.sectionLinksRow}>
+        <Pressable
+          accessibilityRole="button"
+          style={styles.sectionLink}
+          disabled={weeklyItems.length === 0}
+          onPress={() => scrollToSection('weekly')}>
+          <Text style={[styles.sectionLinkLabel, weeklyItems.length === 0 && styles.sectionLinkLabelDisabled]}>
+            {t('shopping.weekly')}
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          style={styles.sectionLink}
+          disabled={monthlyItems.length === 0}
+          onPress={() => scrollToSection('monthly')}>
+          <Text style={[styles.sectionLinkLabel, monthlyItems.length === 0 && styles.sectionLinkLabelDisabled]}>
+            {t('shopping.monthly')}
+          </Text>
+        </Pressable>
+      </View>
 
-      <FlatList
+      <ScrollView
         ref={listRef}
         onScroll={(e) => {
           onRestoreScroll(e);
@@ -145,28 +161,34 @@ export default function ShoppingScreen() {
         onContentSizeChange={scrollHint.onContentSizeChange}
         onLayout={scrollHint.onLayout}
         scrollEventThrottle={scrollEventThrottle}
-        contentContainerStyle={styles.list}
-        data={[
-          { key: 'weekly', title: t('shopping.weekly'), items: weeklyItems },
-          { key: 'monthly', title: t('shopping.monthly'), items: monthlyItems },
-        ]}
-        keyExtractor={(section) => section.key}
-        renderItem={({ item: section }) =>
-          section.items.length > 0 ? (
-            <View>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              {section.items.map((item: ShoppingItemRow) => (
-                <ShoppingRow
-                  key={item.id}
-                  item={item}
-                  onToggle={() => void setShoppingItemChecked(db, item.id, !item.checked)}
-                  onRemove={() => void removeShoppingItem(db, item.id)}
-                />
-              ))}
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={
+        contentContainerStyle={styles.list}>
+        {weeklyItems.length > 0 ? (
+          <View onLayout={(e) => { sectionOffsets.current.weekly = e.nativeEvent.layout.y; }}>
+            <Text style={styles.sectionTitle}>{t('shopping.weekly')}</Text>
+            {weeklyItems.map((item: ShoppingItemRow) => (
+              <ShoppingRow
+                key={item.id}
+                item={item}
+                onToggle={() => void setShoppingItemChecked(db, item.id, !item.checked)}
+                onRemove={() => void removeShoppingItem(db, item.id)}
+              />
+            ))}
+          </View>
+        ) : null}
+        {monthlyItems.length > 0 ? (
+          <View onLayout={(e) => { sectionOffsets.current.monthly = e.nativeEvent.layout.y; }}>
+            <Text style={styles.sectionTitle}>{t('shopping.monthly')}</Text>
+            {monthlyItems.map((item: ShoppingItemRow) => (
+              <ShoppingRow
+                key={item.id}
+                item={item}
+                onToggle={() => void setShoppingItemChecked(db, item.id, !item.checked)}
+                onRemove={() => void removeShoppingItem(db, item.id)}
+              />
+            ))}
+          </View>
+        ) : null}
+        {weeklyItems.length === 0 && monthlyItems.length === 0 ? (
           <View style={styles.emptyWrap}>
             <Image
               source={require('../../assets/images/empty-states/shopping-empty.png')}
@@ -175,8 +197,8 @@ export default function ShoppingScreen() {
             />
             <Text style={styles.emptyText}>{t('shopping.emptyList')}</Text>
           </View>
-        }
-      />
+        ) : null}
+      </ScrollView>
 
       <FoodPickerModal
         visible={pickerVisible && !pendingFood}
@@ -245,18 +267,24 @@ function createStyles(colors: ColorTokens) {
     spinner: {
       marginTop: spacing.sm,
     },
-    pantryLink: {
+    sectionLinksRow: {
       flexDirection: 'row',
-      alignItems: 'center',
       justifyContent: 'center',
-      gap: spacing.xs,
-      paddingHorizontal: spacing.md,
+      gap: spacing.lg,
       marginTop: spacing.sm,
     },
-    pantryLinkLabel: {
+    sectionLink: {
+      paddingVertical: spacing.xs,
+    },
+    sectionLinkLabel: {
       color: colors.primary,
       fontSize: typography.body,
       fontWeight: '600',
+      textDecorationLine: 'underline',
+    },
+    sectionLinkLabelDisabled: {
+      color: colors.textSecondary,
+      textDecorationLine: 'none',
     },
     list: {
       padding: spacing.md,
