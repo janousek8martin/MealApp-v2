@@ -248,6 +248,7 @@ function createStyles(colors: ColorTokens) {
     },
     quickRow: {
       flexDirection: 'row',
+      justifyContent: 'center',
       gap: spacing.sm,
       marginTop: spacing.sm,
     },
