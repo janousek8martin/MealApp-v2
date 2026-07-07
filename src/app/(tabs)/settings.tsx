@@ -30,7 +30,7 @@ import {
   useProfileTargets,
 } from '@/hooks/data';
 import type { ProfileRow } from '@/hooks/dataMapping';
-import { useAllMealSlots, type SlotRow } from '@/hooks/plan';
+import { useAllMealSlots } from '@/hooks/plan';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { syncHouseholdNotifications } from '@/services/notifications';
@@ -49,11 +49,6 @@ const NAV_LABEL_KEYS: Record<NavKey, string> = {
   progress: 'tabs.progress',
   settings: 'tabs.settings',
 };
-
-function num(value: string): number | null {
-  const parsed = Number(value.replace(',', '.'));
-  return Number.isFinite(parsed) && value.trim() !== '' ? parsed : null;
-}
 
 function parseNotifications(json: string | null): NotificationSettings {
   if (!json) return defaultNotificationSettings;
@@ -255,86 +250,6 @@ function ProfileSections({ profile }: { profile: ProfileRow }) {
           dailyTargetKcal={targets ? targets.adjustedTdciKcal : null}
         />
       </AccordionCard>
-    </>
-  );
-}
-
-type SlotEdit = { percent: string; enabled: boolean };
-
-function MealSlotsCard({ householdId }: { householdId: string }) {
-  const { t } = useTranslation();
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  const slots = useAllMealSlots(householdId);
-  const [edits, setEdits] = useState<Record<string, SlotEdit>>({});
-  const [seeded, setSeeded] = useState(false);
-
-  useEffect(() => {
-    if (seeded || slots.length === 0) return;
-    const next: Record<string, SlotEdit> = {};
-    for (const slot of slots) {
-      next[slot.id] = {
-        percent: String(Math.round(slot.calorieShare * 100)),
-        enabled: slot.enabled,
-      };
-    }
-    setEdits(next);
-    setSeeded(true);
-  }, [slots, seeded]);
-
-  const updateEdit = (slotId: string, patch: Partial<SlotEdit>) => {
-    setEdits((prev) => ({ ...prev, [slotId]: { ...prev[slotId], ...patch } }));
-  };
-
-  const enabledSum = slots.reduce((sum, slot) => {
-    const edit = edits[slot.id];
-    if (!edit?.enabled) return sum;
-    return sum + (num(edit.percent) ?? 0);
-  }, 0);
-  const canSave = Math.abs(enabledSum - 100) < 0.5;
-
-  const save = async () => {
-    for (const slot of slots) {
-      const edit = edits[slot.id];
-      if (!edit) continue;
-      await updateMealSlotSetting(db, slot.id, {
-        calorieShare: (num(edit.percent) ?? 0) / 100,
-        enabled: edit.enabled,
-      });
-    }
-  };
-
-  return (
-    <>
-      {slots.map((slot: SlotRow) => {
-        const edit = edits[slot.id];
-        if (!edit) return null;
-        return (
-          <View key={slot.id} style={styles.slotRow}>
-            <View style={styles.slotHeader}>
-              <Text style={styles.slotLabel}>{t(`slots.${slot.slotKey}`)}</Text>
-              <Switch
-                value={edit.enabled}
-                onValueChange={(v) => updateEdit(slot.id, { enabled: v })}
-                trackColor={{ false: colors.border, true: colors.primaryLight }}
-                thumbColor={colors.surface}
-              />
-            </View>
-            <TextField
-              label={t('settings.slotShare')}
-              value={edit.percent}
-              onChangeText={(v) => updateEdit(slot.id, { percent: v })}
-              keyboardType="numeric"
-              suffix="%"
-            />
-          </View>
-        );
-      })}
-
-      <Text style={[styles.sumText, !canSave && styles.sumTextWarning]}>
-        {t('settings.slotsSumWarning', { sum: Math.round(enabledSum) })}
-      </Text>
-      <Button label={t('settings.saveSlots')} onPress={save} disabled={!canSave} />
     </>
   );
 }
@@ -572,10 +487,6 @@ export default function SettingsScreen() {
           />
         </AccordionCard>
 
-        <AccordionCard title={t('settings.mealSlots')} subtitle={t('settings.mealSlotsHint')}>
-          <MealSlotsCard householdId={household.id} />
-        </AccordionCard>
-
         <AccordionCard title={t('settings.notifications')}>
           <SwitchRow
             label={t('settings.mealReminders')}
@@ -798,16 +709,6 @@ function createStyles(colors: ColorTokens) {
       paddingVertical: spacing.sm,
       marginBottom: spacing.sm,
     },
-    slotRow: {
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      paddingVertical: spacing.sm,
-    },
-    slotHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
     slotLabel: {
       color: colors.text,
       fontSize: typography.body,
@@ -819,11 +720,6 @@ function createStyles(colors: ColorTokens) {
     },
     slotFieldTime: {
       flex: 1,
-    },
-    sumText: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
-      marginBottom: spacing.sm,
     },
     sumTextWarning: {
       color: colors.danger,
