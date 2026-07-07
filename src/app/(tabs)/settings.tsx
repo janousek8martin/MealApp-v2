@@ -11,7 +11,6 @@ import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { ManualAdjustmentCard, MacroOverridesCard } from '@/components/ProfileNutritionCards';
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { ProfilePortionsCard } from '@/components/ProfilePortionsCard';
-import { TdciCard } from '@/components/TdciCard';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { SwitchRow } from '@/components/ui/SwitchRow';
@@ -223,14 +222,20 @@ function ProfileSections({ profile }: { profile: ProfileRow }) {
       </AccordionCard>
 
       <AccordionCard title={t('settings.nutritionSection')}>
-        {targets ? <TdciCard name={profile.name} targets={targets} /> : null}
+        {targets ? (
+          <>
+            <Text style={styles.tdciSummary}>
+              {Math.round(targets.adjustedTdciKcal)} kcal · {t(`tdciMode.${targets.mode}`)}
+            </Text>
+            <Text style={styles.fiberInfo}>
+              {t('macros.protein')} {Math.round(targets.macros.proteinG)} g · {t('macros.carbs')}{' '}
+              {Math.round(targets.macros.carbsG)} g · {t('macros.fat')} {Math.round(targets.macros.fatG)} g ·{' '}
+              {t('macros.fiber')} {Math.round(targets.fiberG)} g
+            </Text>
+          </>
+        ) : null}
         {targets ? <ManualAdjustmentCard profileId={profile.id} kcal={profile.tdciManualAdjustmentKcal} /> : null}
         <MacroOverridesCard profileId={profile.id} macroOverridesJson={profile.macroOverridesJson} />
-        {targets ? (
-          <Text style={styles.fiberInfo}>
-            {t('settings.fiberTarget')}: {Math.round(targets.fiberG)} g
-          </Text>
-        ) : null}
         {(() => {
           const rda = micronutrientRda(profile.sex, ageYears(profile.birthDate));
           return (
@@ -773,6 +778,12 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small,
       marginTop: 2,
       lineHeight: 18,
+    },
+    tdciSummary: {
+      color: colors.text,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginTop: spacing.sm,
     },
     fiberInfo: {
       color: colors.textSecondary,
