@@ -3,10 +3,11 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image as RNImage, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EditActions } from '@/components/EditActions';
+import { ALLERGEN_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
 import { softDeleteRecipe, toggleFavorite } from '@/db/repositories/library';
 import { useActiveProfile, useHousehold } from '@/hooks/data';
@@ -14,6 +15,7 @@ import {
   recipeNutritionOf,
   useFavoriteRecipeIds,
   usePhoto,
+  usePhotoMap,
   useRecipe,
   useRecipeIngredients,
   useRecipeTagsMap,
@@ -35,6 +37,7 @@ export default function RecipeDetailScreen() {
   const activeProfile = useActiveProfile(household?.id);
   const favoriteIds = useFavoriteRecipeIds(activeProfile?.id);
   const recipeTagsMap = useRecipeTagsMap();
+  const photoMap = usePhotoMap();
 
   if (!recipe) {
     return <SafeAreaView style={styles.safeArea} />;
@@ -103,9 +106,17 @@ export default function RecipeDetailScreen() {
         <Text style={styles.sectionTitle}>{t('recipeDetail.ingredients')}</Text>
         {ingredientRows.map((row) => {
           const equivalent = kitchenEquivalentLabel(row.ingredient.amount, row.food.baseUnit, row.food.gramsPerCup);
+          const ingredientPhoto = photoMap.get(`food:${row.food.id}`);
           return (
             <View key={row.ingredient.id} style={styles.ingredientRow}>
-              <Text style={styles.ingredientName}>{localizedName(row.food)}</Text>
+              {ingredientPhoto ? (
+                <Image source={{ uri: ingredientPhoto }} style={styles.ingredientThumb} contentFit="cover" />
+              ) : (
+                <View style={[styles.ingredientThumb, styles.ingredientThumbPlaceholder]} />
+              )}
+              <Text style={styles.ingredientName} numberOfLines={1}>
+                {localizedName(row.food)}
+              </Text>
               <View style={styles.ingredientAmountCol}>
                 <Text style={styles.ingredientAmount}>
                   {row.ingredient.amount} {row.food.baseUnit === 'piece' ? t('units.pcs') : row.food.baseUnit}
@@ -126,6 +137,9 @@ export default function RecipeDetailScreen() {
             <View style={styles.chipRow}>
               {allergens.map((allergen) => (
                 <View key={allergen} style={styles.allergenChip}>
+                  {ALLERGEN_ICONS[allergen] ? (
+                    <RNImage source={ALLERGEN_ICONS[allergen]} style={styles.allergenChipIcon} />
+                  ) : null}
                   <Text style={styles.allergenChipLabel}>{t(`allergens.${allergen}`)}</Text>
                 </View>
               ))}
@@ -242,7 +256,8 @@ function createStyles(colors: ColorTokens) {
     },
     ingredientRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: spacing.sm,
       backgroundColor: colors.surface,
       borderRadius: radius.input,
       borderWidth: 1,
@@ -251,7 +266,16 @@ function createStyles(colors: ColorTokens) {
       paddingHorizontal: spacing.md,
       marginBottom: spacing.xs + 2,
     },
+    ingredientThumb: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.card - 12,
+    },
+    ingredientThumbPlaceholder: {
+      backgroundColor: colors.mint,
+    },
     ingredientName: {
+      flex: 1,
       color: colors.text,
       fontSize: typography.body,
     },
@@ -278,10 +302,18 @@ function createStyles(colors: ColorTokens) {
       gap: spacing.sm,
     },
     allergenChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
       backgroundColor: colors.lime,
       borderRadius: radius.chip,
       paddingVertical: spacing.xs + 2,
       paddingHorizontal: spacing.md,
+    },
+    allergenChipIcon: {
+      width: 16,
+      height: 16,
+      resizeMode: 'contain',
     },
     allergenChipLabel: {
       color: colors.text,

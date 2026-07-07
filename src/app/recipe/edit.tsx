@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +15,7 @@ import { CUISINE_KEYS, RECIPE_TAG_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { setPhoto, upsertRecipe } from '@/db/repositories/library';
 import { computeRecipeNutrition } from '@/domain/recipeNutrition';
-import { useFoods, usePhoto, useRecipe, useRecipeIngredients } from '@/hooks/library';
+import { useFoods, usePhoto, usePhotoMap, useRecipe, useRecipeIngredients } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
@@ -43,6 +44,7 @@ export default function RecipeEditScreen() {
   const photo = usePhoto('recipe', id);
   const foodRows = useFoods();
   const foodById = new Map(foodRows.map((food) => [food.id, food]));
+  const photoMap = usePhotoMap();
 
   const [nameCs, setNameCs] = useState('');
   const [nameEn, setNameEn] = useState('');
@@ -210,8 +212,14 @@ export default function RecipeEditScreen() {
         <Text style={styles.section}>{t('recipeEdit.ingredients')}</Text>
         {ingredients.map((entry) => {
           const food = foodById.get(entry.foodId);
+          const ingredientPhoto = photoMap.get(`food:${entry.foodId}`);
           return (
             <View key={entry.foodId} style={styles.ingredientRow}>
+              {ingredientPhoto ? (
+                <Image source={{ uri: ingredientPhoto }} style={styles.ingredientThumb} contentFit="cover" />
+              ) : (
+                <View style={[styles.ingredientThumb, styles.ingredientThumbPlaceholder]} />
+              )}
               <Text style={styles.ingredientName} numberOfLines={1}>
                 {food ? localizedName(food) : entry.foodId}
               </Text>
@@ -334,6 +342,14 @@ function createStyles(colors: ColorTokens) {
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
       marginBottom: spacing.xs + 2,
+    },
+    ingredientThumb: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.card - 12,
+    },
+    ingredientThumbPlaceholder: {
+      backgroundColor: colors.mint,
     },
     ingredientName: {
       flex: 1,

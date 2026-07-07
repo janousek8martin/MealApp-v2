@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image as RNImage, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+
+export type LibraryCardTag = { label: string; icon?: ImageSourcePropType };
 
 type Props = {
   title: string;
@@ -14,9 +16,9 @@ type Props = {
   accent?: string;
   favorite?: boolean;
   /** All tags shown in one wrapping row at the bottom of the card (budget included). */
-  tags?: string[];
+  tags?: LibraryCardTag[];
   /** Allergens, shown in the same row as `tags` but visually flagged since they're safety-relevant. */
-  allergenTags?: string[];
+  allergenTags?: LibraryCardTag[];
   onPress: () => void;
   /** When provided, a long-press on the card reveals a delete (trash) button. */
   onDelete?: () => void;
@@ -62,16 +64,18 @@ export function LibraryCard({
         {(tags && tags.length > 0) || (allergenTags && allergenTags.length > 0) ? (
           <View style={styles.tagRow}>
             {allergenTags?.map((tag) => (
-              <View key={`allergen:${tag}`} style={[styles.tag, styles.allergenTag]}>
+              <View key={`allergen:${tag.label}`} style={[styles.tag, styles.allergenTag]}>
+                {tag.icon ? <RNImage source={tag.icon} style={styles.tagIcon} /> : null}
                 <Text style={styles.tagLabel} numberOfLines={1}>
-                  {tag}
+                  {tag.label}
                 </Text>
               </View>
             ))}
             {tags?.map((tag) => (
-              <View key={tag} style={styles.tag}>
+              <View key={tag.label} style={styles.tag}>
+                {tag.icon ? <RNImage source={tag.icon} style={styles.tagIcon} /> : null}
                 <Text style={styles.tagLabel} numberOfLines={1}>
-                  {tag}
+                  {tag.label}
                 </Text>
               </View>
             ))}
@@ -138,13 +142,21 @@ function createStyles(colors: ColorTokens) {
       marginTop: spacing.xs,
     },
     tag: {
+      flexDirection: 'row',
+      alignItems: 'center',
       backgroundColor: colors.tealTint,
       borderRadius: radius.chip,
       paddingVertical: 1,
       paddingHorizontal: spacing.xs + 2,
+      gap: 3,
     },
     allergenTag: {
       backgroundColor: colors.lime,
+    },
+    tagIcon: {
+      width: 12,
+      height: 12,
+      resizeMode: 'contain',
     },
     tagLabel: {
       color: colors.text,

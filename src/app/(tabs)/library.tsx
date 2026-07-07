@@ -404,8 +404,14 @@ export default function LibraryScreen() {
                 photoUri={photoMap.get(`recipe:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
                 favorite={favoriteIds.has(item.id)}
-                tags={[t(`budget.${item.budget}`), ...tags.map((tag) => t(`recipeTags.${tag}`))]}
-                allergenTags={allergens.map((allergen) => t(`allergens.${allergen}`))}
+                tags={[
+                  { label: t(`budget.${item.budget}`) },
+                  ...tags.map((tag) => ({ label: t(`recipeTags.${tag}`) })),
+                ]}
+                allergenTags={allergens.map((allergen) => ({
+                  label: t(`allergens.${allergen}`),
+                  icon: ALLERGEN_ICONS[allergen],
+                }))}
                 onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: item.id } })}
                 onDelete={() => confirmDeleteRecipe(item)}
               />
@@ -444,8 +450,14 @@ export default function LibraryScreen() {
                 subtitle={`${Math.round(item.kcalPer100)} kcal / 100 ${item.baseUnit === 'piece' ? 'g' : item.baseUnit}`}
                 photoUri={photoMap.get(`food:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
-                tags={[t(`budget.${item.budget}`), ...dietFlags.map((flag) => t(`diets.${flag}`))]}
-                allergenTags={allergens.map((allergen) => t(`allergens.${allergen}`))}
+                tags={[
+                  { label: t(`budget.${item.budget}`) },
+                  ...dietFlags.map((flag) => ({ label: t(`diets.${flag}`), icon: DIET_ICONS[flag] })),
+                ]}
+                allergenTags={allergens.map((allergen) => ({
+                  label: t(`allergens.${allergen}`),
+                  icon: ALLERGEN_ICONS[allergen],
+                }))}
                 onPress={() => router.push({ pathname: '/food/[id]', params: { id: item.id } })}
                 onDelete={() => confirmDeleteFood(item)}
               />

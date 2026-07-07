@@ -3,10 +3,11 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image as RNImage, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EditActions } from '@/components/EditActions';
+import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
 import { softDeleteFood } from '@/db/repositories/library';
 import { useFood, useFoodAllergens, usePhoto } from '@/hooks/library';
@@ -110,11 +111,15 @@ export default function FoodDetailScreen() {
             <View style={styles.chipRow}>
               {allergens.map((allergen) => (
                 <View key={allergen} style={[styles.chip, styles.allergenChip]}>
+                  {ALLERGEN_ICONS[allergen] ? (
+                    <RNImage source={ALLERGEN_ICONS[allergen]} style={styles.chipIcon} />
+                  ) : null}
                   <Text style={styles.chipLabel}>{t(`allergens.${allergen}`)}</Text>
                 </View>
               ))}
               {dietFlags.map((flag) => (
                 <View key={flag} style={styles.chip}>
+                  {DIET_ICONS[flag] ? <RNImage source={DIET_ICONS[flag]} style={styles.chipIcon} /> : null}
                   <Text style={styles.chipLabel}>{t(`diets.${flag}`)}</Text>
                 </View>
               ))}
@@ -208,6 +213,9 @@ function createStyles(colors: ColorTokens) {
       gap: spacing.sm,
     },
     chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
       backgroundColor: colors.mint,
       borderRadius: radius.chip,
       paddingVertical: spacing.xs + 2,
@@ -215,6 +223,11 @@ function createStyles(colors: ColorTokens) {
     },
     allergenChip: {
       backgroundColor: colors.lime,
+    },
+    chipIcon: {
+      width: 16,
+      height: 16,
+      resizeMode: 'contain',
     },
     chipLabel: {
       color: colors.text,
