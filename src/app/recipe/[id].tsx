@@ -16,6 +16,7 @@ import {
   usePhoto,
   useRecipe,
   useRecipeIngredients,
+  useRecipeTagsMap,
 } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -33,11 +34,13 @@ export default function RecipeDetailScreen() {
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
   const favoriteIds = useFavoriteRecipeIds(activeProfile?.id);
+  const recipeTagsMap = useRecipeTagsMap();
 
   if (!recipe) {
     return <SafeAreaView style={styles.safeArea} />;
   }
 
+  const allergens = recipeTagsMap.get(recipe.id)?.allergens ?? [];
   const nutrition = recipeNutritionOf(ingredientRows, recipe.servingsBase);
   const instructions = localizedInstructions(recipe);
   const isFavorite = favoriteIds.has(recipe.id);
@@ -116,6 +119,19 @@ export default function RecipeDetailScreen() {
             </View>
           );
         })}
+
+        {allergens.length > 0 ? (
+          <>
+            <Text style={styles.sectionTitle}>{t('recipeDetail.allergens')}</Text>
+            <View style={styles.chipRow}>
+              {allergens.map((allergen) => (
+                <View key={allergen} style={styles.allergenChip}>
+                  <Text style={styles.allergenChipLabel}>{t(`allergens.${allergen}`)}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        ) : null}
 
         {instructions ? (
           <>
@@ -255,6 +271,22 @@ function createStyles(colors: ColorTokens) {
       color: colors.text,
       fontSize: typography.body,
       lineHeight: 22,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    allergenChip: {
+      backgroundColor: colors.lime,
+      borderRadius: radius.chip,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
+    },
+    allergenChipLabel: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '600',
     },
   });
 }

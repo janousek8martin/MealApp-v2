@@ -389,6 +389,7 @@
     "deleteMessage": "This recipe will be removed from the library.",
     "nutritionPerPortion": "Nutrition per portion",
     "ingredients": "Ingredients",
+    "allergens": "Allergens",
     "instructions": "Instructions",
     "kitchenEquivalent": "about {{fraction}} cup"
   },

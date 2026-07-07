@@ -396,6 +396,7 @@ export default function LibraryScreen() {
             const nutrition = recipeNutritionMap.get(item.id);
             const categoryLabel = t(`library.filter.${item.isSide ? 'side' : item.category}`);
             const tags: string[] = item.tagsJson ? JSON.parse(item.tagsJson) : [];
+            const allergens = recipeTagsMap.get(item.id)?.allergens ?? [];
             return (
               <LibraryCard
                 title={localizedName(item)}
@@ -404,6 +405,7 @@ export default function LibraryScreen() {
                 accent={ACCENTS[index % ACCENTS.length]}
                 favorite={favoriteIds.has(item.id)}
                 tags={[t(`budget.${item.budget}`), ...tags.map((tag) => t(`recipeTags.${tag}`))]}
+                allergenTags={allergens.map((allergen) => t(`allergens.${allergen}`))}
                 onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: item.id } })}
                 onDelete={() => confirmDeleteRecipe(item)}
               />
@@ -435,6 +437,7 @@ export default function LibraryScreen() {
           }
           renderItem={({ item, index }) => {
             const dietFlags: string[] = item.dietFlagsJson ? JSON.parse(item.dietFlagsJson) : [];
+            const allergens = foodAllergensMap.get(item.id) ?? [];
             return (
               <LibraryCard
                 title={localizedName(item)}
@@ -442,6 +445,7 @@ export default function LibraryScreen() {
                 photoUri={photoMap.get(`food:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
                 tags={[t(`budget.${item.budget}`), ...dietFlags.map((flag) => t(`diets.${flag}`))]}
+                allergenTags={allergens.map((allergen) => t(`allergens.${allergen}`))}
                 onPress={() => router.push({ pathname: '/food/[id]', params: { id: item.id } })}
                 onDelete={() => confirmDeleteFood(item)}
               />

@@ -389,6 +389,7 @@
     "deleteMessage": "Tento recept bude odstraněn z knihovny.",
     "nutritionPerPortion": "Nutriční hodnoty na porci",
     "ingredients": "Suroviny",
+    "allergens": "Alergeny",
     "instructions": "Postup",
     "kitchenEquivalent": "cca {{fraction}} hrnku"
   },

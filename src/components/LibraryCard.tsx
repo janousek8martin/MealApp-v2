@@ -15,6 +15,8 @@ type Props = {
   favorite?: boolean;
   /** All tags shown in one wrapping row at the bottom of the card (budget included). */
   tags?: string[];
+  /** Allergens, shown in the same row as `tags` but visually flagged since they're safety-relevant. */
+  allergenTags?: string[];
   onPress: () => void;
   /** When provided, a long-press on the card reveals a delete (trash) button. */
   onDelete?: () => void;
@@ -28,6 +30,7 @@ export function LibraryCard({
   accent,
   favorite,
   tags,
+  allergenTags,
   onPress,
   onDelete,
 }: Props) {
@@ -56,9 +59,16 @@ export function LibraryCard({
         <Text style={styles.subtitle} numberOfLines={1}>
           {subtitle}
         </Text>
-        {tags && tags.length > 0 ? (
+        {(tags && tags.length > 0) || (allergenTags && allergenTags.length > 0) ? (
           <View style={styles.tagRow}>
-            {tags.map((tag) => (
+            {allergenTags?.map((tag) => (
+              <View key={`allergen:${tag}`} style={[styles.tag, styles.allergenTag]}>
+                <Text style={styles.tagLabel} numberOfLines={1}>
+                  {tag}
+                </Text>
+              </View>
+            ))}
+            {tags?.map((tag) => (
               <View key={tag} style={styles.tag}>
                 <Text style={styles.tagLabel} numberOfLines={1}>
                   {tag}
@@ -132,6 +142,9 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.chip,
       paddingVertical: 1,
       paddingHorizontal: spacing.xs + 2,
+    },
+    allergenTag: {
+      backgroundColor: colors.lime,
     },
     tagLabel: {
       color: colors.text,
