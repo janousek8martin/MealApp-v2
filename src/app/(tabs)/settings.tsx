@@ -229,8 +229,7 @@ function ProfileSections({ profile }: { profile: ProfileRow }) {
             </Text>
             <Text style={styles.fiberInfo}>
               {t('macros.protein')} {Math.round(targets.macros.proteinG)} g · {t('macros.carbs')}{' '}
-              {Math.round(targets.macros.carbsG)} g · {t('macros.fat')} {Math.round(targets.macros.fatG)} g ·{' '}
-              {t('macros.fiber')} {Math.round(targets.fiberG)} g
+              {Math.round(targets.macros.carbsG)} g · {t('macros.fat')} {Math.round(targets.macros.fatG)} g
             </Text>
           </>
         ) : null}
@@ -241,7 +240,9 @@ function ProfileSections({ profile }: { profile: ProfileRow }) {
           return (
             <Text style={styles.fiberInfo}>
               {t('micros.ironMg')} {rda.ironMg} · {t('micros.vitaminDUg')} {rda.vitaminDUg} · {t('micros.b12Ug')}{' '}
-              {rda.b12Ug} · {t('micros.calciumMg')} {rda.calciumMg} · {t('micros.omega3G')} {rda.omega3G}
+              {rda.b12Ug} · {t('micros.calciumMg')} {rda.calciumMg}
+              {targets ? ` · ${t('macros.fiber')} ${Math.round(targets.fiberG)} g` : ''} ·{' '}
+              {t('micros.omega3G')} {rda.omega3G}
             </Text>
           );
         })()}
