@@ -6,7 +6,7 @@ import {
   gramsToOunces,
   isKitchenVolumeUnit,
   kgToLbs,
-  kitchenEquivalentLabel,
+  kitchenEquivalent,
   kitchenVolumeToMl,
   kitchenWeightToGrams,
   lbsToKg,
@@ -93,27 +93,38 @@ describe('formatCupQuarters', () => {
   });
 });
 
-describe('kitchenEquivalentLabel', () => {
+describe('kitchenEquivalent', () => {
   it('matches the "60 g of oats -> ~3/4 cup" example from the spec', () => {
     // oats gramsPerCup = 90 -> 60g = 2/3 cup -> rounds to nearest quarter (2.67 quarters -> 3 -> 3/4)
-    expect(kitchenEquivalentLabel(60, 'g', 90)).toBe('3/4');
+    expect(kitchenEquivalent(60, 'g', 90)).toEqual({ unit: 'cup', quarters: 3 });
   });
 
   it('returns null for piece-based ingredients', () => {
-    expect(kitchenEquivalentLabel(2, 'piece', null)).toBeNull();
+    expect(kitchenEquivalent(2, 'piece', null)).toBeNull();
   });
 
   it('returns null for g-based foods with no known density', () => {
-    expect(kitchenEquivalentLabel(100, 'g', null)).toBeNull();
-    expect(kitchenEquivalentLabel(100, 'g', undefined)).toBeNull();
+    expect(kitchenEquivalent(100, 'g', null)).toBeNull();
+    expect(kitchenEquivalent(100, 'g', undefined)).toBeNull();
   });
 
-  it('returns null for amounts under a quarter cup', () => {
-    expect(kitchenEquivalentLabel(5, 'g', 90)).toBeNull();
+  it('falls back to tablespoons for amounts under a quarter cup', () => {
+    // 5g of oats (90 g/cup) -> ~13.3 ml -> rounds to 1 tbsp (15 ml), not "nothing"
+    expect(kitchenEquivalent(5, 'g', 90)).toEqual({ unit: 'tbsp', amount: 1 });
+  });
+
+  it('falls back to teaspoons for amounts under a tablespoon', () => {
+    // 2g of oats (90 g/cup) -> ~5.3 ml -> rounds to 1 tsp (5 ml)
+    expect(kitchenEquivalent(2, 'g', 90)).toEqual({ unit: 'tsp', amount: 1 });
+  });
+
+  it('returns null for genuinely negligible amounts', () => {
+    // 0.3g of oats (90 g/cup) -> 0.8 ml -> rounds to 0 tsp
+    expect(kitchenEquivalent(0.3, 'g', 90)).toBeNull();
   });
 
   it('computes a direct volume equivalent for ml-based foods, no density needed', () => {
     // 120 ml = 1/2 cup (240 ml/cup)
-    expect(kitchenEquivalentLabel(120, 'ml', null)).toBe('1/2');
+    expect(kitchenEquivalent(120, 'ml', null)).toEqual({ unit: 'cup', quarters: 2 });
   });
 });

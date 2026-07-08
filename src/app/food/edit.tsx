@@ -40,6 +40,7 @@ export default function FoodEditScreen() {
   const [category, setCategory] = useState<string | null>(null);
   const [baseUnit, setBaseUnit] = useState<'g' | 'ml' | 'piece'>('g');
   const [gramsPerPiece, setGramsPerPiece] = useState('');
+  const [gramsPerCup, setGramsPerCup] = useState('');
   const [kcal, setKcal] = useState('');
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
@@ -67,6 +68,7 @@ export default function FoodEditScreen() {
     setCategory(existing.category);
     setBaseUnit(existing.baseUnit);
     setGramsPerPiece(existing.gramsPerPiece ? String(existing.gramsPerPiece) : '');
+    setGramsPerCup(existing.gramsPerCup ? String(existing.gramsPerCup) : '');
     setKcal(String(existing.kcalPer100));
     setProtein(String(existing.proteinPer100));
     setCarbs(String(existing.carbsPer100));
@@ -112,6 +114,7 @@ export default function FoodEditScreen() {
         category,
         baseUnit,
         gramsPerPiece: baseUnit === 'piece' ? num(gramsPerPiece) : null,
+        gramsPerCup: baseUnit === 'g' ? num(gramsPerCup) : null,
         kcalPer100: num(kcal)!,
         proteinPer100: num(protein)!,
         carbsPer100: num(carbs)!,
@@ -170,6 +173,15 @@ export default function FoodEditScreen() {
             label={t('foodEdit.gramsPerPiece')}
             value={gramsPerPiece}
             onChangeText={setGramsPerPiece}
+            keyboardType="decimal-pad"
+            suffix="g"
+          />
+        ) : null}
+        {baseUnit === 'g' ? (
+          <TextField
+            label={t('foodEdit.gramsPerCup')}
+            value={gramsPerCup}
+            onChangeText={setGramsPerCup}
             keyboardType="decimal-pad"
             suffix="g"
           />

@@ -17,10 +17,16 @@ import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 const UNIT_ROWS: { unit: KitchenUnit; display: string }[] = [
   { unit: 'tsp', display: '5 ml' },
   { unit: 'tbsp', display: '15 ml' },
+  { unit: 'cup_eighth', display: '30 ml' },
   { unit: 'cup_quarter', display: '60 ml' },
   { unit: 'cup_third', display: '80 ml' },
   { unit: 'cup_half', display: '120 ml' },
+  { unit: 'cup_two_thirds', display: '160 ml' },
   { unit: 'cup', display: '240 ml' },
+  { unit: 'fl_oz', display: '29.57 ml' },
+  { unit: 'pint', display: '473.18 ml' },
+  { unit: 'quart', display: '946.35 ml' },
+  { unit: 'gallon', display: '3785.41 ml' },
   { unit: 'oz', display: '28.35 g' },
   { unit: 'lb', display: '453.6 g' },
 ];

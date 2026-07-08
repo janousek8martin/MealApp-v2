@@ -22,7 +22,7 @@ import {
 } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
-import { kitchenEquivalentLabel } from '@/domain/units';
+import { formatCupQuarters, kitchenEquivalent } from '@/domain/units';
 import { localizedInstructions, localizedName } from '@/utils/localized';
 
 export default function RecipeDetailScreen() {
@@ -105,7 +105,12 @@ export default function RecipeDetailScreen() {
 
         <Text style={styles.sectionTitle}>{t('recipeDetail.ingredients')}</Text>
         {ingredientRows.map((row) => {
-          const equivalent = kitchenEquivalentLabel(row.ingredient.amount, row.food.baseUnit, row.food.gramsPerCup);
+          const equivalent = kitchenEquivalent(row.ingredient.amount, row.food.baseUnit, row.food.gramsPerCup);
+          const equivalentLabel = equivalent
+            ? equivalent.unit === 'cup'
+              ? t('recipeDetail.kitchenEquivalentCup', { fraction: formatCupQuarters(equivalent.quarters) })
+              : t(`recipeDetail.kitchenEquivalent${equivalent.unit === 'tbsp' ? 'Tbsp' : 'Tsp'}`, { count: equivalent.amount })
+            : null;
           const ingredientPhoto = photoMap.get(`food:${row.food.id}`);
           return (
             <View key={row.ingredient.id} style={styles.ingredientRow}>
@@ -121,10 +126,8 @@ export default function RecipeDetailScreen() {
                 <Text style={styles.ingredientAmount}>
                   {row.ingredient.amount} {row.food.baseUnit === 'piece' ? t('units.pcs') : row.food.baseUnit}
                 </Text>
-                {equivalent ? (
-                  <Text style={styles.ingredientEquivalent}>
-                    {t('recipeDetail.kitchenEquivalent', { fraction: equivalent })}
-                  </Text>
+                {equivalentLabel ? (
+                  <Text style={styles.ingredientEquivalent}>{equivalentLabel}</Text>
                 ) : null}
               </View>
             </View>

@@ -369,6 +369,7 @@
     "category": "Kategorie",
     "baseUnit": "Základní jednotka",
     "gramsPerPiece": "Hmotnost 1 kusu",
+    "gramsPerCup": "Hmotnost 1 hrnku (nepovinné, pro kuchyňský ekvivalent u receptů)",
     "budget": "Cenová kategorie",
     "shelfLife": "Trvanlivost",
     "storage": "Skladování",
@@ -391,7 +392,9 @@
     "ingredients": "Suroviny",
     "allergens": "Alergeny",
     "instructions": "Postup",
-    "kitchenEquivalent": "cca {{fraction}} hrnku"
+    "kitchenEquivalentCup": "cca {{fraction}} hrnku",
+    "kitchenEquivalentTbsp": "cca {{count}} lžíce",
+    "kitchenEquivalentTsp": "cca {{count}} lžička"
   },
   "recipeEdit": {
     "newTitle": "Nový recept",
@@ -519,10 +522,16 @@
   "kitchenUnitNames": {
     "tsp": "1 lžička",
     "tbsp": "1 lžíce",
+    "cup_eighth": "1/8 hrnku",
     "cup_quarter": "1/4 hrnku",
     "cup_third": "1/3 hrnku",
     "cup_half": "1/2 hrnku",
+    "cup_two_thirds": "2/3 hrnku",
     "cup": "1 hrnek",
+    "fl_oz": "1 tekutá unce (fl oz)",
+    "pint": "1 pinta (pt)",
+    "quart": "1 quart (qt)",
+    "gallon": "1 galon (gal)",
     "oz": "1 unce (oz)",
     "lb": "1 libra (lb)"
   }
