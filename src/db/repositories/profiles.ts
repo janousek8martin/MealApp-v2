@@ -238,6 +238,15 @@ export type MacroOverrides = {
   fatShareOfTdci?: number;
 };
 
+export function parseMacroOverrides(json: string | null): MacroOverrides {
+  if (!json) return {};
+  try {
+    return JSON.parse(json) as MacroOverrides;
+  } catch {
+    return {};
+  }
+}
+
 /** Pass `null` to clear all overrides and fall back to the domain defaults. */
 export async function updateProfileMacroOverrides(
   db: AppDb,

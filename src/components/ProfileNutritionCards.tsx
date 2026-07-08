@@ -5,7 +5,12 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
-import { updateProfileMacroOverrides, updateTdciManualAdjustment, type MacroOverrides } from '@/db/repositories/profiles';
+import {
+  parseMacroOverrides,
+  updateProfileMacroOverrides,
+  updateTdciManualAdjustment,
+  type MacroOverrides,
+} from '@/db/repositories/profiles';
 import { PROTEIN_PER_KG_LBM, FAT_SHARE_DEFAULT, SURPLUS_KCAL_DEFAULT } from '@/domain/constants';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -13,15 +18,6 @@ import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 function num(value: string): number | null {
   const parsed = Number(value.replace(',', '.'));
   return Number.isFinite(parsed) && value.trim() !== '' ? parsed : null;
-}
-
-function parseMacroOverrides(json: string | null): MacroOverrides {
-  if (!json) return {};
-  try {
-    return JSON.parse(json) as MacroOverrides;
-  } catch {
-    return {};
-  }
 }
 
 export function ManualAdjustmentCard({ profileId, kcal }: { profileId: string; kcal: number }) {
