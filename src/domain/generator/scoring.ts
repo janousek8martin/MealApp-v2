@@ -14,6 +14,8 @@ const BUDGET_SCORE: Record<RecipeCandidate['budget'], number> = {
 const FIBER_SCORE_PER_GRAM = 0.6;
 const FIBER_SCORE_CAP = 8;
 const PANTRY_EXPIRY_BONUS_PER_INGREDIENT = 6;
+/** Soft nudge for a recipe matching one of the household's preferred cuisines. */
+const FAVORITE_CUISINE_BONUS = 8;
 /** Max bonus for a recipe whose protein/fat density (per kcal) exactly matches the slot's macro-fit target. */
 const MACRO_FIT_BONUS_MAX = 15;
 /** Converts a per-kcal-gram ratio difference into score points (calibrated so a ~0.05 g/kcal miss costs the whole bonus). */
@@ -55,8 +57,11 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
   const expiringCount = candidate.ingredients.filter((i) => ctx.expiringFoodIds.has(i.foodId)).length;
   const pantryBonus = expiringCount * PANTRY_EXPIRY_BONUS_PER_INGREDIENT;
   const macroBonus = macroFitScore(candidate, ctx.macroFitTarget);
+  const cuisineBonus = candidate.cuisine && ctx.favoriteCuisines?.has(candidate.cuisine) ? FAVORITE_CUISINE_BONUS : 0;
 
-  return BASE_SCORE - repetitionPenalty + favoriteBonus + budgetScore + fiberScore + pantryBonus + macroBonus;
+  return (
+    BASE_SCORE - repetitionPenalty + favoriteBonus + budgetScore + fiberScore + pantryBonus + macroBonus + cuisineBonus
+  );
 }
 
 export function scoreCandidates(candidates: RecipeCandidate[], ctx: ScoringContext): ScoredCandidate[] {

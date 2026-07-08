@@ -75,6 +75,7 @@ type GeneratorContext = {
   /** Union of every candidate id → its per-portion nutrition, for locked-slot bookkeeping. */
   nutritionById: Map<string, RecipeNutrition>;
   favoriteRecipeIdsByProfile: Map<string, Set<string>>;
+  favoriteCuisines: Set<string>;
   expiringFoodIds: Set<string>;
 };
 
@@ -266,6 +267,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
       isSide: recipe.isSide,
       budget: recipe.budget,
       nutritionPerPortion: nutrition,
+      cuisine: recipe.cuisine,
       ingredients: rows.map((row) => ({
         foodId: row.food.id,
         allergens: allergensByFood.get(row.food.id) ?? [],
@@ -329,6 +331,10 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     pantryRows.filter((row) => row.expiresAt !== null && row.expiresAt <= soon).map((row) => row.foodId),
   );
 
+  const favoriteCuisines = new Set<string>(
+    settingsRow?.favoriteCuisinesJson ? (JSON.parse(settingsRow.favoriteCuisinesJson) as string[]) : [],
+  );
+
   return {
     settings: {
       defaultMaxRepetitionsPerWeek: settingsRow?.defaultMaxRepetitionsPerWeek ?? 2,
@@ -336,6 +342,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     },
     slots,
     profiles: profileContexts,
+    favoriteCuisines,
     mainItems,
     snackItems,
     nutritionById,
@@ -576,6 +583,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
           repetitionCtx,
           {
             favoriteRecipeIds: unionFavorites(sharedProfiles, ctx),
+            favoriteCuisines: ctx.favoriteCuisines,
             expiringFoodIds: ctx.expiringFoodIds,
             macroFitTarget: averageMacroFitTarget(sharedProfiles, slot),
           },
@@ -614,6 +622,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
         repetitionCtx,
         {
           favoriteRecipeIds: ctx.favoriteRecipeIdsByProfile.get(profile.id) ?? new Set(),
+          favoriteCuisines: ctx.favoriteCuisines,
           expiringFoodIds: ctx.expiringFoodIds,
           macroFitTarget: averageMacroFitTarget([profile], slot),
         },
@@ -789,6 +798,7 @@ export async function regenerateSlot(
       repetitionCtx,
       {
         favoriteRecipeIds: unionFavorites(relevantProfiles, ctx),
+        favoriteCuisines: ctx.favoriteCuisines,
         expiringFoodIds: ctx.expiringFoodIds,
         macroFitTarget: averageMacroFitTarget(relevantProfiles, slot),
       },

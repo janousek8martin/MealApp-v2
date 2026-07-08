@@ -58,6 +58,18 @@ describe('scoreCandidate', () => {
     expect(cheap).toBeGreaterThan(expensive);
   });
 
+  it('rewards a recipe matching one of the household favorite cuisines', () => {
+    const noPreference = scoreCandidate(candidate({ cuisine: 'czech' }), ctx());
+    const preferred = scoreCandidate(candidate({ cuisine: 'czech' }), ctx({ favoriteCuisines: new Set(['czech']) }));
+    expect(preferred).toBeGreaterThan(noPreference);
+  });
+
+  it('does not reward a recipe whose cuisine is not in the favorites list', () => {
+    const other = scoreCandidate(candidate({ cuisine: 'italian' }), ctx({ favoriteCuisines: new Set(['czech']) }));
+    const noPreference = scoreCandidate(candidate({ cuisine: 'italian' }), ctx());
+    expect(other).toBe(noPreference);
+  });
+
   it('rewards recipes using soon-to-expire pantry ingredients', () => {
     const withExpiring = candidate({ ingredients: [{ foodId: 'spinach', allergens: [], dietFlags: [] }] });
     const base = scoreCandidate(withExpiring, ctx());

@@ -24,6 +24,8 @@ export type RecipeCandidate = {
   isSide: boolean;
   budget: Budget;
   snackSuitable?: boolean;
+  /** Free-form cuisine key (e.g. 'czech', 'mediterranean'); null for standalone foods or untagged recipes. */
+  cuisine?: string | null;
   nutritionPerPortion: RecipeNutritionPerPortion;
   ingredients: IngredientFoodTags[];
   /** Per-recipe override; null = use the household default. */
@@ -66,6 +68,8 @@ export type RepetitionContext = {
 
 export type ScoringContext = RepetitionContext & {
   favoriteRecipeIds: Set<string>;
+  /** Household-preferred cuisine keys from the onboarding wizard – a soft scoring nudge, never a filter. */
+  favoriteCuisines?: Set<string>;
   /** Food ids in the pantry that are close to expiring. */
   expiringFoodIds: Set<string>;
   /**
