@@ -6,7 +6,8 @@
     "save": "Uložit",
     "done": "Hotovo",
     "edit": "Upravit",
-    "delete": "Smazat"
+    "delete": "Smazat",
+    "undo": "Zpět"
   },
   "tabs": {
     "home": "Domů",
@@ -302,7 +303,11 @@
     "viewProgress": "Zobrazit pokrok",
     "manualAdjustment": "Manuální korekce TDCI",
     "manualAdjustmentHint": "Ruční úprava vypočtených kalorií po krocích 100 kcal, nahoru i dolů.",
-    "personalAndGoals": "Osobní údaje a cíle"
+    "personalAndGoals": "Osobní údaje a cíle",
+    "deleteProfile": "Smazat profil",
+    "deleteTitle": "Smazat profil?",
+    "deleteMessage": "Opravdu chcete smazat profil {{name}}? Tuto akci půjde krátce vzít zpět.",
+    "deletedSnackbar": "Profil {{name}} byl smazán."
   },
   "navy": {
     "title": "Kalkulačka tělesného tuku",

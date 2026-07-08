@@ -177,6 +177,15 @@ export async function listActiveProfiles(db: AppDb, householdId: string) {
     .where(and(eq(profiles.householdId, householdId), isNull(profiles.deletedAt)));
 }
 
+/** Soft-deletes a profile; `restoreProfile` reverses this (used by the delete-confirmation undo snackbar). */
+export async function softDeleteProfile(db: AppDb, profileId: string): Promise<void> {
+  await db.update(profiles).set({ deletedAt: nowIso(), updatedAt: nowIso() }).where(eq(profiles.id, profileId));
+}
+
+export async function restoreProfile(db: AppDb, profileId: string): Promise<void> {
+  await db.update(profiles).set({ deletedAt: null, updatedAt: nowIso() }).where(eq(profiles.id, profileId));
+}
+
 export type AddBodyMetricInput = {
   date?: string;
   weightKg: number;

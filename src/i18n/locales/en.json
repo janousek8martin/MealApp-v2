@@ -6,7 +6,8 @@
     "save": "Save",
     "done": "Done",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "undo": "Undo"
   },
   "tabs": {
     "home": "Home",
@@ -302,7 +303,11 @@
     "viewProgress": "View progress",
     "manualAdjustment": "Manual TDCI adjustment",
     "manualAdjustmentHint": "Manually nudge the computed calories up or down, in steps of 100 kcal.",
-    "personalAndGoals": "Personal details & goals"
+    "personalAndGoals": "Personal details & goals",
+    "deleteProfile": "Delete profile",
+    "deleteTitle": "Delete profile?",
+    "deleteMessage": "Are you sure you want to delete {{name}}'s profile? You'll be able to undo this briefly.",
+    "deletedSnackbar": "{{name}}'s profile was deleted."
   },
   "navy": {
     "title": "Body fat calculator",

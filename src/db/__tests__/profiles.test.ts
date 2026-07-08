@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 
 import { targetsForProfile } from '../../hooks/dataMapping';
 import { createHouseholdWithDefaults } from '../repositories/households';
-import { addBodyMetric, createProfile } from '../repositories/profiles';
+import { addBodyMetric, createProfile, restoreProfile, softDeleteProfile } from '../repositories/profiles';
 import { bodyMetrics, profileRestrictions, profiles } from '../schema';
 import { createTestDb } from '../testing/testDb';
 
@@ -54,6 +54,22 @@ describe('profile repository input validation (V3/D3)', () => {
     const profileId = await createProfile(db, validCreateInput(householdId));
     await expect(addBodyMetric(db, profileId, { weightKg: 500 })).rejects.toThrow();
     await expect(addBodyMetric(db, profileId, { weightKg: 80, bodyFatPct: 95 })).rejects.toThrow();
+  });
+});
+
+describe('softDeleteProfile / restoreProfile (N1 undo)', () => {
+  it('soft-deletes a profile and restores it, reversing the delete', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    const profileId = await createProfile(db, validCreateInput(householdId));
+
+    await softDeleteProfile(db, profileId);
+    const [deleted] = await db.select().from(profiles).where(eq(profiles.id, profileId));
+    expect(deleted.deletedAt).not.toBeNull();
+
+    await restoreProfile(db, profileId);
+    const [restored] = await db.select().from(profiles).where(eq(profiles.id, profileId));
+    expect(restored.deletedAt).toBeNull();
   });
 });
 

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,11 +13,12 @@ import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { ProfilePortionsCard } from '@/components/ProfilePortionsCard';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
+import { Snackbar } from '@/components/ui/Snackbar';
 import { SwitchRow } from '@/components/ui/SwitchRow';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
 import { updateHouseholdSettings, updateMealSlotSetting } from '@/db/repositories/households';
-import { updateProfile } from '@/db/repositories/profiles';
+import { restoreProfile, softDeleteProfile, updateProfile } from '@/db/repositories/profiles';
 import { ageYears } from '@/domain/age';
 import { micronutrientRda } from '@/domain/micronutrients';
 import { defaultNotificationSettings, type NotificationSettings } from '@/db/types';
@@ -177,7 +178,14 @@ function profileFormValueFor(profile: ProfileRow, weightKg: number, bodyFatPct: 
 }
 
 /** Accordion cards for the profile selected in the header dropdown. */
-function ProfileSections({ profile }: { profile: ProfileRow }) {
+function ProfileSections({
+  profile,
+  onDelete,
+}: {
+  profile: ProfileRow;
+  /** Omitted when this is the household's only profile – deleting it isn't offered. */
+  onDelete?: () => void;
+}) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -250,6 +258,21 @@ function ProfileSections({ profile }: { profile: ProfileRow }) {
           dailyTargetKcal={targets ? targets.adjustedTdciKcal : null}
         />
       </AccordionCard>
+
+      {onDelete ? (
+        <Pressable
+          accessibilityRole="button"
+          style={styles.deleteProfileButton}
+          onPress={() =>
+            Alert.alert(t('profile.deleteTitle'), t('profile.deleteMessage', { name: profile.name }), [
+              { text: t('common.cancel'), style: 'cancel' },
+              { text: t('common.delete'), style: 'destructive', onPress: onDelete },
+            ])
+          }>
+          <Ionicons name="trash-outline" size={16} color={colors.danger} />
+          <Text style={styles.deleteProfileLabel}>{t('profile.deleteProfile')}</Text>
+        </Pressable>
+      ) : null}
     </>
   );
 }
@@ -353,8 +376,10 @@ export default function SettingsScreen() {
   const restoreScrollTimeoutSec = useAppStore((s) => s.restoreScrollTimeoutSec);
   const setRestoreScrollTimeoutSec = useAppStore((s) => s.setRestoreScrollTimeoutSec);
   const activeProfileId = useAppStore((s) => s.activeProfileId);
+  const setActiveProfileId = useAppStore((s) => s.setActiveProfileId);
   const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>(undefined);
   const [kitchenUnitsVisible, setKitchenUnitsVisible] = useState(false);
+  const [deletedProfile, setDeletedProfile] = useState<{ id: string; name: string } | null>(null);
 
   const notifications = parseNotifications(settings?.notificationsJson ?? null);
   const [weighInTime, setWeighInTime] = useState('');
@@ -388,6 +413,24 @@ export default function SettingsScreen() {
   };
   const timesValid = TIME_RE.test(weighInTime) && TIME_RE.test(planningTime);
 
+  const deleteSelectedProfile = async () => {
+    if (!selectedProfile) return;
+    await softDeleteProfile(db, selectedProfile.id);
+    setDeletedProfile({ id: selectedProfile.id, name: selectedProfile.name });
+    setSelectedProfileId(undefined);
+    if (activeProfileId === selectedProfile.id) {
+      const fallback = members.find((m) => m.id !== selectedProfile.id);
+      setActiveProfileId(fallback?.id ?? null);
+    }
+  };
+
+  const undoDeleteProfile = async () => {
+    if (!deletedProfile) return;
+    await restoreProfile(db, deletedProfile.id);
+    setSelectedProfileId(deletedProfile.id);
+    setActiveProfileId(deletedProfile.id);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView
@@ -408,7 +451,12 @@ export default function SettingsScreen() {
           onSelect={setSelectedProfileId}
         />
 
-        {selectedProfile ? <ProfileSections profile={selectedProfile} /> : null}
+        {selectedProfile ? (
+          <ProfileSections
+            profile={selectedProfile}
+            onDelete={members.length > 1 ? deleteSelectedProfile : undefined}
+          />
+        ) : null}
 
         <AccordionCard title={t('settings.general')}>
           <ChipSelect
@@ -562,6 +610,15 @@ export default function SettingsScreen() {
       />
 
       <KitchenUnitsModal visible={kitchenUnitsVisible} onClose={() => setKitchenUnitsVisible(false)} />
+
+      {deletedProfile ? (
+        <Snackbar
+          message={t('profile.deletedSnackbar', { name: deletedProfile.name })}
+          actionLabel={t('common.undo')}
+          onAction={undoDeleteProfile}
+          onDismiss={() => setDeletedProfile(null)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -581,6 +638,22 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.title,
       fontWeight: '800',
       marginBottom: spacing.sm,
+    },
+    deleteProfileButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      borderWidth: 1,
+      borderColor: colors.danger,
+      borderRadius: radius.chip,
+      paddingVertical: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    deleteProfileLabel: {
+      color: colors.danger,
+      fontSize: typography.body,
+      fontWeight: '600',
     },
     profileHeader: {
       flexDirection: 'row',

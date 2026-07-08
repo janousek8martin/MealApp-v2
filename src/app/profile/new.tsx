@@ -1,7 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
@@ -28,6 +29,11 @@ export default function NewProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.topBar}>
+          <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}>
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
+          </Pressable>
+        </View>
         <Text style={styles.title}>{t('settings.addProfile')}</Text>
         <ProfileForm submitLabel={t('common.save')} onSubmit={save} />
       </ScrollView>
@@ -44,6 +50,20 @@ function createStyles(colors: ColorTokens) {
     content: {
       padding: spacing.md,
       paddingBottom: spacing.xl,
+    },
+    topBar: {
+      flexDirection: 'row',
+      marginBottom: spacing.sm,
+    },
+    back: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     title: {
       color: colors.text,
