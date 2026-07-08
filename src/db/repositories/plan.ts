@@ -402,15 +402,25 @@ async function loadMealsForDate(db: AppDb, householdId: string, date: string) {
 /** A slot/track is locked once any of its portions has been marked eaten – never touched by regeneration. */
 async function loadLockedTrackKeys(db: AppDb, householdId: string, date: string): Promise<Set<string>> {
   const meals = await loadMealsForDate(db, householdId, date);
+  if (meals.length === 0) return new Set();
+
+  const portions = await db
+    .select()
+    .from(plannedMealPortions)
+    .where(
+      and(
+        inArray(
+          plannedMealPortions.plannedMealId,
+          meals.map((m) => m.id),
+        ),
+        isNull(plannedMealPortions.deletedAt),
+      ),
+    );
+
+  const eatenMealIds = new Set(portions.filter((p) => p.status === 'eaten').map((p) => p.plannedMealId));
   const locked = new Set<string>();
   for (const meal of meals) {
-    const portions = await db
-      .select()
-      .from(plannedMealPortions)
-      .where(and(eq(plannedMealPortions.plannedMealId, meal.id), isNull(plannedMealPortions.deletedAt)));
-    if (portions.some((p) => p.status === 'eaten')) {
-      locked.add(slotTrackKey(meal.slotKey, meal.profileId));
-    }
+    if (eatenMealIds.has(meal.id)) locked.add(slotTrackKey(meal.slotKey, meal.profileId));
   }
   return locked;
 }
@@ -1026,24 +1036,28 @@ async function computeConsumedExcluding(
   ctx: GeneratorContext,
 ): Promise<MacroTotal> {
   const meals = await loadMealsForDate(db, householdId, date);
+  const relevantMeals = meals.filter((meal) => meal.id !== excludeMealId && ctx.nutritionById.has(meal.itemId));
   const totals = new Map<string, MacroTotal>();
-  for (const meal of meals) {
-    if (meal.id === excludeMealId) continue;
-    const nutrition = ctx.nutritionById.get(meal.itemId);
-    if (!nutrition) continue;
-    const portions = await db
-      .select()
-      .from(plannedMealPortions)
-      .where(
-        and(
-          eq(plannedMealPortions.plannedMealId, meal.id),
-          eq(plannedMealPortions.profileId, profileId),
-          isNull(plannedMealPortions.deletedAt),
+  if (relevantMeals.length === 0) return totals.get(profileId) ?? { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 };
+
+  const portions = await db
+    .select()
+    .from(plannedMealPortions)
+    .where(
+      and(
+        inArray(
+          plannedMealPortions.plannedMealId,
+          relevantMeals.map((m) => m.id),
         ),
-      );
-    for (const portion of portions) {
-      addConsumed(totals, profileId, nutrition, portion.multiplier);
-    }
+        eq(plannedMealPortions.profileId, profileId),
+        isNull(plannedMealPortions.deletedAt),
+      ),
+    );
+  const nutritionByMealId = new Map(relevantMeals.map((meal) => [meal.id, ctx.nutritionById.get(meal.itemId)!]));
+  for (const portion of portions) {
+    const nutrition = nutritionByMealId.get(portion.plannedMealId);
+    if (!nutrition) continue;
+    addConsumed(totals, profileId, nutrition, portion.multiplier);
   }
   return totals.get(profileId) ?? { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 };
 }
@@ -1153,17 +1167,23 @@ export async function countOtherOccurrences(
       ),
     );
 
-  let count = 0;
-  for (const row of rows) {
-    if (row.id === excludeMealId || row.date < today) continue;
-    const portions = await db
-      .select()
-      .from(plannedMealPortions)
-      .where(and(eq(plannedMealPortions.plannedMealId, row.id), isNull(plannedMealPortions.deletedAt)));
-    if (portions.some((p) => p.status === 'eaten')) continue;
-    count += 1;
-  }
-  return count;
+  const candidates = rows.filter((row) => row.id !== excludeMealId && row.date >= today);
+  if (candidates.length === 0) return 0;
+
+  const portions = await db
+    .select()
+    .from(plannedMealPortions)
+    .where(
+      and(
+        inArray(
+          plannedMealPortions.plannedMealId,
+          candidates.map((row) => row.id),
+        ),
+        isNull(plannedMealPortions.deletedAt),
+      ),
+    );
+  const eatenMealIds = new Set(portions.filter((p) => p.status === 'eaten').map((p) => p.plannedMealId));
+  return candidates.filter((row) => !eatenMealIds.has(row.id)).length;
 }
 
 /** Removes every other today-or-future, unlocked occurrence of the same item, excluding `excludeMealId`. */
