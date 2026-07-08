@@ -391,7 +391,15 @@
     "shelfLife": "Trvanlivost",
     "storage": "Skladování",
     "snackSuitable": "Vhodné jako svačina",
-    "dietFlags": "Vhodné pro dietu"
+    "dietFlags": "Vhodné pro dietu",
+    "scanBarcode": "Naskenovat čárový kód",
+    "lookingUpBarcode": "Hledám produkt…",
+    "scanBarcodeTitle": "Naskenovat čárový kód",
+    "cameraPermissionNeeded": "Pro naskenování čárového kódu appka potřebuje přístup ke kameře.",
+    "grantCameraPermission": "Povolit přístup ke kameře",
+    "barcodeValue": "Čárový kód: {{barcode}}",
+    "productNotFoundTitle": "Produkt nenalezen",
+    "productNotFoundMessage": "Tento čárový kód jsme v databázi Open Food Facts nenašli. Údaje můžete vyplnit ručně – čárový kód zůstane uložený u této potraviny."
   },
   "foodDetail": {
     "deleteTitle": "Smazat potravinu?",

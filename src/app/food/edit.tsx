@@ -1,9 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BarcodeScannerModal } from '@/components/BarcodeScannerModal';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
@@ -13,6 +14,7 @@ import { ALLERGEN_KEYS, MANUAL_DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { setPhoto, upsertFood } from '@/db/repositories/library';
 import { useFood, useFoodAllergens, usePhoto } from '@/hooks/library';
+import { getProductByBarcode } from '@/services/openFoodFacts';
 import { useTheme } from '@/theme/ThemeContext';
 import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 
@@ -59,6 +61,9 @@ export default function FoodEditScreen() {
   const [dietFlags, setDietFlags] = useState<string[]>([]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [loadedId, setLoadedId] = useState<string | null>(null);
+  const [barcode, setBarcode] = useState<string | null>(null);
+  const [scannerVisible, setScannerVisible] = useState(false);
+  const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
 
   useEffect(() => {
     if (!existing || loadedId === existing.id) return;
@@ -87,6 +92,7 @@ export default function FoodEditScreen() {
     setStorage(existing.storage);
     setSnackSuitable(existing.snackSuitable);
     setDietFlags(existing.dietFlagsJson ? (JSON.parse(existing.dietFlagsJson) as string[]) : []);
+    setBarcode(existing.barcode);
   }, [existing, loadedId]);
 
   useEffect(() => {
@@ -133,6 +139,7 @@ export default function FoodEditScreen() {
         snackSuitable,
         dietFlags,
         allergens,
+        barcode,
       },
       id || undefined,
     );
@@ -142,10 +149,43 @@ export default function FoodEditScreen() {
     router.back();
   };
 
+  const onBarcodeScanned = async (scanned: string) => {
+    setScannerVisible(false);
+    setBarcode(scanned);
+    setLookingUpBarcode(true);
+    try {
+      const product = await getProductByBarcode(scanned);
+      if (!product) {
+        Alert.alert(t('foodEdit.productNotFoundTitle'), t('foodEdit.productNotFoundMessage'));
+        return;
+      }
+      if (product.name) {
+        if (!nameCs.trim()) setNameCs(product.name);
+        if (!nameEn.trim()) setNameEn(product.name);
+      }
+      if (product.kcalPer100 !== null) setKcal(String(product.kcalPer100));
+      if (product.proteinPer100 !== null) setProtein(String(product.proteinPer100));
+      if (product.carbsPer100 !== null) setCarbs(String(product.carbsPer100));
+      if (product.fatPer100 !== null) setFat(String(product.fatPer100));
+      if (product.fiberPer100 !== null) setFiber(String(product.fiberPer100));
+    } finally {
+      setLookingUpBarcode(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>{id ? t('foodEdit.editTitle') : t('foodEdit.newTitle')}</Text>
+
+        <Button
+          label={lookingUpBarcode ? t('foodEdit.lookingUpBarcode') : t('foodEdit.scanBarcode')}
+          variant="secondary"
+          onPress={() => setScannerVisible(true)}
+          disabled={lookingUpBarcode}
+          style={styles.scanButton}
+        />
+        {barcode ? <Text style={styles.barcodeValue}>{t('foodEdit.barcodeValue', { barcode })}</Text> : null}
 
         <PhotoPicker uri={photoUri ?? photo?.uri ?? null} onPicked={setPhotoUri} />
 
@@ -261,6 +301,12 @@ export default function FoodEditScreen() {
           <Button label={t('common.save')} onPress={save} disabled={!canSave} style={styles.action} />
         </View>
       </ScrollView>
+
+      <BarcodeScannerModal
+        visible={scannerVisible}
+        onClose={() => setScannerVisible(false)}
+        onScanned={(scanned) => void onBarcodeScanned(scanned)}
+      />
     </SafeAreaView>
   );
 }
@@ -279,6 +325,14 @@ function createStyles(colors: ColorTokens) {
       color: colors.text,
       fontSize: typography.title,
       fontWeight: '800',
+      marginBottom: spacing.md,
+    },
+    scanButton: {
+      marginBottom: spacing.xs,
+    },
+    barcodeValue: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
       marginBottom: spacing.md,
     },
     section: {

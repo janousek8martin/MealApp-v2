@@ -391,7 +391,15 @@
     "shelfLife": "Shelf life",
     "storage": "Storage",
     "snackSuitable": "Suitable as a snack",
-    "dietFlags": "Suitable for diet"
+    "dietFlags": "Suitable for diet",
+    "scanBarcode": "Scan barcode",
+    "lookingUpBarcode": "Looking up product…",
+    "scanBarcodeTitle": "Scan barcode",
+    "cameraPermissionNeeded": "Scanning a barcode needs camera access.",
+    "grantCameraPermission": "Grant camera access",
+    "barcodeValue": "Barcode: {{barcode}}",
+    "productNotFoundTitle": "Product not found",
+    "productNotFoundMessage": "This barcode wasn't found in the Open Food Facts database. You can fill in the details manually - the barcode will still be saved with this food."
   },
   "foodDetail": {
     "deleteTitle": "Delete this food?",

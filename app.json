@@ -35,7 +35,13 @@
         }
       ],
       "expo-localization",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Aplikace potřebuje přístup ke kameře pro naskenování čárového kódu potraviny."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

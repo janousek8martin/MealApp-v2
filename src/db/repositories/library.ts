@@ -36,6 +36,8 @@ export type FoodInput = {
   snackSuitable: boolean;
   dietFlags: string[];
   allergens: string[];
+  /** EAN scanned via the barcode scanner (item 10); null when entered manually. */
+  barcode?: string | null;
 };
 
 /** Serializes only the micronutrients the user actually filled in – an omitted field stays unknown, never becomes 0. */
@@ -67,6 +69,7 @@ export async function upsertFood(db: AppDb, input: FoodInput, foodId?: string): 
     storage: input.storage ?? null,
     snackSuitable: input.snackSuitable,
     dietFlagsJson: JSON.stringify(input.dietFlags),
+    barcode: input.barcode ?? null,
     updatedAt: now,
   };
 
