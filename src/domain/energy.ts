@@ -44,18 +44,26 @@ const EER_PA: Record<Sex, Record<ActivityLevel, number>> = {
   female: { sedentary: 1.0, light: 1.16, moderate: 1.31, active: 1.56, very_active: 1.56 },
 };
 
+const EER_CHILD_MIN_AGE = 3;
+const EER_CHILD_MAX_AGE = 18;
+
 /**
  * Estimated Energy Requirement for children (IOM 2005), ages 3–18.
  * Children never get a deficit – the result is used directly as their target.
+ * The equation is only validated within 3–18 y; ageYears is clamped to that
+ * band before use so a profile briefly out of range (e.g. right at a
+ * birthday, or a data-entry slip) doesn't extrapolate into a nonsense
+ * result (the `-61.9 * age` / `-30.8 * age` terms turn negative outside it).
  */
 export function eerChildKcal({ sex, ageYears, weightKg, heightCm, activityLevel }: EerChildInput): number {
+  const clampedAge = Math.min(EER_CHILD_MAX_AGE, Math.max(EER_CHILD_MIN_AGE, ageYears));
   const heightM = heightCm / 100;
   const pa = EER_PA[sex][activityLevel];
   // Energy deposition for growth: 20 kcal (3–8 y), 25 kcal (9–18 y).
-  const growthKcal = ageYears < 9 ? 20 : 25;
+  const growthKcal = clampedAge < 9 ? 20 : 25;
 
   if (sex === 'male') {
-    return 88.5 - 61.9 * ageYears + pa * (26.7 * weightKg + 903 * heightM) + growthKcal;
+    return 88.5 - 61.9 * clampedAge + pa * (26.7 * weightKg + 903 * heightM) + growthKcal;
   }
-  return 135.3 - 30.8 * ageYears + pa * (10 * weightKg + 934 * heightM) + growthKcal;
+  return 135.3 - 30.8 * clampedAge + pa * (10 * weightKg + 934 * heightM) + growthKcal;
 }

@@ -4,6 +4,11 @@ import { newId } from '../id';
 import { bodyMetrics, profileRestrictions, profileSlotPortions, profiles } from '../schema';
 import { nowIso, todayIsoDate } from '../time';
 import type { AppDb } from '../types';
+import { assertInRange, assertPastDate } from '../validation';
+
+const HEIGHT_CM_RANGE = [60, 250] as const;
+const WEIGHT_KG_RANGE = [5, 300] as const;
+const BODY_FAT_PCT_RANGE = [3, 70] as const;
 
 export type CreateProfileInput = {
   householdId: string;
@@ -33,6 +38,11 @@ export type CreateProfileInput = {
 };
 
 export async function createProfile(db: AppDb, input: CreateProfileInput): Promise<string> {
+  assertInRange(input.heightCm, ...HEIGHT_CM_RANGE, 'heightCm');
+  assertInRange(input.weightKg, ...WEIGHT_KG_RANGE, 'weightKg');
+  if (input.bodyFatPct !== undefined) assertInRange(input.bodyFatPct, ...BODY_FAT_PCT_RANGE, 'bodyFatPct');
+  assertPastDate(input.birthDate, 'birthDate');
+
   const profileId = newId();
   const now = nowIso();
 
@@ -109,6 +119,9 @@ export type UpdateProfileInput = {
 
 /** Updates a profile's editable fields and replaces its allergen/diet restrictions. */
 export async function updateProfile(db: AppDb, profileId: string, input: UpdateProfileInput): Promise<void> {
+  assertInRange(input.heightCm, ...HEIGHT_CM_RANGE, 'heightCm');
+  assertPastDate(input.birthDate, 'birthDate');
+
   const now = nowIso();
 
   await db
@@ -181,6 +194,9 @@ export type AddBodyMetricInput = {
  * creating a second one, keeping the progress graph one point per day.
  */
 export async function addBodyMetric(db: AppDb, profileId: string, input: AddBodyMetricInput): Promise<void> {
+  assertInRange(input.weightKg, ...WEIGHT_KG_RANGE, 'weightKg');
+  if (input.bodyFatPct != null) assertInRange(input.bodyFatPct, ...BODY_FAT_PCT_RANGE, 'bodyFatPct');
+
   const date = input.date ?? todayIsoDate();
   const now = nowIso();
 

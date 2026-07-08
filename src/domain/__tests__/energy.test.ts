@@ -62,4 +62,16 @@ describe('EER for children (IOM)', () => {
       eerChildKcal({ sex: 'female', ageYears: 6, weightKg: 21, heightCm: 118, activityLevel: 'light' }),
     ).toBeCloseTo(1492.56, 1);
   });
+
+  it('clamps an age above 18 to 18 rather than extrapolating the formula', () => {
+    const at18 = eerChildKcal({ sex: 'male', ageYears: 18, weightKg: 60, heightCm: 170, activityLevel: 'moderate' });
+    const above18 = eerChildKcal({ sex: 'male', ageYears: 25, weightKg: 60, heightCm: 170, activityLevel: 'moderate' });
+    expect(above18).toBeCloseTo(at18, 5);
+  });
+
+  it('clamps an age below 3 to 3 rather than extrapolating the formula', () => {
+    const at3 = eerChildKcal({ sex: 'female', ageYears: 3, weightKg: 14, heightCm: 95, activityLevel: 'sedentary' });
+    const below3 = eerChildKcal({ sex: 'female', ageYears: 1, weightKg: 14, heightCm: 95, activityLevel: 'sedentary' });
+    expect(below3).toBeCloseTo(at3, 5);
+  });
 });

@@ -2,9 +2,60 @@ import { eq } from 'drizzle-orm';
 
 import { targetsForProfile } from '../../hooks/dataMapping';
 import { createHouseholdWithDefaults } from '../repositories/households';
-import { createProfile } from '../repositories/profiles';
+import { addBodyMetric, createProfile } from '../repositories/profiles';
 import { bodyMetrics, profileRestrictions, profiles } from '../schema';
 import { createTestDb } from '../testing/testDb';
+
+function validCreateInput(householdId: string) {
+  return {
+    householdId,
+    name: 'Martin',
+    profileType: 'adult' as const,
+    sex: 'male' as const,
+    birthDate: '1990-05-01',
+    heightCm: 180,
+    activityLevel: 'moderate' as const,
+    goal: 'lose' as const,
+    weightKg: 80,
+  };
+}
+
+describe('profile repository input validation (V3/D3)', () => {
+  it('rejects an out-of-range height', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await expect(createProfile(db, { ...validCreateInput(householdId), heightCm: 30 })).rejects.toThrow();
+    await expect(createProfile(db, { ...validCreateInput(householdId), heightCm: 400 })).rejects.toThrow();
+  });
+
+  it('rejects an out-of-range weight', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await expect(createProfile(db, { ...validCreateInput(householdId), weightKg: 1 })).rejects.toThrow();
+    await expect(createProfile(db, { ...validCreateInput(householdId), weightKg: 500 })).rejects.toThrow();
+  });
+
+  it('rejects an out-of-range body fat percentage', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await expect(createProfile(db, { ...validCreateInput(householdId), bodyFatPct: 1 })).rejects.toThrow();
+    await expect(createProfile(db, { ...validCreateInput(householdId), bodyFatPct: 95 })).rejects.toThrow();
+  });
+
+  it('rejects a birth date that is not in the past', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await expect(createProfile(db, { ...validCreateInput(householdId), birthDate: '2999-01-01' })).rejects.toThrow();
+  });
+
+  it('rejects an out-of-range weight/body-fat when logging a body metric', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    const profileId = await createProfile(db, validCreateInput(householdId));
+    await expect(addBodyMetric(db, profileId, { weightKg: 500 })).rejects.toThrow();
+    await expect(addBodyMetric(db, profileId, { weightKg: 80, bodyFatPct: 95 })).rejects.toThrow();
+  });
+});
 
 describe('profile repository', () => {
   it('creates a profile with an initial body metric and restrictions', async () => {
