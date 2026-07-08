@@ -51,7 +51,38 @@ export const householdSettings = sqliteTable('household_settings', {
   notificationsJson: text('notifications_json'),
   /** JSON array of cuisine keys the household prefers – a soft bonus in generator scoring. */
   favoriteCuisinesJson: text('favorite_cuisines_json'),
+  /**
+   * How recipe-detail ingredient amounts are displayed: 'grams' shows only
+   * the canonical baseUnit amount; 'hybrid' also shows the kitchen-measure
+   * equivalent (e.g. "200 g (≈ 3/4 cup)"), the pre-existing behavior. Purely
+   * presentational – nutrition math always uses the canonical amount.
+   */
+  kitchenUnitDisplayMode: text('kitchen_unit_display_mode', { enum: ['grams', 'hybrid'] })
+    .notNull()
+    .default('hybrid'),
 });
+
+/**
+ * User-defined kitchen units (e.g. a specific mug or scoop), merged with the
+ * built-in conversion table (`KITCHEN_VOLUME_ML`/`KITCHEN_WEIGHT_G` in
+ * `src/domain/units.ts`) for the Settings kitchen-units table/calculator.
+ */
+export const householdCustomUnits = sqliteTable(
+  'household_custom_units',
+  {
+    ...meta,
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id),
+    name: text('name').notNull(),
+    unitType: text('unit_type', { enum: ['volume', 'weight'] }).notNull(),
+    /** Amount in the reference unit (ml for volume, g for weight) that one of this unit equals. */
+    conversionValue: real('conversion_value').notNull(),
+    /** JSON array of alternate names/spellings (Czech aliases) this unit is also known by. */
+    aliasesJson: text('aliases_json'),
+  },
+  (table) => [index('household_custom_units_household_idx').on(table.householdId)],
+);
 
 /**
  * Household-wide allergies/diet rules, set during the setup wizard. The

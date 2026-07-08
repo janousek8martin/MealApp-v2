@@ -529,7 +529,21 @@
     "kitchenUnitsTable": "Převodní tabulka",
     "kitchenCalculator": "Kalkulačka",
     "kitchenCalculatorAmount": "Množství",
-    "kitchenCalculatorResult": "= {{result}}"
+    "kitchenCalculatorResult": "= {{result}}",
+    "kitchenUnitDisplayMode": "Zobrazení jednotek u ingrediencí",
+    "kitchenUnitDisplayGrams": "Gramy",
+    "kitchenUnitDisplayHybrid": "Hybridně (obojí)",
+    "addCustomUnit": "Přidat vlastní jednotku",
+    "editCustomUnit": "Upravit jednotku",
+    "customUnitName": "Název",
+    "customUnitType": "Typ",
+    "customUnitVolume": "Objem",
+    "customUnitWeight": "Váha",
+    "customUnitValueMl": "Hodnota (ml)",
+    "customUnitValueG": "Hodnota (g)",
+    "customUnitAliases": "Aliasy (oddělené čárkou)",
+    "deleteCustomUnitTitle": "Smazat jednotku?",
+    "deleteCustomUnitMessage": "Opravdu chcete smazat jednotku {{name}}?"
   },
   "kitchenUnitNames": {
     "tsp": "1 lžička",

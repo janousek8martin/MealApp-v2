@@ -10,7 +10,7 @@ import { EditActions } from '@/components/EditActions';
 import { ALLERGEN_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
 import { softDeleteRecipe, toggleFavorite } from '@/db/repositories/library';
-import { useActiveProfile, useHousehold } from '@/hooks/data';
+import { useActiveProfile, useHousehold, useHouseholdSettings } from '@/hooks/data';
 import {
   recipeNutritionOf,
   useFavoriteRecipeIds,
@@ -34,6 +34,8 @@ export default function RecipeDetailScreen() {
   const ingredientRows = useRecipeIngredients(id);
   const photo = usePhoto('recipe', id);
   const { household } = useHousehold();
+  const householdSettings = useHouseholdSettings(household?.id);
+  const showKitchenEquivalent = (householdSettings?.kitchenUnitDisplayMode ?? 'hybrid') === 'hybrid';
   const activeProfile = useActiveProfile(household?.id);
   const favoriteIds = useFavoriteRecipeIds(activeProfile?.id);
   const recipeTagsMap = useRecipeTagsMap();
@@ -105,7 +107,9 @@ export default function RecipeDetailScreen() {
 
         <Text style={styles.sectionTitle}>{t('recipeDetail.ingredients')}</Text>
         {ingredientRows.map((row) => {
-          const equivalent = kitchenEquivalent(row.ingredient.amount, row.food.baseUnit, row.food.gramsPerCup);
+          const equivalent = showKitchenEquivalent
+            ? kitchenEquivalent(row.ingredient.amount, row.food.baseUnit, row.food.gramsPerCup)
+            : null;
           const equivalentLabel = equivalent
             ? equivalent.unit === 'cup'
               ? t('recipeDetail.kitchenEquivalentCup', { fraction: formatCupQuarters(equivalent.quarters) })

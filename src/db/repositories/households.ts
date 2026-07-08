@@ -66,6 +66,7 @@ export type HouseholdSettingsPatch = Partial<{
   defaultAllowConsecutiveDays: boolean;
   fiberMode: 'efsa_min' | 'gender_specific';
   notifications: NotificationSettings;
+  kitchenUnitDisplayMode: 'grams' | 'hybrid';
 }>;
 
 export async function updateHouseholdSettings(

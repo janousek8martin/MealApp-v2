@@ -476,6 +476,15 @@ export default function SettingsScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </Pressable>
           <ChipSelect
+            label={t('settings.kitchenUnitDisplayMode')}
+            options={[
+              { value: 'grams', label: t('settings.kitchenUnitDisplayGrams') },
+              { value: 'hybrid', label: t('settings.kitchenUnitDisplayHybrid') },
+            ]}
+            value={settings.kitchenUnitDisplayMode}
+            onChange={(v) => updateHouseholdSettings(db, household.id, { kitchenUnitDisplayMode: v as 'grams' | 'hybrid' })}
+          />
+          <ChipSelect
             label={t('settings.language')}
             options={[
               { value: 'cs', label: t('settings.languageCs') },
@@ -609,7 +618,11 @@ export default function SettingsScreen() {
         onPressOut={scrollHint.onPressOut}
       />
 
-      <KitchenUnitsModal visible={kitchenUnitsVisible} onClose={() => setKitchenUnitsVisible(false)} />
+      <KitchenUnitsModal
+        visible={kitchenUnitsVisible}
+        onClose={() => setKitchenUnitsVisible(false)}
+        householdId={household.id}
+      />
 
       {deletedProfile ? (
         <Snackbar

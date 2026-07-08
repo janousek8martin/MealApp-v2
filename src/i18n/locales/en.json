@@ -529,7 +529,21 @@
     "kitchenUnitsTable": "Conversion table",
     "kitchenCalculator": "Calculator",
     "kitchenCalculatorAmount": "Amount",
-    "kitchenCalculatorResult": "= {{result}}"
+    "kitchenCalculatorResult": "= {{result}}",
+    "kitchenUnitDisplayMode": "Ingredient unit display",
+    "kitchenUnitDisplayGrams": "Grams",
+    "kitchenUnitDisplayHybrid": "Hybrid (both)",
+    "addCustomUnit": "Add custom unit",
+    "editCustomUnit": "Edit unit",
+    "customUnitName": "Name",
+    "customUnitType": "Type",
+    "customUnitVolume": "Volume",
+    "customUnitWeight": "Weight",
+    "customUnitValueMl": "Value (ml)",
+    "customUnitValueG": "Value (g)",
+    "customUnitAliases": "Aliases (comma-separated)",
+    "deleteCustomUnitTitle": "Delete unit?",
+    "deleteCustomUnitMessage": "Are you sure you want to delete {{name}}?"
   },
   "kitchenUnitNames": {
     "tsp": "1 teaspoon",
