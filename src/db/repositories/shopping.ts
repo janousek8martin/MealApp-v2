@@ -193,15 +193,23 @@ export async function removeShoppingItem(db: AppDb, itemId: string): Promise<voi
   await db.update(shoppingListItems).set({ deletedAt: now, updatedAt: now }).where(eq(shoppingListItems.id, itemId));
 }
 
-/** Unchecking never reverses a pantry move – undoing an actual purchase is rare and not modeled. */
+/**
+ * Unchecking never reverses a pantry move – undoing an actual purchase is
+ * rare and not modeled. Stocking the pantry only happens on an actual
+ * false->true transition (checked state read *before* the update), so
+ * re-checking an already-checked item, or a duplicate call, can never
+ * double-stock the same purchase.
+ */
 export async function setShoppingItemChecked(db: AppDb, itemId: string, checked: boolean): Promise<void> {
+  const [item] = await db.select().from(shoppingListItems).where(eq(shoppingListItems.id, itemId));
+  if (!item) return;
+  const wasChecked = item.checked;
+
   const now = nowIso();
   await db.update(shoppingListItems).set({ checked, updatedAt: now }).where(eq(shoppingListItems.id, itemId));
 
-  if (!checked) return;
-
-  const [item] = await db.select().from(shoppingListItems).where(eq(shoppingListItems.id, itemId));
-  if (!item || !item.foodId || item.quantity === null) return; // free-text items have nothing to stock
+  if (!checked || wasChecked) return;
+  if (!item.foodId || item.quantity === null) return; // free-text items have nothing to stock
 
   const [food] = await db.select().from(foods).where(eq(foods.id, item.foodId));
   const expiresAt = food?.shelfLifeDays != null ? addDays(todayIsoDate(), food.shelfLifeDays) : null;
