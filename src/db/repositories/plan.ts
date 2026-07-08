@@ -538,6 +538,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
           repetitionCtx,
           { favoriteRecipeIds: unionFavorites(sharedProfiles, ctx), expiringFoodIds: ctx.expiringFoodIds },
           rng,
+          sharedProfiles.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),
         );
         if (picked) {
           const portions = sharedProfiles
@@ -571,6 +572,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
         repetitionCtx,
         { favoriteRecipeIds: ctx.favoriteRecipeIdsByProfile.get(profile.id) ?? new Set(), expiringFoodIds: ctx.expiringFoodIds },
         rng,
+        [profile.dailyTarget.kcal],
       );
       if (!picked) continue;
       const multiplier = scalingMultiplier(
@@ -744,6 +746,7 @@ export async function regenerateSlot(
         expiringFoodIds: ctx.expiringFoodIds,
       },
       createSeededRng(rngSeed ?? Date.now()),
+      relevantProfiles.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),
     );
   }
   if (!picked) return;

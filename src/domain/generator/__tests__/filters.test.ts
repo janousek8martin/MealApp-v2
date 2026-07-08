@@ -1,5 +1,6 @@
 import {
   deriveRecipeTags,
+  exceedsCandidateCalorieCap,
   findRestrictionConflicts,
   isRecipeAllowedForProfiles,
   passesRepetitionRules,
@@ -140,6 +141,21 @@ describe('isRecipeAllowedForProfiles', () => {
     expect(
       isRecipeAllowedForProfiles(grilledChicken, [{ ...noRestrictions, diets: ['low_carb'] }]),
     ).toBe(true);
+  });
+});
+
+describe('exceedsCandidateCalorieCap', () => {
+  it('flags a candidate above 60% of the daily target', () => {
+    expect(exceedsCandidateCalorieCap(1300, 2000)).toBe(true);
+  });
+
+  it('allows a candidate at or below 60% of the daily target', () => {
+    expect(exceedsCandidateCalorieCap(1200, 2000)).toBe(false);
+    expect(exceedsCandidateCalorieCap(500, 2000)).toBe(false);
+  });
+
+  it('never flags anything when the daily target is unknown (0)', () => {
+    expect(exceedsCandidateCalorieCap(5000, 0)).toBe(false);
   });
 });
 

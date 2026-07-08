@@ -42,7 +42,9 @@
     "conflictAllergen": "Obsahuje {{allergen}}, na které má profil alergii.",
     "conflictDiet": "Nesplňuje stravovací režim: {{diet}}.",
     "conflictAvoided": "Profil má tuto položku označenou jako nechtěnou.",
-    "addAnyway": "Přesto přidat"
+    "addAnyway": "Přesto přidat",
+    "fitWithinTolerance": "V toleranci cíle",
+    "fitOutsideTolerance": "Mimo toleranci cíle"
   },
   "library": {
     "placeholderTitle": "Recepty a potraviny",

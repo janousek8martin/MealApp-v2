@@ -225,6 +225,67 @@ describe('plan generator (repository)', () => {
     expect(portionAfter.status).toBe('eaten');
   });
 
+  it('never picks a main-meal recipe whose calories exceed 0.6x the profile\'s daily target when a reasonable one exists', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    const profileId = await createAdult(db, householdId);
+    await seedIfEmpty(db);
+
+    const [profile] = await db.select().from(profiles).where(eq(profiles.id, profileId));
+    const targets = computeTargets({
+      profileType: 'adult',
+      sex: profile.sex,
+      ageYears: ageYears(profile.birthDate),
+      heightCm: profile.heightCm,
+      weightKg: 80,
+      bodyFatPct: 20,
+      activityLevel: profile.activityLevel,
+      goal: 'maintain',
+      manualAdjustmentKcal: profile.tdciManualAdjustmentKcal,
+      fiberMode: 'efsa_min',
+    });
+
+    const oversizedFoodId = await upsertFood(db, {
+      nameCs: 'Obří hostina',
+      nameEn: 'Giant feast',
+      category: 'grain',
+      baseUnit: 'g',
+      kcalPer100: 200,
+      proteinPer100: 10,
+      carbsPer100: 20,
+      fatPer100: 8,
+      budget: 'average',
+      snackSuitable: false,
+      dietFlags: [],
+      allergens: [],
+    });
+    const oversizedRecipeId = await upsertRecipe(db, {
+      nameCs: 'Obří hostina',
+      nameEn: 'Giant feast',
+      category: 'lunch_dinner',
+      isSide: false,
+      budget: 'average',
+      servingsBase: 1,
+      // ~0.7x the daily target in a single portion – well over the 0.6x cap.
+      ingredients: [{ foodId: oversizedFoodId, amount: (targets.adjustedTdciKcal * 0.7 * 100) / 200 }],
+    });
+
+    await generateWeek(db, householdId, FUTURE_MONDAY, 999);
+
+    const rows = await db
+      .select()
+      .from(plannedMeals)
+      .where(
+        and(
+          eq(plannedMeals.householdId, householdId),
+          inArray(plannedMeals.slotKey, ['lunch', 'dinner']),
+          isNull(plannedMeals.deletedAt),
+        ),
+      );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((row) => row.itemId !== oversizedRecipeId)).toBe(true);
+  });
+
   it('swap replaces a slot with a different recipe than the one being excluded', async () => {
     const db = createTestDb();
     const householdId = await createHouseholdWithDefaults(db, 'Test');

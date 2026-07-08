@@ -79,6 +79,18 @@ export function isRecipeAllowedForProfiles(
   });
 }
 
+/**
+ * A recipe/food this much larger than a profile's whole daily calorie budget
+ * is a poor main-meal candidate even after portion scaling (scaling it down
+ * to fit would distort the portion beyond what's sensible to cook/serve).
+ * Snacks are exempt – a snack's whole point is a small slice of the day.
+ */
+const MAX_CANDIDATE_KCAL_SHARE_OF_DAILY_TARGET = 0.6;
+
+export function exceedsCandidateCalorieCap(candidateKcal: number, dailyTargetKcal: number): boolean {
+  return dailyTargetKcal > 0 && candidateKcal > MAX_CANDIDATE_KCAL_SHARE_OF_DAILY_TARGET * dailyTargetKcal;
+}
+
 export type RestrictionConflict = { kind: 'allergen' | 'diet' | 'avoided'; value?: string };
 
 /**

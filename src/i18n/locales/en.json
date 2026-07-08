@@ -42,7 +42,9 @@
     "conflictAllergen": "Contains {{allergen}}, which a profile is allergic to.",
     "conflictDiet": "Doesn't satisfy diet: {{diet}}.",
     "conflictAvoided": "A profile has this item marked as avoided.",
-    "addAnyway": "Add anyway"
+    "addAnyway": "Add anyway",
+    "fitWithinTolerance": "Within target tolerance",
+    "fitOutsideTolerance": "Outside target tolerance"
   },
   "library": {
     "placeholderTitle": "Recipes & foods",

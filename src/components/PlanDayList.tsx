@@ -4,6 +4,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  View,
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -13,17 +14,22 @@ import { MealSlotCard } from '@/components/MealSlotCard';
 import { db } from '@/db/client';
 import { regenerateSlot, removeMealExtra, setPortionStatus } from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
+import { isWithinDailyTolerance } from '@/domain/generator/tolerance';
 import type { RecipeNutrition } from '@/domain/recipeNutrition';
+import { useDailyProfileTargets } from '@/hooks/data';
 import type { ProfileRow } from '@/hooks/dataMapping';
+import { useFoods } from '@/hooks/library';
 import {
   findMealForProfileInSlot,
+  nutritionForMeal,
   targetProfileIdForSlot,
   useMealsForDate,
+  usePortionsForDate,
   type SlotRow,
 } from '@/hooks/plan';
 import { confirmDeleteMeal } from '@/utils/mealActions';
 import { useTheme } from '@/theme/ThemeContext';
-import { spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Props = {
   date: string;
@@ -74,6 +80,38 @@ export function PlanDayList({
   const meals = useMealsForDate(householdId, date);
   const isPast = date < todayIsoDate();
 
+  // Fit indicator: whether this day's *planned* totals (not eaten-so-far)
+  // land within the tolerance system for the active profile – lets the user
+  // spot a poorly-fitting generated day without opening every slot.
+  const portionsForDate = usePortionsForDate(householdId, date);
+  const dailyTargets = useDailyProfileTargets(activeProfile, date);
+  const foodRows = useFoods();
+  const foodById = useMemo(() => new Map(foodRows.map((food) => [food.id, food])), [foodRows]);
+  const profilePortions = useMemo(
+    () => portionsForDate.filter((row) => row.portion.profileId === activeProfile.id),
+    [portionsForDate, activeProfile.id],
+  );
+  const plannedTotals = useMemo(
+    () =>
+      profilePortions.reduce(
+        (acc, row) => {
+          const nutrition = nutritionForMeal(row.meal, recipeNutritionMap, foodById);
+          if (!nutrition) return acc;
+          const multiplier = row.portion.multiplier;
+          return {
+            kcal: acc.kcal + nutrition.kcal * multiplier,
+            proteinG: acc.proteinG + nutrition.proteinG * multiplier,
+            carbsG: acc.carbsG + nutrition.carbsG * multiplier,
+            fatG: acc.fatG + nutrition.fatG * multiplier,
+          };
+        },
+        { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 },
+      ),
+    [profilePortions, recipeNutritionMap, foodById],
+  );
+  const withinTolerance =
+    dailyTargets && profilePortions.length > 0 ? isWithinDailyTolerance(plannedTotals, dailyTargets) : null;
+
   return (
     <ScrollView
       ref={isActive ? scrollRef : undefined}
@@ -85,6 +123,13 @@ export function PlanDayList({
       onLayout={isActive ? onLayout : undefined}
       scrollEventThrottle={scrollEventThrottle}>
       {isPast ? <Text style={styles.pastNotice}>{t('planScreen.pastNotice')}</Text> : null}
+      {withinTolerance !== null ? (
+        <View style={[styles.fitBadge, withinTolerance ? styles.fitBadgeOk : styles.fitBadgeOff]}>
+          <Text style={[styles.fitBadgeText, withinTolerance ? styles.fitBadgeTextOk : styles.fitBadgeTextOff]}>
+            {withinTolerance ? t('planScreen.fitWithinTolerance') : t('planScreen.fitOutsideTolerance')}
+          </Text>
+        </View>
+      ) : null}
 
       {slots.map((slot) => {
         const meal = findMealForProfileInSlot(meals, slot, activeProfile);
@@ -125,6 +170,29 @@ function createStyles(colors: ColorTokens) {
       color: colors.textSecondary,
       fontSize: typography.small,
       marginBottom: spacing.md,
+    },
+    fitBadge: {
+      alignSelf: 'flex-start',
+      borderRadius: radius.chip,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm + 2,
+      marginBottom: spacing.md,
+    },
+    fitBadgeOk: {
+      backgroundColor: colors.primaryLight,
+    },
+    fitBadgeOff: {
+      backgroundColor: colors.danger + '22',
+    },
+    fitBadgeText: {
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+    fitBadgeTextOk: {
+      color: colors.onPrimary,
+    },
+    fitBadgeTextOff: {
+      color: colors.danger,
     },
   });
 }

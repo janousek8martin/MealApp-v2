@@ -79,6 +79,38 @@ describe('pickMealForSlot', () => {
       )?.candidate.id;
     expect(pick()).toBe(pick());
   });
+
+  it('excludes a candidate whose calories exceed 0.6x a relevant profile\'s daily target', () => {
+    const candidates = [
+      item('oversized', { nutritionPerPortion: { kcal: 1300, proteinG: 40, carbsG: 60, fatG: 20, fiberG: 4 } }),
+      item('reasonable', { nutritionPerPortion: { kcal: 500, proteinG: 40, carbsG: 60, fatG: 20, fiberG: 4 } }),
+    ];
+    const rng = createSeededRng(3);
+    for (let i = 0; i < 20; i += 1) {
+      const result = pickMealForSlot(
+        candidates,
+        [noRestrictions],
+        repetitionCtx(),
+        { favoriteRecipeIds: new Set(), expiringFoodIds: new Set() },
+        rng,
+        [2000],
+      );
+      expect(result?.candidate.id).toBe('reasonable');
+    }
+  });
+
+  it('falls back to an over-cap candidate rather than leaving the slot empty when nothing else passes', () => {
+    const candidates = [item('oversized', { nutritionPerPortion: { kcal: 1300, proteinG: 40, carbsG: 60, fatG: 20, fiberG: 4 } })];
+    const result = pickMealForSlot(
+      candidates,
+      [noRestrictions],
+      repetitionCtx(),
+      { favoriteRecipeIds: new Set(), expiringFoodIds: new Set() },
+      createSeededRng(1),
+      [2000],
+    );
+    expect(result?.candidate.id).toBe('oversized');
+  });
 });
 
 describe('pickSnackForSlot', () => {

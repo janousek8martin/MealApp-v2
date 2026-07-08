@@ -1,4 +1,10 @@
-import { pickClosestSnack, resolveSlotCalorieShare, resolveSnackTarget, scalingMultiplier } from '../portions';
+import {
+  isScalingMultiplierClamped,
+  pickClosestSnack,
+  resolveSlotCalorieShare,
+  resolveSnackTarget,
+  scalingMultiplier,
+} from '../portions';
 
 describe('scalingMultiplier', () => {
   it('scales up when the target exceeds the recipe portion', () => {
@@ -11,6 +17,32 @@ describe('scalingMultiplier', () => {
 
   it('falls back to 1 for a zero-kcal recipe rather than dividing by zero', () => {
     expect(scalingMultiplier(500, 0)).toBe(1);
+  });
+
+  it('clamps a would-be tiny portion to 0.25x', () => {
+    expect(scalingMultiplier(50, 600)).toBeCloseTo(0.25);
+  });
+
+  it('clamps a would-be huge portion to 4x', () => {
+    expect(scalingMultiplier(6000, 600)).toBeCloseTo(4);
+  });
+});
+
+describe('isScalingMultiplierClamped', () => {
+  it('is false within the 0.25x-4x range', () => {
+    expect(isScalingMultiplierClamped(900, 600)).toBe(false);
+  });
+
+  it('is true when the raw ratio would fall below 0.25x', () => {
+    expect(isScalingMultiplierClamped(50, 600)).toBe(true);
+  });
+
+  it('is true when the raw ratio would exceed 4x', () => {
+    expect(isScalingMultiplierClamped(6000, 600)).toBe(true);
+  });
+
+  it('is false for a zero-kcal recipe (scalingMultiplier falls back to 1, not a ratio)', () => {
+    expect(isScalingMultiplierClamped(500, 0)).toBe(false);
   });
 });
 

@@ -1,13 +1,31 @@
 import type { RecipeNutritionPerPortion } from './types';
 
 /**
+ * A portion scaled below 0.25x or above 4x the recipe's base serving is no
+ * longer a sensible amount to cook/serve (e.g. a sliver of lasagna, or five
+ * servings of a snack) – clamping keeps the generator from ever producing
+ * that, at the cost of missing the calorie target exactly (surfaced via
+ * `isScalingMultiplierClamped` so the caller can flag the day accordingly).
+ */
+const MIN_SCALING_MULTIPLIER = 0.25;
+const MAX_SCALING_MULTIPLIER = 4;
+
+/**
  * Single multiplier applied to the whole recipe – keeps its internal macro
  * ratio intact, per the approved algorithm (portion scaling, not per-component
  * adjustment).
  */
 export function scalingMultiplier(targetKcal: number, recipeKcalPerPortion: number): number {
   if (recipeKcalPerPortion <= 0) return 1;
-  return targetKcal / recipeKcalPerPortion;
+  const raw = targetKcal / recipeKcalPerPortion;
+  return Math.min(MAX_SCALING_MULTIPLIER, Math.max(MIN_SCALING_MULTIPLIER, raw));
+}
+
+/** Whether `scalingMultiplier` would clamp this target/recipe pair rather than hitting it exactly. */
+export function isScalingMultiplierClamped(targetKcal: number, recipeKcalPerPortion: number): boolean {
+  if (recipeKcalPerPortion <= 0) return false;
+  const raw = targetKcal / recipeKcalPerPortion;
+  return raw < MIN_SCALING_MULTIPLIER || raw > MAX_SCALING_MULTIPLIER;
 }
 
 export type MacroTarget = { kcal: number; proteinG: number; carbsG: number; fatG: number };
