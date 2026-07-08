@@ -14,7 +14,7 @@ import {
   regenerateSlot,
   setPortionStatus,
 } from '../repositories/plan';
-import { createProfile } from '../repositories/profiles';
+import { createProfile, updateProfileMacroOverrides } from '../repositories/profiles';
 import { foods, plannedMealExtras, plannedMealPortions, plannedMeals, profiles, recipeIngredients, recipes } from '../schema';
 import { seedIfEmpty } from '../seed';
 import { createTestDb } from '../testing/testDb';
@@ -398,6 +398,41 @@ describe('plan generator (repository)', () => {
       .where(and(eq(plannedMealPortions.plannedMealId, meal.id), isNull(plannedMealPortions.deletedAt)));
     expect(portions).toHaveLength(1);
     expect(portions[0].multiplier).toBeGreaterThan(0);
+  });
+
+  it("uses the profile's activity multiplier and macro overrides for the generator's daily target, same as the UI (G1 regression)", async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    // A fine-grained multiplier away from 'moderate's 1.55 midpoint, plus a
+    // protein override well outside the default 1.4-2.0 g/kg-LBM range –
+    // if the generator recomputed targets independently (the G1 bug) it
+    // would ignore both and use the level-midpoint/default-range target.
+    const profileId = await createAdult(db, householdId, { activityMultiplier: 1.7 });
+    await updateProfileMacroOverrides(db, profileId, { proteinPerKgLbm: 2.4 });
+    await seedIfEmpty(db);
+
+    await generateWeek(db, householdId, FUTURE_MONDAY, 777);
+
+    const [profile] = await db.select().from(profiles).where(eq(profiles.id, profileId));
+    const uiTargets = computeTargets({
+      profileType: 'adult',
+      sex: profile.sex,
+      ageYears: ageYears(profile.birthDate),
+      heightCm: profile.heightCm,
+      weightKg: 80,
+      bodyFatPct: 20,
+      activityLevel: profile.activityLevel,
+      activityMultiplier: profile.activityMultiplier,
+      goal: 'maintain',
+      manualAdjustmentKcal: profile.tdciManualAdjustmentKcal,
+      proteinPerKgLbm: 2.4,
+      fiberMode: 'efsa_min',
+    });
+
+    for (const date of weekDates(FUTURE_MONDAY)) {
+      const plannedKcal = await sumPlannedKcal(db, householdId, profileId, date);
+      expect(Math.abs(plannedKcal - uiTargets.adjustedTdciKcal)).toBeLessThanOrEqual(100);
+    }
   });
 
   it('assignManualMeal blocks a manual pick that conflicts with an allergy unless acknowledged', async () => {

@@ -1,6 +1,5 @@
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 
-import { ageYears } from '@/domain/age';
 import { createSeededRng, type Rng } from '@/domain/generator/rng';
 import { deriveRecipeTags, findRestrictionConflicts, type RestrictionConflict } from '@/domain/generator/filters';
 import { resolveSlotCalorieShare, resolveSnackTarget, scalingMultiplier, type SlotPortionOverride } from '@/domain/generator/portions';
@@ -12,9 +11,12 @@ import {
   type GeneratorItem,
 } from '@/domain/generator/select';
 import type { DietRestrictions, DerivedRecipeTags, IngredientFoodTags, RecipeCandidate, RepetitionContext } from '@/domain/generator/types';
-import { computeTargets } from '@/domain/targets';
 import { addDays, previousDay, startOfWeek, weekDates } from '@/domain/week';
 import { applyWorkoutDayCycling } from '@/domain/workoutDays';
+// Reused so the generator's daily target computation can never drift from
+// what the UI shows (see the dailyTarget comment in loadGeneratorContext
+// below) – this is the same pure mapping useProfileTargets calls.
+import { targetsForProfile } from '@/hooks/dataMapping';
 
 import { newId } from '../id';
 import { deductPantryForConsumption, mealIngredientNeeds, restockPantryForConsumption } from './shopping';
@@ -156,20 +158,11 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
 
     const dailyTarget: MacroTotal | null = latestMetric
       ? (() => {
-          const targets = computeTargets({
-            profileType: profile.profileType,
-            sex: profile.sex,
-            ageYears: ageYears(profile.birthDate),
-            heightCm: profile.heightCm,
-            weightKg: latestMetric.weightKg,
-            bodyFatPct: latestMetric.bodyFatPct ?? undefined,
-            activityLevel: profile.activityLevel,
-            goal: profile.goal,
-            goalBodyFatPct: profile.goalBodyFatPct ?? undefined,
-            fitnessExperience: profile.fitnessExperience ?? undefined,
-            manualAdjustmentKcal: profile.tdciManualAdjustmentKcal,
-            fiberMode: settingsRow?.fiberMode ?? 'efsa_min',
-          });
+          // Reuses the exact same mapping the UI reads TDCI/macros through
+          // (useProfileTargets → targetsForProfile), so the generator's
+          // target can never drift from what Home/Settings display –
+          // activity multiplier and macro overrides included.
+          const targets = targetsForProfile(profile, latestMetric, settingsRow?.fiberMode ?? 'efsa_min')!;
           const workoutDays: number[] = profile.workoutDaysJson ? JSON.parse(profile.workoutDaysJson) : [];
           return applyWorkoutDayCycling(
             {
