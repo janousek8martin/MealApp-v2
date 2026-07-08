@@ -14,11 +14,32 @@ const BUDGET_SCORE: Record<RecipeCandidate['budget'], number> = {
 const FIBER_SCORE_PER_GRAM = 0.6;
 const FIBER_SCORE_CAP = 8;
 const PANTRY_EXPIRY_BONUS_PER_INGREDIENT = 6;
+/** Max bonus for a recipe whose protein/fat density (per kcal) exactly matches the slot's macro-fit target. */
+const MACRO_FIT_BONUS_MAX = 15;
+/** Converts a per-kcal-gram ratio difference into score points (calibrated so a ~0.05 g/kcal miss costs the whole bonus). */
+const MACRO_FIT_DISTANCE_SCALE = 300;
+
+/**
+ * Soft bonus for a recipe whose protein/fat density already matches the
+ * slot's macro-fit target (see `resolveMainSlotTarget`) – compares ratios
+ * (g per kcal), not raw grams, since the recipe will be scaled to hit the
+ * slot's kcal target regardless of its base serving size; if the ratio
+ * already matches, scaling to kcal automatically hits protein/fat too.
+ */
+function macroFitScore(candidate: RecipeCandidate, target: ScoringContext['macroFitTarget']): number {
+  if (!target || target.kcal <= 0 || candidate.nutritionPerPortion.kcal <= 0) return 0;
+  const targetProteinRatio = target.proteinG / target.kcal;
+  const targetFatRatio = target.fatG / target.kcal;
+  const candidateProteinRatio = candidate.nutritionPerPortion.proteinG / candidate.nutritionPerPortion.kcal;
+  const candidateFatRatio = candidate.nutritionPerPortion.fatG / candidate.nutritionPerPortion.kcal;
+  const distance = Math.abs(candidateProteinRatio - targetProteinRatio) + Math.abs(candidateFatRatio - targetFatRatio);
+  return Math.max(0, MACRO_FIT_BONUS_MAX - distance * MACRO_FIT_DISTANCE_SCALE);
+}
 
 /**
  * Higher is better. Combines: repetition penalty (relative to the recipe's
- * effective weekly limit), a favorite bonus, a budget/quality nudge, and a
- * bonus for using pantry ingredients close to expiring.
+ * effective weekly limit), a favorite bonus, a budget/quality nudge, a bonus
+ * for using pantry ingredients close to expiring, and a macro-fit nudge.
  */
 export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext): number {
   const used = ctx.weekCounts.get(candidate.id) ?? 0;
@@ -33,8 +54,9 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
   );
   const expiringCount = candidate.ingredients.filter((i) => ctx.expiringFoodIds.has(i.foodId)).length;
   const pantryBonus = expiringCount * PANTRY_EXPIRY_BONUS_PER_INGREDIENT;
+  const macroBonus = macroFitScore(candidate, ctx.macroFitTarget);
 
-  return BASE_SCORE - repetitionPenalty + favoriteBonus + budgetScore + fiberScore + pantryBonus;
+  return BASE_SCORE - repetitionPenalty + favoriteBonus + budgetScore + fiberScore + pantryBonus + macroBonus;
 }
 
 export function scoreCandidates(candidates: RecipeCandidate[], ctx: ScoringContext): ScoredCandidate[] {

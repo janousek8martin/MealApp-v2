@@ -64,6 +64,20 @@ describe('scoreCandidate', () => {
     const boosted = scoreCandidate(withExpiring, ctx({ expiringFoodIds: new Set(['spinach']) }));
     expect(boosted).toBeGreaterThan(base);
   });
+
+  it('does not change the score when there is no macro-fit target (default candidate() has no override)', () => {
+    expect(scoreCandidate(candidate(), ctx())).toBe(scoreCandidate(candidate(), ctx({ macroFitTarget: undefined })));
+  });
+
+  it('rewards a recipe whose protein/fat density matches the slot macro-fit target over one that does not', () => {
+    // Target: 0.1 g protein/kcal, 0.03 g fat/kcal (e.g. 60g protein, 18g fat @ 600 kcal).
+    const target = { kcal: 600, proteinG: 60, fatG: 18 };
+    const matching = candidate({ nutritionPerPortion: { kcal: 600, proteinG: 60, carbsG: 40, fatG: 18, fiberG: 4 } });
+    const mismatched = candidate({ nutritionPerPortion: { kcal: 600, proteinG: 10, carbsG: 100, fatG: 40, fiberG: 4 } });
+    const matchingScore = scoreCandidate(matching, ctx({ macroFitTarget: target }));
+    const mismatchedScore = scoreCandidate(mismatched, ctx({ macroFitTarget: target }));
+    expect(matchingScore).toBeGreaterThan(mismatchedScore);
+  });
 });
 
 describe('pickWeightedRandom', () => {

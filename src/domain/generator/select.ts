@@ -27,7 +27,7 @@ export function pickMealForSlot(
   candidates: GeneratorItem[],
   restrictions: DietRestrictions[],
   repetitionCtx: RepetitionContext,
-  scoringExtras: Pick<ScoringContext, 'favoriteRecipeIds' | 'expiringFoodIds'>,
+  scoringExtras: Pick<ScoringContext, 'favoriteRecipeIds' | 'expiringFoodIds' | 'macroFitTarget'>,
   rng: Rng,
   dailyTargetsKcal: number[] = [],
   shortlistSize: number = DEFAULT_SHORTLIST_SIZE,

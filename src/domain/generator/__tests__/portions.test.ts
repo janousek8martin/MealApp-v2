@@ -1,6 +1,7 @@
 import {
   isScalingMultiplierClamped,
   pickClosestSnack,
+  resolveMainSlotTarget,
   resolveSlotCalorieShare,
   resolveSnackTarget,
   scalingMultiplier,
@@ -127,6 +128,42 @@ describe('resolveSnackTarget', () => {
   it('never returns negative carbs when protein/fat overrides exceed the kcal budget', () => {
     const override = { calorieSharePercent: 0.05, proteinTargetG: 40, fatTargetG: 20 };
     const result = resolveSnackTarget(remaining, 2400, override);
+    expect(result.carbsG).toBe(0);
+  });
+});
+
+describe('resolveMainSlotTarget', () => {
+  // Internally consistent with kcal = protein×4 + fat×9 + carbs×4 (150×4 + 70×9 + 250×4 = 2230),
+  // like a real computeTargets() result, so the no-override case can assert exact proportionality.
+  const dailyTarget = { kcal: 2230, proteinG: 150, carbsG: 250, fatG: 70 };
+
+  it('proportionally splits every macro by the calorie share when there is no override', () => {
+    const result = resolveMainSlotTarget(dailyTarget, 0.25, undefined);
+    expect(result.kcal).toBeCloseTo(557.5);
+    expect(result.proteinG).toBeCloseTo(37.5);
+    expect(result.fatG).toBeCloseTo(17.5);
+    expect(result.carbsG).toBeCloseTo(62.5);
+  });
+
+  it('uses the override protein/fat targets and derives carbs from the remaining kcal budget', () => {
+    const override = { calorieSharePercent: null, proteinTargetG: 50, fatTargetG: 15 };
+    const result = resolveMainSlotTarget(dailyTarget, 0.25, override);
+    expect(result.kcal).toBeCloseTo(557.5);
+    expect(result.proteinG).toBe(50);
+    expect(result.fatG).toBe(15);
+    // (557.5 - 50*4 - 15*9) / 4 = (557.5 - 200 - 135) / 4 = 222.5/4 = 55.625
+    expect(result.carbsG).toBeCloseTo(55.625);
+  });
+
+  it('derives kcal from an overridden calorie share too', () => {
+    const override = { calorieSharePercent: 0.4, proteinTargetG: 60, fatTargetG: 20 };
+    const result = resolveMainSlotTarget(dailyTarget, 0.25, override);
+    expect(result.kcal).toBeCloseTo(892);
+  });
+
+  it('never returns negative carbs when protein/fat overrides exceed the slot kcal budget', () => {
+    const override = { calorieSharePercent: null, proteinTargetG: 100, fatTargetG: 50 };
+    const result = resolveMainSlotTarget(dailyTarget, 0.1, override);
     expect(result.carbsG).toBe(0);
   });
 });

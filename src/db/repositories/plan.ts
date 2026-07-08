@@ -2,7 +2,13 @@ import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { createSeededRng, type Rng } from '@/domain/generator/rng';
 import { deriveRecipeTags, findRestrictionConflicts, type RestrictionConflict } from '@/domain/generator/filters';
-import { resolveSlotCalorieShare, resolveSnackTarget, scalingMultiplier, type SlotPortionOverride } from '@/domain/generator/portions';
+import {
+  resolveMainSlotTarget,
+  resolveSlotCalorieShare,
+  resolveSnackTarget,
+  scalingMultiplier,
+  type SlotPortionOverride,
+} from '@/domain/generator/portions';
 import { computeRecipeNutrition, type RecipeNutrition } from '@/domain/recipeNutrition';
 import {
   pickMealForSlot,
@@ -345,6 +351,27 @@ function unionFavorites(subset: ProfileContext[], ctx: GeneratorContext): Set<st
   return result;
 }
 
+/**
+ * A shared main slot serves several profiles' individual targets with one
+ * recipe pick, so there's no single "the" macro-fit target – this averages
+ * each sharing profile's protein/fat density (g per kcal, not raw grams, so
+ * profiles of different sizes weigh equally) into one synthetic target at
+ * kcal=1, which `macroFitScore` reads as a ratio anyway.
+ */
+function averageMacroFitTarget(
+  profiles: ProfileContext[],
+  slot: SlotRow,
+): { kcal: number; proteinG: number; fatG: number } | undefined {
+  const targets = profiles
+    .filter((p) => p.dailyTarget !== null)
+    .map((p) => resolveMainSlotTarget(p.dailyTarget!, slot.calorieShare, p.slotOverrides.get(slot.id)));
+  if (targets.length === 0) return undefined;
+
+  const avgProteinRatio = targets.reduce((sum, t) => sum + (t.kcal > 0 ? t.proteinG / t.kcal : 0), 0) / targets.length;
+  const avgFatRatio = targets.reduce((sum, t) => sum + (t.kcal > 0 ? t.fatG / t.kcal : 0), 0) / targets.length;
+  return { kcal: 1, proteinG: avgProteinRatio, fatG: avgFatRatio };
+}
+
 function addConsumed(map: Map<string, MacroTotal>, profileId: string, nutrition: RecipeNutrition, multiplier: number) {
   const current = map.get(profileId) ?? { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 };
   map.set(profileId, {
@@ -536,7 +563,11 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
           candidates,
           sharedProfiles.map((p) => p.restrictions),
           repetitionCtx,
-          { favoriteRecipeIds: unionFavorites(sharedProfiles, ctx), expiringFoodIds: ctx.expiringFoodIds },
+          {
+            favoriteRecipeIds: unionFavorites(sharedProfiles, ctx),
+            expiringFoodIds: ctx.expiringFoodIds,
+            macroFitTarget: averageMacroFitTarget(sharedProfiles, slot),
+          },
           rng,
           sharedProfiles.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),
         );
@@ -570,7 +601,11 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
         candidates,
         [profile.restrictions],
         repetitionCtx,
-        { favoriteRecipeIds: ctx.favoriteRecipeIdsByProfile.get(profile.id) ?? new Set(), expiringFoodIds: ctx.expiringFoodIds },
+        {
+          favoriteRecipeIds: ctx.favoriteRecipeIdsByProfile.get(profile.id) ?? new Set(),
+          expiringFoodIds: ctx.expiringFoodIds,
+          macroFitTarget: averageMacroFitTarget([profile], slot),
+        },
         rng,
         [profile.dailyTarget.kcal],
       );
@@ -744,6 +779,7 @@ export async function regenerateSlot(
       {
         favoriteRecipeIds: unionFavorites(relevantProfiles, ctx),
         expiringFoodIds: ctx.expiringFoodIds,
+        macroFitTarget: averageMacroFitTarget(relevantProfiles, slot),
       },
       createSeededRng(rngSeed ?? Date.now()),
       relevantProfiles.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),

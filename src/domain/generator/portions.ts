@@ -71,6 +71,27 @@ export function resolveSlotCalorieShare(householdShare: number, override: SlotPo
 }
 
 /**
+ * A main slot's target macros, for *candidate scoring* only – not for
+ * scaling (a main dish is always scaled by one recipe-wide multiplier, see
+ * `scalingMultiplier`, so it can't be pushed toward an independent protein/
+ * fat target the way a snack can). Mirrors `resolveSnackTarget`'s override
+ * precedence: an explicit protein/fat target replaces its calorie-share-
+ * proportional default, and carbs fill whatever kcal budget is left.
+ */
+export function resolveMainSlotTarget(
+  dailyTarget: MacroTarget,
+  householdCalorieShare: number,
+  override: SlotPortionOverride | undefined,
+): MacroTarget {
+  const effectiveShare = resolveSlotCalorieShare(householdCalorieShare, override);
+  const kcal = effectiveShare * dailyTarget.kcal;
+  const proteinG = override?.proteinTargetG ?? dailyTarget.proteinG * effectiveShare;
+  const fatG = override?.fatTargetG ?? dailyTarget.fatG * effectiveShare;
+  const carbsG = Math.max(0, (kcal - proteinG * 4 - fatG * 9) / 4);
+  return { kcal, proteinG, fatG, carbsG };
+}
+
+/**
  * Resolves the target macros for a snack slot. With no override this is just
  * "whatever remains of the daily target" (the default). Once the profile sets
  * an explicit protein/fat (and optionally calorie-share) target for the slot,

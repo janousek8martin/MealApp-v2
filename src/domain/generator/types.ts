@@ -68,6 +68,15 @@ export type ScoringContext = RepetitionContext & {
   favoriteRecipeIds: Set<string>;
   /** Food ids in the pantry that are close to expiring. */
   expiringFoodIds: Set<string>;
+  /**
+   * Per-kcal protein/fat density the slot is aiming for (see
+   * `resolveMainSlotTarget`/`portions.ts`) – a soft scoring nudge toward
+   * recipes whose macro ratio already matches a profile's slot target, since
+   * the generator's single whole-recipe scaling multiplier can't otherwise
+   * correct a mismatched ratio. Absent when there's no meaningful target
+   * (e.g. no profile has a body-metric-derived daily target yet).
+   */
+  macroFitTarget?: { kcal: number; proteinG: number; fatG: number };
 };
 
 export type ScoredCandidate = { candidate: RecipeCandidate; score: number };

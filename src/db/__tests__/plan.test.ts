@@ -4,7 +4,7 @@ import { ageYears } from '../../domain/age';
 import { computeRecipeNutrition } from '../../domain/recipeNutrition';
 import { computeTargets } from '../../domain/targets';
 import { startOfWeek, weekDates } from '../../domain/week';
-import { createHouseholdWithDefaults } from '../repositories/households';
+import { createHouseholdWithDefaults, updateHouseholdSettings } from '../repositories/households';
 import { upsertFood, upsertRecipe } from '../repositories/library';
 import {
   addMealExtra,
@@ -14,8 +14,8 @@ import {
   regenerateSlot,
   setPortionStatus,
 } from '../repositories/plan';
-import { createProfile, updateProfileMacroOverrides } from '../repositories/profiles';
-import { foods, plannedMealExtras, plannedMealPortions, plannedMeals, profiles, recipeIngredients, recipes } from '../schema';
+import { createProfile, updateProfileMacroOverrides, upsertProfileSlotPortion } from '../repositories/profiles';
+import { foods, mealSlotSettings, plannedMealExtras, plannedMealPortions, plannedMeals, profiles, recipeIngredients, recipes } from '../schema';
 import { seedIfEmpty } from '../seed';
 import { createTestDb } from '../testing/testDb';
 
@@ -284,6 +284,106 @@ describe('plan generator (repository)', () => {
       );
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every((row) => row.itemId !== oversizedRecipeId)).toBe(true);
+  });
+
+  it("favors a main-slot recipe matching a profile's protein/fat slot override over one that doesn't (item 7)", async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    // A generous per-recipe cap so 7 days of picks from only 2 candidates
+    // never exhausts either one's weekly repetition budget mid-week.
+    await updateHouseholdSettings(db, householdId, { defaultMaxRepetitionsPerWeek: 7, defaultAllowConsecutiveDays: true });
+    const profileId = await createAdult(db, householdId);
+    // No seedIfEmpty here: isolates the two candidates below as the *only*
+    // lunch_dinner recipes, so the macro-fit signal isn't diluted by an
+    // unrelated seeded pool competing on repetition/favorite/budget scoring.
+
+    const [lunchSlot] = await db.select().from(mealSlotSettings).where(eq(mealSlotSettings.slotKey, 'lunch'));
+    // Fixes the slot's kcal budget (0.2 × daily target) so the target
+    // protein/fat ratio below is exactly known, independent of the profile's
+    // own computed daily target.
+    await upsertProfileSlotPortion(db, profileId, lunchSlot.id, {
+      calorieSharePercent: 0.2,
+      proteinTargetG: 50,
+      fatTargetG: 15,
+    });
+
+    // Ratios engineered to match the slot target (50g protein / 15g fat @
+    // ~540 kcal, i.e. 0.2 × a ~2700 kcal daily target): 18.5g protein and
+    // 5.6g fat per 100 kcal.
+    const balancedFoodId = await upsertFood(db, {
+      nameCs: 'Vyvážené jídlo',
+      nameEn: 'Balanced meal',
+      category: 'meat',
+      baseUnit: 'g',
+      kcalPer100: 200,
+      proteinPer100: 18.5,
+      carbsPer100: 19,
+      fatPer100: 5.6,
+      budget: 'average',
+      snackSuitable: false,
+      dietFlags: [],
+      allergens: [],
+    });
+    const matchingRecipeId = await upsertRecipe(db, {
+      nameCs: 'Vyvážené jídlo',
+      nameEn: 'Balanced meal',
+      category: 'lunch_dinner',
+      isSide: false,
+      budget: 'average',
+      servingsBase: 1,
+      ingredients: [{ foodId: balancedFoodId, amount: 270 }], // ~540 kcal, ~50g protein, ~15g fat
+    });
+
+    const pastaId = await upsertFood(db, {
+      nameCs: 'Těstoviny',
+      nameEn: 'Pasta',
+      category: 'grain',
+      baseUnit: 'g',
+      kcalPer100: 350,
+      proteinPer100: 8,
+      carbsPer100: 75,
+      fatPer100: 1,
+      budget: 'average',
+      snackSuitable: false,
+      dietFlags: [],
+      allergens: ['gluten'],
+    });
+    const mismatchedRecipeId = await upsertRecipe(db, {
+      nameCs: 'Těstoviny',
+      nameEn: 'Pasta',
+      category: 'lunch_dinner',
+      isSide: false,
+      budget: 'average',
+      servingsBase: 1,
+      ingredients: [{ foodId: pastaId, amount: 154 }], // ~539 kcal, ~12g protein, ~1.5g fat
+    });
+
+    // generateWeek scores every day's lunch independently (unlike
+    // regenerateSlot, which excludes the current pick and would force a
+    // strict alternation between exactly two candidates regardless of
+    // score) – re-running it several times samples the weighted-random
+    // pick enough to show the macro-fit bonus's effect on win rate.
+    const picks = { matching: 0, mismatched: 0, other: 0 };
+    for (let seed = 1; seed <= 20; seed += 1) {
+      await generateWeek(db, householdId, FUTURE_MONDAY, seed);
+      const rows = await db
+        .select()
+        .from(plannedMeals)
+        .where(
+          and(
+            eq(plannedMeals.householdId, householdId),
+            eq(plannedMeals.slotKey, 'lunch'),
+            isNull(plannedMeals.deletedAt),
+          ),
+        );
+      for (const row of rows) {
+        if (row.itemId === matchingRecipeId) picks.matching += 1;
+        else if (row.itemId === mismatchedRecipeId) picks.mismatched += 1;
+        else picks.other += 1;
+      }
+    }
+
+    expect(picks.matching).toBeGreaterThan(picks.mismatched);
   });
 
   it('swap replaces a slot with a different recipe than the one being excluded', async () => {
