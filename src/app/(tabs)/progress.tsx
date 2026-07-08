@@ -14,7 +14,10 @@ import { WeightChart } from '@/components/WeightChart';
 import { db } from '@/db/client';
 import { addBodyMetric } from '@/db/repositories/profiles';
 import { todayIsoDate } from '@/db/time';
+import { estimateAdaptiveTdee } from '@/domain/adaptiveTdee';
 import { shouldRecommendMaintenance } from '@/domain/goals';
+import { addDays } from '@/domain/week';
+import { useLoggedDailyKcal } from '@/hooks/adaptiveTdee';
 import {
   useActiveProfile,
   useBodyMetricHistory,
@@ -32,6 +35,9 @@ function num(value: string): number | null {
   return Number.isFinite(parsed) && value.trim() !== '' ? parsed : null;
 }
 
+/** Fixed in V1 (see the approved adaptive-TDEE proposal); a configurable 14-28 day range is a future refinement. */
+const ADAPTIVE_TDEE_WINDOW_DAYS = 21;
+
 export default function ProgressScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -44,6 +50,18 @@ export default function ProgressScreen() {
   const targets = useProfileTargets(activeProfile);
   const latestMetric = useLatestBodyMetric(activeProfile?.id);
   const history = useBodyMetricHistory(activeProfile?.id);
+
+  const adaptiveTdeeWindowStart = useMemo(() => addDays(todayIsoDate(), -ADAPTIVE_TDEE_WINDOW_DAYS), []);
+  const loggedDailyKcal = useLoggedDailyKcal(activeProfile?.id, adaptiveTdeeWindowStart);
+  const weighInsInWindow = useMemo(
+    () => history.filter((h) => h.date >= adaptiveTdeeWindowStart).map((h) => ({ date: h.date, weightKg: h.weightKg })),
+    [history, adaptiveTdeeWindowStart],
+  );
+  const adaptiveTdee = estimateAdaptiveTdee({
+    weighIns: weighInsInWindow,
+    loggedDailyKcal,
+    windowDays: ADAPTIVE_TDEE_WINDOW_DAYS,
+  });
 
   const [weight, setWeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
@@ -145,6 +163,31 @@ export default function ProgressScreen() {
             />
             <Text style={styles.cardTitle}>{t('progress.noDataTitle')}</Text>
             <Text style={styles.emptyText}>{t('progress.noDataText')}</Text>
+          </View>
+        ) : null}
+
+        {activeProfile && targets ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t('progress.adaptiveTdeeTitle')}</Text>
+            <View style={styles.tdeeRow}>
+              <Text style={styles.tdeeLabel}>{t('progress.tdeeFormula')}</Text>
+              <Text style={styles.tdeeValue}>{Math.round(targets.tdee)} kcal</Text>
+            </View>
+            {adaptiveTdee.status === 'ok' ? (
+              <>
+                <View style={styles.tdeeRow}>
+                  <Text style={styles.tdeeLabel}>
+                    {t('progress.tdeeTrend', { days: ADAPTIVE_TDEE_WINDOW_DAYS })}
+                  </Text>
+                  <Text style={styles.tdeeValue}>{Math.round(adaptiveTdee.estimatedTdeeKcal)} kcal</Text>
+                </View>
+                <Text style={styles.tdeeMeta}>
+                  {t('progress.tdeeTrendBasis', { count: adaptiveTdee.loggedDaysCount })}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.tdeeMeta}>{t('progress.tdeeInsufficientData')}</Text>
+            )}
           </View>
         ) : null}
 
@@ -258,6 +301,26 @@ function createStyles(colors: ColorTokens) {
       color: colors.text,
       fontSize: typography.body,
       marginBottom: spacing.xs,
+    },
+    tdeeRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+      marginBottom: spacing.xs,
+    },
+    tdeeLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+    },
+    tdeeValue: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+    },
+    tdeeMeta: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: spacing.xs,
     },
   });
 }

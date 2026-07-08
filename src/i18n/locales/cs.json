@@ -96,7 +96,12 @@
     "goalBodyFatLabel": "Cílový tělesný tuk",
     "dietCycleBanner": "Od začátku jste ubrali dost tělesného tuku – zvažte přechod na udržovací kalorie na 1–2 měsíce, než budete pokračovat v deficitu.",
     "noDataTitle": "Zatím žádná data",
-    "noDataText": "Jakmile zapíšete první váhu, uvidíte tu vývoj v čase."
+    "noDataText": "Jakmile zapíšete první váhu, uvidíte tu vývoj v čase.",
+    "adaptiveTdeeTitle": "Odhad energetického výdeje",
+    "tdeeFormula": "Odhad dle vzorce",
+    "tdeeTrend": "Odhad dle trendu ({{days}} dní)",
+    "tdeeTrendBasis": "na základě {{count}} zalogovaných dní",
+    "tdeeInsufficientData": "Pro odhad dle skutečného trendu zatím chybí data (potřeba pravidelnější zapisování váhy/jídel)."
   },
   "walkthrough": {
     "page1Title": "Jeden plán pro celou rodinu",

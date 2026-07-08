@@ -96,7 +96,12 @@
     "goalBodyFatLabel": "Goal body fat",
     "dietCycleBanner": "You've lost a good amount of body fat since you started – consider switching to maintenance calories for 1–2 months before continuing the deficit.",
     "noDataTitle": "No data yet",
-    "noDataText": "Once you log your first weight entry, you'll see your trend here."
+    "noDataText": "Once you log your first weight entry, you'll see your trend here.",
+    "adaptiveTdeeTitle": "Energy expenditure estimate",
+    "tdeeFormula": "Formula estimate",
+    "tdeeTrend": "Trend estimate ({{days}} days)",
+    "tdeeTrendBasis": "based on {{count}} logged days",
+    "tdeeInsufficientData": "Not enough data yet for a trend-based estimate (log your weight and meals more consistently)."
   },
   "walkthrough": {
     "page1Title": "One plan for the whole family",
