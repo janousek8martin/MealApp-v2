@@ -103,7 +103,8 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
   const profileRows = await db
     .select()
     .from(profiles)
-    .where(and(eq(profiles.householdId, householdId), isNull(profiles.deletedAt)));
+    .where(and(eq(profiles.householdId, householdId), isNull(profiles.deletedAt)))
+    .orderBy(asc(profiles.createdAt));
 
   // Household-wide restrictions (set in the setup wizard) apply to every
   // profile's shared meals in addition to whatever that profile adds itself.
