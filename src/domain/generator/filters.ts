@@ -79,6 +79,54 @@ export function isRecipeAllowedForProfiles(
   });
 }
 
+export type RestrictionConflict = { kind: 'allergen' | 'diet' | 'avoided'; value?: string };
+
+/**
+ * Manual-assignment safety guard: unlike `isRecipeAllowedForProfiles` (a hard
+ * filter that silently excludes candidates from the generator), this reports
+ * every conflict for an item a user explicitly picked, so the caller can ask
+ * for confirmation instead of allowing a silent allergy/diet/avoid-list bypass.
+ * `low_carb` is skipped as a diet conflict here – it's a computed nutritional
+ * property, not an ingredient-tag mismatch, and would false-positive on every
+ * item that hasn't been explicitly tagged with it.
+ */
+export function findRestrictionConflicts(
+  item: { itemType: 'recipe' | 'food'; itemId: string; allergens: string[]; dietFlags: string[] },
+  profiles: DietRestrictions[],
+): RestrictionConflict[] {
+  const conflicts: RestrictionConflict[] = [];
+  const seenAllergens = new Set<string>();
+  const seenDiets = new Set<string>();
+  let avoided = false;
+
+  for (const profile of profiles) {
+    for (const allergen of profile.allergens) {
+      if (!seenAllergens.has(allergen) && item.allergens.includes(allergen)) {
+        seenAllergens.add(allergen);
+        conflicts.push({ kind: 'allergen', value: allergen });
+      }
+    }
+    for (const diet of profile.diets) {
+      if (diet === LOW_CARB || seenDiets.has(diet)) continue;
+      if (!item.dietFlags.includes(diet)) {
+        seenDiets.add(diet);
+        conflicts.push({ kind: 'diet', value: diet });
+      }
+    }
+    if (!avoided) {
+      const isAvoided =
+        (item.itemType === 'recipe' && profile.avoidedRecipeIds.includes(item.itemId)) ||
+        (item.itemType === 'food' && profile.avoidedFoodIds.includes(item.itemId));
+      if (isAvoided) {
+        avoided = true;
+        conflicts.push({ kind: 'avoided' });
+      }
+    }
+  }
+
+  return conflicts;
+}
+
 function effectiveMaxRepetitions(candidate: RecipeCandidate, ctx: RepetitionContext): number {
   return candidate.maxRepetitionsPerWeek ?? ctx.household.defaultMaxRepetitionsPerWeek;
 }

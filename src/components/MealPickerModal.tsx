@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { ALLERGEN_ICONS } from '@/constants/chipIcons';
 import { LibraryCard } from '@/components/LibraryCard';
 import { useRecipeNutritionMap } from '@/hooks/plan';
-import { useFoods, usePhotoMap, useRecipes } from '@/hooks/library';
+import { useFoodAllergensMap, useFoods, usePhotoMap, useRecipes, useRecipeTagsMap } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
@@ -17,6 +18,8 @@ type Props = {
   category: 'breakfast' | 'lunch_dinner' | 'snack';
   onClose: () => void;
   onPick: (result: PickResult) => void;
+  /** Allergens a profile this pick applies to must avoid – flags conflicting items with an allergen icon. */
+  restrictedAllergens?: string[];
 };
 
 /**
@@ -24,7 +27,7 @@ type Props = {
  * generator. Styled like the library list (photo, name, category, kcal) and
  * pre-filtered to the slot's category, with a toggle to see everything.
  */
-export function MealPickerModal({ visible, category, onClose, onPick }: Props) {
+export function MealPickerModal({ visible, category, onClose, onPick, restrictedAllergens = [] }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -35,6 +38,10 @@ export function MealPickerModal({ visible, category, onClose, onPick }: Props) {
   const foodRows = useFoods();
   const nutritionByRecipe = useRecipeNutritionMap();
   const photoMap = usePhotoMap();
+  const recipeTagsMap = useRecipeTagsMap();
+  const foodAllergensMap = useFoodAllergensMap();
+
+  const conflictingAllergens = (allergens: string[]) => allergens.filter((a) => restrictedAllergens.includes(a));
 
   const items = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -50,6 +57,7 @@ export function MealPickerModal({ visible, category, onClose, onPick }: Props) {
         subtitle: t(`library.filter.${r.category}`),
         kcal: nutritionByRecipe.get(r.id)?.kcal,
         photoUri: photoMap.get(`recipe:${r.id}`),
+        conflicts: conflictingAllergens(recipeTagsMap.get(r.id)?.allergens ?? []),
       }));
 
     const foodItems =
@@ -63,13 +71,14 @@ export function MealPickerModal({ visible, category, onClose, onPick }: Props) {
               subtitle: t(`foodCategory.${f.category}`),
               kcal: f.kcalPer100,
               photoUri: photoMap.get(`food:${f.id}`),
+              conflicts: conflictingAllergens(foodAllergensMap.get(f.id) ?? []),
             }))
         : [];
 
     return [...recipeItems, ...foodItems]
       .filter((item) => matches(item.name))
       .sort((a, b) => a.name.localeCompare(b.name, 'cs'));
-  }, [recipeRows, foodRows, category, filter, search, nutritionByRecipe, photoMap, t]);
+  }, [recipeRows, foodRows, category, filter, search, nutritionByRecipe, photoMap, recipeTagsMap, foodAllergensMap, restrictedAllergens, t]);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -108,6 +117,10 @@ export function MealPickerModal({ visible, category, onClose, onPick }: Props) {
               subtitle={item.kcal !== undefined ? `${item.subtitle} · ${Math.round(item.kcal)} kcal` : item.subtitle}
               photoUri={item.photoUri}
               accent={ACCENTS[index % ACCENTS.length]}
+              allergenTags={item.conflicts.map((allergen) => ({
+                label: t(`allergens.${allergen}`),
+                icon: ALLERGEN_ICONS[allergen],
+              }))}
               onPress={() => {
                 onPick({ itemType: item.itemType, itemId: item.itemId });
                 setSearch('');

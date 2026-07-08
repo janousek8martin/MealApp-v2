@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { ALLERGEN_ICONS } from '@/constants/chipIcons';
 import type { foods } from '@/db/schema';
-import { useFoods } from '@/hooks/library';
+import { useFoodAllergensMap, useFoods } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
@@ -14,15 +15,18 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   onPick: (food: FoodRow) => void;
+  /** Allergens a profile this pick applies to must avoid – flags conflicting rows with an allergen icon. Omit when there's no restriction context (e.g. picking a recipe ingredient). */
+  restrictedAllergens?: string[];
 };
 
 /** Searchable food list used when composing recipe ingredients. */
-export function FoodPickerModal({ visible, onClose, onPick }: Props) {
+export function FoodPickerModal({ visible, onClose, onPick, restrictedAllergens = [] }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [search, setSearch] = useState('');
   const foodRows = useFoods();
+  const foodAllergensMap = useFoodAllergensMap();
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -33,8 +37,12 @@ export function FoodPickerModal({ visible, onClose, onPick }: Props) {
           food.nameCs.toLowerCase().includes(query) ||
           food.nameEn.toLowerCase().includes(query),
       )
-      .sort((a, b) => localizedName(a).localeCompare(localizedName(b), 'cs'));
-  }, [foodRows, search]);
+      .map((food) => ({
+        food,
+        conflicts: (foodAllergensMap.get(food.id) ?? []).filter((a) => restrictedAllergens.includes(a)),
+      }))
+      .sort((a, b) => localizedName(a.food).localeCompare(localizedName(b.food), 'cs'));
+  }, [foodRows, search, foodAllergensMap, restrictedAllergens]);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -50,18 +58,28 @@ export function FoodPickerModal({ visible, onClose, onPick }: Props) {
         />
         <FlatList
           data={filtered}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.food.id}
           renderItem={({ item }) => (
             <Pressable
               accessibilityRole="button"
               style={styles.row}
               onPress={() => {
-                onPick(item);
+                onPick(item.food);
                 setSearch('');
               }}>
-              <Text style={styles.rowName}>{localizedName(item)}</Text>
+              <View style={styles.rowTitleRow}>
+                <Text style={styles.rowName}>{localizedName(item.food)}</Text>
+                {item.conflicts.map((allergen) => (
+                  <Image
+                    key={allergen}
+                    source={ALLERGEN_ICONS[allergen]}
+                    style={styles.allergenIcon}
+                    accessibilityLabel={t(`allergens.${allergen}`)}
+                  />
+                ))}
+              </View>
               <Text style={styles.rowMeta}>
-                {Math.round(item.kcalPer100)} kcal / 100 {item.baseUnit === 'piece' ? 'g' : item.baseUnit}
+                {Math.round(item.food.kcalPer100)} kcal / 100 {item.food.baseUnit === 'piece' ? 'g' : item.food.baseUnit}
               </Text>
             </Pressable>
           )}
@@ -107,10 +125,19 @@ function createStyles(colors: ColorTokens) {
       paddingHorizontal: spacing.md,
       marginBottom: spacing.xs + 2,
     },
+    rowTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
     rowName: {
       color: colors.text,
       fontSize: typography.body,
       fontWeight: '600',
+    },
+    allergenIcon: {
+      width: 16,
+      height: 16,
     },
     rowMeta: {
       color: colors.textSecondary,

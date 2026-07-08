@@ -1,5 +1,6 @@
 import {
   deriveRecipeTags,
+  findRestrictionConflicts,
   isRecipeAllowedForProfiles,
   passesRepetitionRules,
 } from '../filters';
@@ -139,6 +140,102 @@ describe('isRecipeAllowedForProfiles', () => {
     expect(
       isRecipeAllowedForProfiles(grilledChicken, [{ ...noRestrictions, diets: ['low_carb'] }]),
     ).toBe(true);
+  });
+});
+
+describe('findRestrictionConflicts', () => {
+  const noRestrictions: DietRestrictions = {
+    allergens: [],
+    diets: [],
+    avoidedRecipeIds: [],
+    avoidedFoodIds: [],
+  };
+
+  it('reports no conflicts when nothing overlaps', () => {
+    expect(
+      findRestrictionConflicts(
+        { itemType: 'recipe', itemId: 'r1', allergens: [], dietFlags: [] },
+        [noRestrictions],
+      ),
+    ).toEqual([]);
+  });
+
+  it('reports an allergen conflict', () => {
+    expect(
+      findRestrictionConflicts(
+        { itemType: 'recipe', itemId: 'r1', allergens: ['gluten'], dietFlags: [] },
+        [{ ...noRestrictions, allergens: ['gluten'] }],
+      ),
+    ).toEqual([{ kind: 'allergen', value: 'gluten' }]);
+  });
+
+  it('reports a diet conflict when the item lacks a required diet flag', () => {
+    expect(
+      findRestrictionConflicts(
+        { itemType: 'recipe', itemId: 'r1', allergens: [], dietFlags: [] },
+        [{ ...noRestrictions, diets: ['vegetarian'] }],
+      ),
+    ).toEqual([{ kind: 'diet', value: 'vegetarian' }]);
+  });
+
+  it('does not report a diet conflict when the item carries the flag', () => {
+    expect(
+      findRestrictionConflicts(
+        { itemType: 'recipe', itemId: 'r1', allergens: [], dietFlags: ['vegetarian'] },
+        [{ ...noRestrictions, diets: ['vegetarian'] }],
+      ),
+    ).toEqual([]);
+  });
+
+  it('ignores low_carb as a diet conflict (computed nutritional property, not a tag)', () => {
+    expect(
+      findRestrictionConflicts(
+        { itemType: 'recipe', itemId: 'r1', allergens: [], dietFlags: [] },
+        [{ ...noRestrictions, diets: ['low_carb'] }],
+      ),
+    ).toEqual([]);
+  });
+
+  it('reports an avoided-recipe conflict', () => {
+    expect(
+      findRestrictionConflicts(
+        { itemType: 'recipe', itemId: 'r1', allergens: [], dietFlags: [] },
+        [{ ...noRestrictions, avoidedRecipeIds: ['r1'] }],
+      ),
+    ).toEqual([{ kind: 'avoided' }]);
+  });
+
+  it('reports an avoided-food conflict for a standalone food item', () => {
+    expect(
+      findRestrictionConflicts(
+        { itemType: 'food', itemId: 'f1', allergens: [], dietFlags: [] },
+        [{ ...noRestrictions, avoidedFoodIds: ['f1'] }],
+      ),
+    ).toEqual([{ kind: 'avoided' }]);
+  });
+
+  it('deduplicates the same allergen conflict across multiple profiles', () => {
+    expect(
+      findRestrictionConflicts(
+        { itemType: 'recipe', itemId: 'r1', allergens: ['gluten'], dietFlags: [] },
+        [{ ...noRestrictions, allergens: ['gluten'] }, { ...noRestrictions, allergens: ['gluten'] }],
+      ),
+    ).toEqual([{ kind: 'allergen', value: 'gluten' }]);
+  });
+
+  it('collects multiple distinct conflict kinds together', () => {
+    const conflicts = findRestrictionConflicts(
+      { itemType: 'recipe', itemId: 'r1', allergens: ['gluten'], dietFlags: [] },
+      [{ allergens: ['gluten'], diets: ['vegetarian'], avoidedRecipeIds: ['r1'], avoidedFoodIds: [] }],
+    );
+    expect(conflicts).toEqual(
+      expect.arrayContaining([
+        { kind: 'allergen', value: 'gluten' },
+        { kind: 'diet', value: 'vegetarian' },
+        { kind: 'avoided' },
+      ]),
+    );
+    expect(conflicts).toHaveLength(3);
   });
 });
 

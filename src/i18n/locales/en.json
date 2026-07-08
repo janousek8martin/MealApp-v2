@@ -37,7 +37,12 @@
     "generateWeek": "Generate week",
     "generateDay": "Generate day",
     "pastNotice": "Past days can't be edited – you can only mark retroactively whether a meal was eaten.",
-    "jumpToToday": "Today"
+    "jumpToToday": "Today",
+    "conflictTitle": "Doesn't match profile restrictions",
+    "conflictAllergen": "Contains {{allergen}}, which a profile is allergic to.",
+    "conflictDiet": "Doesn't satisfy diet: {{diet}}.",
+    "conflictAvoided": "A profile has this item marked as avoided.",
+    "addAnyway": "Add anyway"
   },
   "library": {
     "placeholderTitle": "Recipes & foods",

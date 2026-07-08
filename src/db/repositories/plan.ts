@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { ageYears } from '@/domain/age';
 import { createSeededRng, type Rng } from '@/domain/generator/rng';
+import { deriveRecipeTags, findRestrictionConflicts, type RestrictionConflict } from '@/domain/generator/filters';
 import { resolveSlotCalorieShare, resolveSnackTarget, scalingMultiplier, type SlotPortionOverride } from '@/domain/generator/portions';
 import { computeRecipeNutrition, type RecipeNutrition } from '@/domain/recipeNutrition';
 import {
@@ -10,7 +11,7 @@ import {
   recordPick,
   type GeneratorItem,
 } from '@/domain/generator/select';
-import type { DietRestrictions, RecipeCandidate, RepetitionContext } from '@/domain/generator/types';
+import type { DietRestrictions, DerivedRecipeTags, IngredientFoodTags, RecipeCandidate, RepetitionContext } from '@/domain/generator/types';
 import { computeTargets } from '@/domain/targets';
 import { addDays, previousDay, startOfWeek, weekDates } from '@/domain/week';
 import { applyWorkoutDayCycling } from '@/domain/workoutDays';
@@ -796,10 +797,112 @@ export async function regenerateSlot(
 }
 
 /**
+ * Loads a recipe's or standalone food's allergens/diet-flags directly from
+ * its own rows – independent of `loadGeneratorContext`'s candidate lists, so
+ * it also covers foods that aren't `snackSuitable` (the "show everything"
+ * filter in the manual pickers can surface those too).
+ */
+async function loadItemTags(db: AppDb, itemType: 'recipe' | 'food', itemId: string): Promise<DerivedRecipeTags> {
+  if (itemType === 'food') {
+    const [[food], restrictionRows] = await Promise.all([
+      db.select().from(foods).where(eq(foods.id, itemId)),
+      db.select().from(foodRestrictions).where(and(eq(foodRestrictions.foodId, itemId), isNull(foodRestrictions.deletedAt))),
+    ]);
+    return {
+      allergens: [...new Set(restrictionRows.map((r) => r.allergen))],
+      dietFlags: food?.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : [],
+    };
+  }
+
+  const ingredientRows = await db
+    .select()
+    .from(recipeIngredients)
+    .where(and(eq(recipeIngredients.recipeId, itemId), isNull(recipeIngredients.deletedAt)));
+  const foodIds = ingredientRows.map((row) => row.foodId);
+  if (foodIds.length === 0) return { allergens: [], dietFlags: [] };
+
+  const [foodRows, restrictionRows] = await Promise.all([
+    db.select().from(foods).where(inArray(foods.id, foodIds)),
+    db.select().from(foodRestrictions).where(and(inArray(foodRestrictions.foodId, foodIds), isNull(foodRestrictions.deletedAt))),
+  ]);
+  const allergensByFood = new Map<string, string[]>();
+  for (const row of restrictionRows) {
+    const list = allergensByFood.get(row.foodId) ?? [];
+    list.push(row.allergen);
+    allergensByFood.set(row.foodId, list);
+  }
+  const foodById = new Map(foodRows.map((food) => [food.id, food]));
+  const ingredientTags: IngredientFoodTags[] = [];
+  for (const row of ingredientRows) {
+    const food = foodById.get(row.foodId);
+    if (!food) continue;
+    ingredientTags.push({
+      foodId: food.id,
+      allergens: allergensByFood.get(food.id) ?? [],
+      dietFlags: food.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : [],
+    });
+  }
+  return deriveRecipeTags(ingredientTags);
+}
+
+/** Household-wide restrictions unioned with one profile's own – the same rule `loadGeneratorContext` applies per profile, but for a single profile without loading the whole recipe/food catalog. */
+async function loadCombinedRestrictions(db: AppDb, householdId: string, profileId: string): Promise<DietRestrictions> {
+  const [householdRestrictionRows, householdAvoidRows, restrictionRows, avoidRows] = await Promise.all([
+    db
+      .select()
+      .from(householdRestrictions)
+      .where(and(eq(householdRestrictions.householdId, householdId), isNull(householdRestrictions.deletedAt))),
+    db
+      .select()
+      .from(householdAvoidedItems)
+      .where(and(eq(householdAvoidedItems.householdId, householdId), isNull(householdAvoidedItems.deletedAt))),
+    db
+      .select()
+      .from(profileRestrictions)
+      .where(and(eq(profileRestrictions.profileId, profileId), isNull(profileRestrictions.deletedAt))),
+    db
+      .select()
+      .from(profileAvoidedItems)
+      .where(and(eq(profileAvoidedItems.profileId, profileId), isNull(profileAvoidedItems.deletedAt))),
+  ]);
+
+  return {
+    allergens: [
+      ...new Set([
+        ...householdRestrictionRows.filter((r) => r.kind === 'allergen').map((r) => r.value),
+        ...restrictionRows.filter((r) => r.kind === 'allergen').map((r) => r.value),
+      ]),
+    ],
+    diets: [
+      ...new Set([
+        ...householdRestrictionRows.filter((r) => r.kind === 'diet').map((r) => r.value),
+        ...restrictionRows.filter((r) => r.kind === 'diet').map((r) => r.value),
+      ]),
+    ],
+    avoidedRecipeIds: [
+      ...new Set([
+        ...householdAvoidRows.filter((r) => r.itemType === 'recipe').map((r) => r.itemId),
+        ...avoidRows.filter((r) => r.itemType === 'recipe').map((r) => r.itemId),
+      ]),
+    ],
+    avoidedFoodIds: [
+      ...new Set([
+        ...householdAvoidRows.filter((r) => r.itemType === 'food').map((r) => r.itemId),
+        ...avoidRows.filter((r) => r.itemType === 'food').map((r) => r.itemId),
+      ]),
+    ],
+  };
+}
+
+/**
  * The "+ Add Meal" flow: manually assigns a specific recipe/food to a slot,
  * scaling it the same way the generator would. Replaces any existing
  * (unlocked) assignment for that slot/track; does nothing if it's eaten-locked
  * or the date is in the past.
+ *
+ * Guards against silently bypassing allergies/diets/avoid-lists: returns any
+ * conflicts without writing anything unless `acknowledgeConflict` is set,
+ * mirroring the confirmation the UI asks the user for.
  */
 export async function assignManualMeal(
   db: AppDb,
@@ -809,21 +912,29 @@ export async function assignManualMeal(
   profileId: string | null,
   itemType: 'recipe' | 'food',
   itemId: string,
-): Promise<void> {
-  if (date < todayIsoDate()) return;
+  acknowledgeConflict = false,
+): Promise<{ conflicts: RestrictionConflict[] }> {
+  if (date < todayIsoDate()) return { conflicts: [] };
 
   const ctx = await loadGeneratorContext(db, householdId, date);
   const slot = ctx.slots.find((s) => s.slotKey === slotKey);
-  if (!slot) return;
+  if (!slot) return { conflicts: [] };
 
   const nutrition = ctx.nutritionById.get(itemId);
-  if (!nutrition) return;
+  if (!nutrition) return { conflicts: [] };
 
   const relevantProfiles =
     profileId !== null
       ? ctx.profiles.filter((p) => p.id === profileId)
       : ctx.profiles.filter((p) => p.sharesMainMeals);
-  if (relevantProfiles.length === 0) return;
+  if (relevantProfiles.length === 0) return { conflicts: [] };
+
+  const tags = await loadItemTags(db, itemType, itemId);
+  const conflicts = findRestrictionConflicts(
+    { itemType, itemId, allergens: tags.allergens, dietFlags: tags.dietFlags },
+    relevantProfiles.map((p) => p.restrictions),
+  );
+  if (conflicts.length > 0 && !acknowledgeConflict) return { conflicts };
 
   const portions =
     slot.kind === 'snack'
@@ -846,7 +957,7 @@ export async function assignManualMeal(
       .select()
       .from(plannedMealPortions)
       .where(and(eq(plannedMealPortions.plannedMealId, existing.id), isNull(plannedMealPortions.deletedAt)));
-    if (existingPortions.some((p) => p.status === 'eaten')) return;
+    if (existingPortions.some((p) => p.status === 'eaten')) return { conflicts };
 
     const now = nowIso();
     await db
@@ -868,6 +979,8 @@ export async function assignManualMeal(
   } else {
     await insertPlannedMeal(db, householdId, date, slotKey, profileId, itemType, itemId, portions);
   }
+
+  return { conflicts };
 }
 
 /** Recomputes one profile's daily nutrition total from every meal that day except `excludeMealId`. */
@@ -906,12 +1019,37 @@ async function computeConsumedExcluding(
 // Extras – a food/recipe added on top of an already-planned meal
 // ---------------------------------------------------------------------------
 
+/**
+ * Adds a food/recipe on top of an already-planned meal. Guards against
+ * silently bypassing allergies/diets/avoid-lists for every profile the
+ * underlying meal covers, same as `assignManualMeal`.
+ */
 export async function addMealExtra(
   db: AppDb,
   plannedMealId: string,
   itemType: 'recipe' | 'food',
   itemId: string,
-): Promise<void> {
+  acknowledgeConflict = false,
+): Promise<{ conflicts: RestrictionConflict[] }> {
+  const [meal] = await db.select().from(plannedMeals).where(eq(plannedMeals.id, plannedMealId));
+  if (!meal) return { conflicts: [] };
+
+  const portionRows = await db
+    .select()
+    .from(plannedMealPortions)
+    .where(and(eq(plannedMealPortions.plannedMealId, plannedMealId), isNull(plannedMealPortions.deletedAt)));
+  const profileIds = [...new Set(portionRows.map((row) => row.profileId))];
+
+  const [restrictions, tags] = await Promise.all([
+    Promise.all(profileIds.map((profileId) => loadCombinedRestrictions(db, meal.householdId, profileId))),
+    loadItemTags(db, itemType, itemId),
+  ]);
+  const conflicts = findRestrictionConflicts(
+    { itemType, itemId, allergens: tags.allergens, dietFlags: tags.dietFlags },
+    restrictions,
+  );
+  if (conflicts.length > 0 && !acknowledgeConflict) return { conflicts };
+
   const now = nowIso();
   await db.insert(plannedMealExtras).values({
     id: newId(),
@@ -921,6 +1059,7 @@ export async function addMealExtra(
     itemType,
     itemId,
   });
+  return { conflicts };
 }
 
 export async function removeMealExtra(db: AppDb, extraId: string): Promise<void> {

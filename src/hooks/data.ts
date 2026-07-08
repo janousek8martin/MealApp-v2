@@ -1,8 +1,16 @@
-import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 
 import { db } from '@/db/client';
-import { bodyMetrics, householdSettings, households, profileRestrictions, profileSlotPortions, profiles } from '@/db/schema';
+import {
+  bodyMetrics,
+  householdRestrictions,
+  householdSettings,
+  households,
+  profileRestrictions,
+  profileSlotPortions,
+  profiles,
+} from '@/db/schema';
 import { applyWorkoutDayCycling } from '@/domain/workoutDays';
 import { targetsForProfile, type ProfileRow } from '@/hooks/dataMapping';
 import { useAppStore } from '@/stores/appStore';
@@ -80,6 +88,46 @@ export function useProfileRestrictions(profileId: string | undefined) {
     allergens: rows.filter((row) => row.kind === 'allergen').map((row) => row.value),
     diets: rows.filter((row) => row.kind === 'diet').map((row) => row.value),
   };
+}
+
+/** Household-wide allergen/diet restrictions (set in the setup wizard) – apply to every profile in addition to their own. */
+export function useHouseholdRestrictions(householdId: string | undefined) {
+  const { data } = useLiveQuery(
+    db
+      .select()
+      .from(householdRestrictions)
+      .where(and(eq(householdRestrictions.householdId, householdId ?? ''), isNull(householdRestrictions.deletedAt))),
+    [householdId],
+  );
+  const rows = data ?? [];
+  return {
+    allergens: rows.filter((row) => row.kind === 'allergen').map((row) => row.value),
+    diets: rows.filter((row) => row.kind === 'diet').map((row) => row.value),
+  };
+}
+
+/**
+ * Allergens across a set of profiles, unioned – an approximate hint for
+ * visually flagging conflicting items in the manual meal/food pickers before
+ * the user picks. The actual gate is the domain-level guard in
+ * `assignManualMeal`/`addMealExtra`, which also checks diets/avoid-lists;
+ * this hook only needs to be good enough for the allergen icon.
+ */
+export function useProfilesAllergens(profileIds: string[]): string[] {
+  const { data } = useLiveQuery(
+    db
+      .select()
+      .from(profileRestrictions)
+      .where(
+        and(
+          inArray(profileRestrictions.profileId, profileIds.length > 0 ? profileIds : ['']),
+          eq(profileRestrictions.kind, 'allergen'),
+          isNull(profileRestrictions.deletedAt),
+        ),
+      ),
+    [profileIds.slice().sort().join(',')],
+  );
+  return [...new Set((data ?? []).map((row) => row.value))];
 }
 
 /** A profile's per-slot portion overrides (calorie share % + snack macro grams), keyed by slotId. */

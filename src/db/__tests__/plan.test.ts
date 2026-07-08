@@ -7,6 +7,7 @@ import { startOfWeek, weekDates } from '../../domain/week';
 import { createHouseholdWithDefaults } from '../repositories/households';
 import { upsertFood, upsertRecipe } from '../repositories/library';
 import {
+  addMealExtra,
   assignManualMeal,
   generateWeek,
   regenerateDay,
@@ -14,7 +15,7 @@ import {
   setPortionStatus,
 } from '../repositories/plan';
 import { createProfile } from '../repositories/profiles';
-import { foods, plannedMealPortions, plannedMeals, profiles, recipeIngredients, recipes } from '../schema';
+import { foods, plannedMealExtras, plannedMealPortions, plannedMeals, profiles, recipeIngredients, recipes } from '../schema';
 import { seedIfEmpty } from '../seed';
 import { createTestDb } from '../testing/testDb';
 
@@ -397,6 +398,121 @@ describe('plan generator (repository)', () => {
       .where(and(eq(plannedMealPortions.plannedMealId, meal.id), isNull(plannedMealPortions.deletedAt)));
     expect(portions).toHaveLength(1);
     expect(portions[0].multiplier).toBeGreaterThan(0);
+  });
+
+  it('assignManualMeal blocks a manual pick that conflicts with an allergy unless acknowledged', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await createAdult(db, householdId, { allergens: ['gluten'] });
+    await seedIfEmpty(db);
+
+    const breadId = await upsertFood(db, {
+      nameCs: 'Chleba',
+      nameEn: 'Bread',
+      category: 'grain',
+      baseUnit: 'g',
+      kcalPer100: 250,
+      proteinPer100: 8,
+      carbsPer100: 45,
+      fatPer100: 2,
+      budget: 'cheap',
+      snackSuitable: false,
+      dietFlags: [],
+      allergens: ['gluten'],
+    });
+    const glutenRecipeId = await upsertRecipe(db, {
+      nameCs: 'Toast',
+      nameEn: 'Toast',
+      category: 'lunch_dinner',
+      isSide: false,
+      budget: 'cheap',
+      servingsBase: 1,
+      ingredients: [{ foodId: breadId, amount: 200 }],
+    });
+
+    const blocked = await assignManualMeal(db, householdId, FUTURE_MONDAY, 'lunch', null, 'recipe', glutenRecipeId);
+    expect(blocked.conflicts).toEqual([{ kind: 'allergen', value: 'gluten' }]);
+
+    const [mealAfterBlock] = await db
+      .select()
+      .from(plannedMeals)
+      .where(
+        and(
+          eq(plannedMeals.householdId, householdId),
+          eq(plannedMeals.date, FUTURE_MONDAY),
+          eq(plannedMeals.slotKey, 'lunch'),
+        ),
+      );
+    expect(mealAfterBlock).toBeUndefined();
+
+    const acknowledged = await assignManualMeal(
+      db,
+      householdId,
+      FUTURE_MONDAY,
+      'lunch',
+      null,
+      'recipe',
+      glutenRecipeId,
+      true,
+    );
+    expect(acknowledged.conflicts).toEqual([{ kind: 'allergen', value: 'gluten' }]);
+
+    const [mealAfterAck] = await db
+      .select()
+      .from(plannedMeals)
+      .where(
+        and(
+          eq(plannedMeals.householdId, householdId),
+          eq(plannedMeals.date, FUTURE_MONDAY),
+          eq(plannedMeals.slotKey, 'lunch'),
+        ),
+      );
+    expect(mealAfterAck?.itemId).toBe(glutenRecipeId);
+  });
+
+  it('addMealExtra blocks an extra that conflicts with an allergy unless acknowledged', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await createAdult(db, householdId, { allergens: ['nuts'] });
+    await seedIfEmpty(db);
+
+    const walnutsId = await upsertFood(db, {
+      nameCs: 'Vlašské ořechy',
+      nameEn: 'Walnuts',
+      category: 'snack',
+      baseUnit: 'g',
+      kcalPer100: 650,
+      proteinPer100: 15,
+      carbsPer100: 14,
+      fatPer100: 65,
+      budget: 'average',
+      snackSuitable: true,
+      dietFlags: [],
+      allergens: ['nuts'],
+    });
+
+    const [recipe] = await db.select().from(recipes).where(eq(recipes.category, 'lunch_dinner'));
+    await assignManualMeal(db, householdId, FUTURE_MONDAY, 'lunch', null, 'recipe', recipe.id);
+    const [meal] = await db
+      .select()
+      .from(plannedMeals)
+      .where(
+        and(
+          eq(plannedMeals.householdId, householdId),
+          eq(plannedMeals.date, FUTURE_MONDAY),
+          eq(plannedMeals.slotKey, 'lunch'),
+        ),
+      );
+
+    const blocked = await addMealExtra(db, meal.id, 'food', walnutsId);
+    expect(blocked.conflicts).toEqual([{ kind: 'allergen', value: 'nuts' }]);
+    const extrasAfterBlock = await db.select().from(plannedMealExtras).where(eq(plannedMealExtras.plannedMealId, meal.id));
+    expect(extrasAfterBlock).toHaveLength(0);
+
+    const acknowledged = await addMealExtra(db, meal.id, 'food', walnutsId, true);
+    expect(acknowledged.conflicts).toEqual([{ kind: 'allergen', value: 'nuts' }]);
+    const extrasAfterAck = await db.select().from(plannedMealExtras).where(eq(plannedMealExtras.plannedMealId, meal.id));
+    expect(extrasAfterAck).toHaveLength(1);
   });
 
   it('assignManualMeal refuses to overwrite an eaten-locked slot', async () => {

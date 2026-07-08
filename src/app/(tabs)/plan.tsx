@@ -3,6 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Alert,
   Animated,
   PanResponder,
   ActivityIndicator,
@@ -24,12 +25,14 @@ import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
 import { addMealExtra, assignManualMeal, generateWeek, regenerateDay } from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
+import type { RestrictionConflict } from '@/domain/generator/filters';
 import { jumpDirection, paneDates, weekJumpTarget, type PagerTransition } from '@/domain/planPager';
 import { addDays, startOfWeek, weekDates } from '@/domain/week';
-import { useActiveProfile, useHousehold } from '@/hooks/data';
+import { useActiveProfile, useHousehold, useHouseholdRestrictions, useProfiles, useProfilesAllergens } from '@/hooks/data';
 import {
   targetProfileIdForSlot,
   useMealSlots,
+  usePortionsForMeal,
   useRecipeNutritionMap,
   type SlotRow,
 } from '@/hooks/plan';
@@ -54,6 +57,16 @@ function monthTitle(dateIso: string, language: string): string {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
+/** Turns the domain guard's conflict list into the confirmation dialog's body text. */
+function describeConflicts(conflicts: RestrictionConflict[], t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const lines = conflicts.map((conflict) => {
+    if (conflict.kind === 'allergen') return t('planScreen.conflictAllergen', { allergen: t(`allergens.${conflict.value}`) });
+    if (conflict.kind === 'diet') return t('planScreen.conflictDiet', { diet: t(`diets.${conflict.value}`) });
+    return t('planScreen.conflictAvoided');
+  });
+  return lines.join('\n');
+}
+
 const SWIPE_THRESHOLD = 60;
 const DAY_STRIP_GAP = spacing.xs;
 /** Height of the animated "jump to today" row: top margin + button. */
@@ -65,6 +78,8 @@ export default function PlanScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
+  const profiles = useProfiles(household?.id);
+  const householdRestrictions = useHouseholdRestrictions(household?.id);
   const today = todayIsoDate();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
@@ -78,6 +93,31 @@ export default function PlanScreen() {
   const [extraMealId, setExtraMealId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<'week' | 'day' | null>(null);
   const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>({});
+
+  // Which profiles a manual-assignment pick would apply to, for allergen
+  // flagging in the pickers – mirrors assignManualMeal's own relevantProfiles
+  // logic (a null track targets every sharesMainMeals profile).
+  const pickerProfileIds = useMemo(() => {
+    if (!pickerSlot || !activeProfile) return [];
+    const trackProfileId = targetProfileIdForSlot(pickerSlot, activeProfile);
+    return trackProfileId !== null ? [trackProfileId] : profiles.filter((p) => p.sharesMainMeals).map((p) => p.id);
+  }, [pickerSlot, activeProfile, profiles]);
+  const pickerAllergens = useProfilesAllergens(pickerProfileIds);
+  const mealPickerRestrictedAllergens = useMemo(
+    () => [...new Set([...householdRestrictions.allergens, ...pickerAllergens])],
+    [householdRestrictions.allergens, pickerAllergens],
+  );
+
+  const extraPortions = usePortionsForMeal(extraMealId ?? undefined);
+  const extraProfileIds = useMemo(
+    () => [...new Set(extraPortions.map((p) => p.profileId))],
+    [extraPortions],
+  );
+  const extraAllergens = useProfilesAllergens(extraProfileIds);
+  const foodPickerRestrictedAllergens = useMemo(
+    () => [...new Set([...householdRestrictions.allergens, ...extraAllergens])],
+    [householdRestrictions.allergens, extraAllergens],
+  );
 
   const slide = useRef(new Animated.Value(0)).current;
   const isAnimating = useRef(false);
@@ -380,10 +420,21 @@ export default function PlanScreen() {
         <MealPickerModal
           visible
           category={pickerSlot.slotKey === 'breakfast' ? 'breakfast' : pickerSlot.kind === 'snack' ? 'snack' : 'lunch_dinner'}
+          restrictedAllergens={mealPickerRestrictedAllergens}
           onClose={() => setPickerSlot(null)}
           onPick={({ itemType, itemId }) => {
             const trackProfileId = targetProfileIdForSlot(pickerSlot, activeProfile);
-            void assignManualMeal(db, household.id, selectedDate, pickerSlot.slotKey, trackProfileId, itemType, itemId);
+            const assign = (acknowledgeConflict: boolean) =>
+              assignManualMeal(db, household.id, selectedDate, pickerSlot.slotKey, trackProfileId, itemType, itemId, acknowledgeConflict);
+            void (async () => {
+              const { conflicts } = await assign(false);
+              if (conflicts.length > 0) {
+                Alert.alert(t('planScreen.conflictTitle'), describeConflicts(conflicts, t), [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  { text: t('planScreen.addAnyway'), style: 'destructive', onPress: () => void assign(true) },
+                ]);
+              }
+            })();
             setPickerSlot(null);
           }}
         />
@@ -392,9 +443,19 @@ export default function PlanScreen() {
       {extraMealId ? (
         <FoodPickerModal
           visible
+          restrictedAllergens={foodPickerRestrictedAllergens}
           onClose={() => setExtraMealId(null)}
           onPick={(food) => {
-            void addMealExtra(db, extraMealId, 'food', food.id);
+            const add = (acknowledgeConflict: boolean) => addMealExtra(db, extraMealId, 'food', food.id, acknowledgeConflict);
+            void (async () => {
+              const { conflicts } = await add(false);
+              if (conflicts.length > 0) {
+                Alert.alert(t('planScreen.conflictTitle'), describeConflicts(conflicts, t), [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  { text: t('planScreen.addAnyway'), style: 'destructive', onPress: () => void add(true) },
+                ]);
+              }
+            })();
             setExtraMealId(null);
           }}
         />

@@ -37,7 +37,12 @@
     "generateWeek": "Vygenerovat týden",
     "generateDay": "Vygenerovat den",
     "pastNotice": "Minulé dny jsou needitovatelné – lze zpětně jen označit, zda bylo jídlo snědené.",
-    "jumpToToday": "Dnes"
+    "jumpToToday": "Dnes",
+    "conflictTitle": "Nesedí to s omezeními profilu",
+    "conflictAllergen": "Obsahuje {{allergen}}, na které má profil alergii.",
+    "conflictDiet": "Nesplňuje stravovací režim: {{diet}}.",
+    "conflictAvoided": "Profil má tuto položku označenou jako nechtěnou.",
+    "addAnyway": "Přesto přidat"
   },
   "library": {
     "placeholderTitle": "Recepty a potraviny",
