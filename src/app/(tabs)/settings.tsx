@@ -480,9 +480,12 @@ export default function SettingsScreen() {
             options={[
               { value: 'grams', label: t('settings.kitchenUnitDisplayGrams') },
               { value: 'hybrid', label: t('settings.kitchenUnitDisplayHybrid') },
+              { value: 'kitchen', label: t('settings.kitchenUnitDisplayKitchen') },
             ]}
             value={settings.kitchenUnitDisplayMode}
-            onChange={(v) => updateHouseholdSettings(db, household.id, { kitchenUnitDisplayMode: v as 'grams' | 'hybrid' })}
+            onChange={(v) =>
+              updateHouseholdSettings(db, household.id, { kitchenUnitDisplayMode: v as 'grams' | 'hybrid' | 'kitchen' })
+            }
           />
           <ChipSelect
             label={t('settings.language')}

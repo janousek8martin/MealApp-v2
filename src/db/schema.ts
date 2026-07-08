@@ -54,10 +54,12 @@ export const householdSettings = sqliteTable('household_settings', {
   /**
    * How recipe-detail ingredient amounts are displayed: 'grams' shows only
    * the canonical baseUnit amount; 'hybrid' also shows the kitchen-measure
-   * equivalent (e.g. "200 g (≈ 3/4 cup)"), the pre-existing behavior. Purely
+   * equivalent (e.g. "200 g (≈ 3/4 cup)"), the pre-existing behavior;
+   * 'kitchen' shows only the kitchen-measure equivalent, falling back to
+   * grams when no equivalent exists (e.g. piece-based ingredients). Purely
    * presentational – nutrition math always uses the canonical amount.
    */
-  kitchenUnitDisplayMode: text('kitchen_unit_display_mode', { enum: ['grams', 'hybrid'] })
+  kitchenUnitDisplayMode: text('kitchen_unit_display_mode', { enum: ['grams', 'hybrid', 'kitchen'] })
     .notNull()
     .default('hybrid'),
 });

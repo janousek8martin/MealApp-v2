@@ -548,6 +548,7 @@
     "kitchenUnitDisplayMode": "Zobrazení jednotek u ingrediencí",
     "kitchenUnitDisplayGrams": "Gramy",
     "kitchenUnitDisplayHybrid": "Hybridně (obojí)",
+    "kitchenUnitDisplayKitchen": "Kuchyňské jednotky",
     "addCustomUnit": "Přidat vlastní jednotku",
     "editCustomUnit": "Upravit jednotku",
     "customUnitName": "Název",

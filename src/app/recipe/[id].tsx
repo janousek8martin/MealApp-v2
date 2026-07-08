@@ -35,7 +35,8 @@ export default function RecipeDetailScreen() {
   const photo = usePhoto('recipe', id);
   const { household } = useHousehold();
   const householdSettings = useHouseholdSettings(household?.id);
-  const showKitchenEquivalent = (householdSettings?.kitchenUnitDisplayMode ?? 'hybrid') === 'hybrid';
+  const unitDisplayMode = householdSettings?.kitchenUnitDisplayMode ?? 'hybrid';
+  const showKitchenEquivalent = unitDisplayMode === 'hybrid' || unitDisplayMode === 'kitchen';
   const activeProfile = useActiveProfile(household?.id);
   const favoriteIds = useFavoriteRecipeIds(activeProfile?.id);
   const recipeTagsMap = useRecipeTagsMap();
@@ -116,6 +117,12 @@ export default function RecipeDetailScreen() {
               : t(`recipeDetail.kitchenEquivalent${equivalent.unit === 'tbsp' ? 'Tbsp' : 'Tsp'}`, { count: equivalent.amount })
             : null;
           const ingredientPhoto = photoMap.get(`food:${row.food.id}`);
+          const gramsLabel = `${row.ingredient.amount} ${row.food.baseUnit === 'piece' ? t('units.pcs') : row.food.baseUnit}`;
+          // 'kitchen' mode shows only the kitchen measure, falling back to
+          // grams when no equivalent exists (e.g. piece-based ingredients).
+          const kitchenOnly = unitDisplayMode === 'kitchen';
+          const primaryLabel = kitchenOnly && equivalentLabel ? equivalentLabel : gramsLabel;
+          const secondaryLabel = kitchenOnly ? null : equivalentLabel;
           return (
             <View key={row.ingredient.id} style={styles.ingredientRow}>
               {ingredientPhoto ? (
@@ -127,12 +134,8 @@ export default function RecipeDetailScreen() {
                 {localizedName(row.food)}
               </Text>
               <View style={styles.ingredientAmountCol}>
-                <Text style={styles.ingredientAmount}>
-                  {row.ingredient.amount} {row.food.baseUnit === 'piece' ? t('units.pcs') : row.food.baseUnit}
-                </Text>
-                {equivalentLabel ? (
-                  <Text style={styles.ingredientEquivalent}>{equivalentLabel}</Text>
-                ) : null}
+                <Text style={styles.ingredientAmount}>{primaryLabel}</Text>
+                {secondaryLabel ? <Text style={styles.ingredientEquivalent}>{secondaryLabel}</Text> : null}
               </View>
             </View>
           );

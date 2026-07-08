@@ -548,6 +548,7 @@
     "kitchenUnitDisplayMode": "Ingredient unit display",
     "kitchenUnitDisplayGrams": "Grams",
     "kitchenUnitDisplayHybrid": "Hybrid (both)",
+    "kitchenUnitDisplayKitchen": "Kitchen units",
     "addCustomUnit": "Add custom unit",
     "editCustomUnit": "Edit unit",
     "customUnitName": "Name",
