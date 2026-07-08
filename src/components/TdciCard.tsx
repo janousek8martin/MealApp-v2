@@ -55,6 +55,8 @@ export function TdciCard({ name, targets }: Props) {
           </View>
         ))}
       </View>
+
+      {targets.fatFloorViolated ? <Text style={styles.fatFloorWarning}>{t('tdciMode.fatFloorViolated')}</Text> : null}
     </LinearGradient>
   );
 }
@@ -126,6 +128,12 @@ function createStyles(colors: ColorTokens) {
       color: colors.mint,
       fontSize: typography.small,
       marginTop: 2,
+    },
+    fatFloorWarning: {
+      color: colors.onPrimary,
+      fontSize: typography.small,
+      marginTop: spacing.sm,
+      opacity: 0.9,
     },
   });
 }

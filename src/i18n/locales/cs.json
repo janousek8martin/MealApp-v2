@@ -223,6 +223,7 @@
     "weightRange": "Zadejte váhu 10–300 kg",
     "bodyFatRange": "Zadejte hodnotu 2–70 %",
     "goalWeightConflict": "Při nižším cílovém % tuku nemůže být cílová váha vyšší než aktuální.",
+    "recompositionHint": "Chybí aktuální tělesný tuk – appka bez něj nepozná rekompozici (nabírání svalů při současném úbytku tuku) a nastaví klasický kalorický přebytek. Doplňte aktuální % tuku výše pro přesnější rozpoznání.",
     "activityLow": "Nižší",
     "activityMedium": "Střední",
     "activityHigh": "Vyšší"
@@ -328,7 +329,8 @@
     "maintenance": "Udržovací kalorie",
     "deficit": "Kalorický deficit",
     "surplus": "Kalorický přebytek",
-    "recomposition": "Rekompozice – udržovací kalorie"
+    "recomposition": "Rekompozice – udržovací kalorie",
+    "fatFloorViolated": "Upozornění: při aktuálním nastavení bílkovin nezbývá dost kalorií na 20% podíl tuku – zvažte snížit cíl bílkovin nebo upravit kalorie."
   },
   "macros": {
     "protein": "Bílkoviny",

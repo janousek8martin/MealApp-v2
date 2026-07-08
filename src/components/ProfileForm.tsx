@@ -467,6 +467,9 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
                   onSelect={(value) => setGoalBodyFat(String(value))}
                 />
               ) : null}
+              {goal === 'gain' && bodyFatPct === null ? (
+                <Text style={styles.workoutDaysHint}>{t('form.recompositionHint')}</Text>
+              ) : null}
             </>
           ) : null}
           <ChipSelect

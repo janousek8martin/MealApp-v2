@@ -223,6 +223,7 @@
     "weightRange": "Enter a weight of 10–300 kg",
     "bodyFatRange": "Enter a value of 2–70 %",
     "goalWeightConflict": "With a lower target body fat, the goal weight cannot exceed the current weight.",
+    "recompositionHint": "Missing your current body fat % - without it the app can't detect recomposition (building muscle while losing fat) and will set a plain calorie surplus instead. Fill in your current body fat % above for a more accurate result.",
     "activityLow": "Low",
     "activityMedium": "Medium",
     "activityHigh": "High"
@@ -328,7 +329,8 @@
     "maintenance": "Maintenance calories",
     "deficit": "Calorie deficit",
     "surplus": "Calorie surplus",
-    "recomposition": "Recomposition – maintenance calories"
+    "recomposition": "Recomposition – maintenance calories",
+    "fatFloorViolated": "Note: with the current protein target, there isn't enough left for the 20% fat floor - consider lowering the protein target or adjusting calories."
   },
   "macros": {
     "protein": "Protein",

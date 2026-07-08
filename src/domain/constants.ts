@@ -49,9 +49,6 @@ export const WEEKLY_LOSS_PCT_MIN = 0.005;
 export const WEEKLY_LOSS_PCT_MAX = 0.01;
 /** Approximate energy content of 1 kg of body fat. */
 export const KCAL_PER_KG_FAT = 7700;
-/** The deficit is adjusted in steps of 100–250 kcal. */
-export const DEFICIT_STEP_KCAL_MIN = 100;
-export const DEFICIT_STEP_KCAL_MAX = 250;
 
 /** Default surplus for muscle gain (not specified by the brief; user-editable). */
 export const SURPLUS_KCAL_DEFAULT = 250;

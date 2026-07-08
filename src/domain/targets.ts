@@ -56,6 +56,15 @@ export type TargetsResult = {
   goalLocked: boolean;
   macros: { proteinG: number; fatG: number; carbsG: number };
   fiberG: number;
+  /**
+   * True when the resolved fat grams work out to less than the 20 % floor
+   * of TDCI – can happen despite the floor being respected on the *input*
+   * fat share, if a high protein target (e.g. a low-bodyweight profile with
+   * an aggressive proteinPerKgLbm override) leaves too little of the
+   * calorie budget for fat once carbs are kept non-negative. Informational
+   * only; the app doesn't block on it, just surfaces a warning.
+   */
+  fatFloorViolated: boolean;
 };
 
 /** Daily deficit equivalent to losing `pctPerWeek` of body weight per week. */
@@ -87,6 +96,7 @@ export function computeTargets(input: TargetsInput): TargetsResult {
   if (input.profileType === 'child') {
     const eer = eerChildKcal(input);
     const adjusted = eer + manualAdjustment;
+    const { fatFloorViolated, ...macros } = allocateMacros(input, adjusted, 'maintenance');
     return {
       bmr: eer,
       tdee: eer,
@@ -94,8 +104,9 @@ export function computeTargets(input: TargetsInput): TargetsResult {
       adjustedTdciKcal: adjusted,
       mode: 'maintenance',
       goalLocked: true,
-      macros: allocateMacros(input, adjusted, 'maintenance'),
+      macros,
       fiberG: fiberTarget(input),
+      fatFloorViolated,
     };
   }
 
@@ -134,6 +145,7 @@ export function computeTargets(input: TargetsInput): TargetsResult {
   }
 
   const adjustedTdci = baseTdci + manualAdjustment;
+  const { fatFloorViolated, ...macros } = allocateMacros(input, adjustedTdci, mode);
 
   return {
     bmr,
@@ -142,24 +154,29 @@ export function computeTargets(input: TargetsInput): TargetsResult {
     adjustedTdciKcal: adjustedTdci,
     mode,
     goalLocked: false,
-    macros: allocateMacros(input, adjustedTdci, mode),
+    macros,
     fiberG: fiberTarget(input),
+    fatFloorViolated,
   };
 }
 
 /**
  * Protein is fixed from LBM and never reduced by the deficit; the deficit
- * only shrinks carbs/fat. Fat is clamped to ≥ 20 % of calories.
+ * only shrinks carbs/fat. Fat is clamped to ≥ 20 % of calories, when the
+ * remaining budget after protein allows it (see `fatFloorViolated` above).
  */
 function allocateMacros(
   input: TargetsInput,
   tdciKcal: number,
   mode: TargetsResult['mode'],
-): TargetsResult['macros'] {
+): TargetsResult['macros'] & { fatFloorViolated: boolean } {
   const lbm = estimateLbmKg(input.weightKg, input.bodyFatPct);
+  // Recomposition carries the same "preserve muscle under a calorie
+  // shortfall" rationale as a deficit (ISSN's higher tier), even though its
+  // TDCI itself is set at maintenance.
   const proteinPerKg =
-    input.proteinPerKgLbm ??
-    (mode === 'deficit' ? PROTEIN_PER_KG_LBM.deficitDefault : PROTEIN_PER_KG_LBM.normalDefault);
+    clampProteinPerKgLbm(input.proteinPerKgLbm) ??
+    (mode === 'deficit' || mode === 'recomposition' ? PROTEIN_PER_KG_LBM.deficitDefault : PROTEIN_PER_KG_LBM.normalDefault);
   const proteinG = proteinPerKg * lbm;
   const proteinKcal = proteinG * KCAL_PER_G.protein;
 
@@ -171,12 +188,22 @@ function allocateMacros(
   fatKcal = Math.min(fatKcal, maxFatKcal);
 
   const carbsKcal = Math.max(tdciKcal - proteinKcal - fatKcal, 0);
+  const fatFloorViolated = tdciKcal > 0 && fatKcal / tdciKcal < FAT_SHARE_FLOOR - 1e-9;
 
   return {
     proteinG,
     fatG: fatKcal / KCAL_PER_G.fat,
     carbsG: carbsKcal / KCAL_PER_G.carbs,
+    fatFloorViolated,
   };
+}
+
+/** Clamps a user-supplied protein override to the union of the normal and deficit ISSN ranges (1.4–3.1 g/kg LBM); undefined input stays undefined (falls back to the phase default). */
+function clampProteinPerKgLbm(value: number | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  const min = PROTEIN_PER_KG_LBM.normalRange[0];
+  const max = PROTEIN_PER_KG_LBM.deficitRange[1];
+  return Math.min(max, Math.max(min, value));
 }
 
 function fiberTarget(input: TargetsInput): number {

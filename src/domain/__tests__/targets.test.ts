@@ -98,6 +98,39 @@ describe('computeTargets – adults', () => {
     expect(result.mode).toBe('recomposition');
   });
 
+  it('recomposition uses the higher deficit-tier protein (2.4 g/kg LBM), same rationale as an active deficit', () => {
+    const result = computeTargets({ ...adultBase, goal: 'gain', goalBodyFatPct: 15 });
+    expect(result.macros.proteinG).toBeCloseTo(2.4 * 64, 1);
+  });
+
+  it('clamps a proteinPerKgLbm override above the combined 1.4-3.1 range', () => {
+    const result = computeTargets({ ...adultBase, proteinPerKgLbm: 5 });
+    expect(result.macros.proteinG).toBeCloseTo(3.1 * 64, 1);
+  });
+
+  it('clamps a proteinPerKgLbm override below the combined 1.4-3.1 range', () => {
+    const result = computeTargets({ ...adultBase, proteinPerKgLbm: 0.5 });
+    expect(result.macros.proteinG).toBeCloseTo(1.4 * 64, 1);
+  });
+
+  it('does not flag the fat floor in an ordinary case', () => {
+    expect(computeTargets(adultBase).fatFloorViolated).toBe(false);
+  });
+
+  it('flags fatFloorViolated when a high protein target leaves too little budget for the 20 % fat floor', () => {
+    // Forcing a tiny TDCI via the manual adjustment while requesting the max
+    // protein tier means protein alone eats most of the budget, so even the
+    // floor-respecting fat share can't fit - a real (if extreme) scenario
+    // for a very lean, small-bodied profile on a large adjustment.
+    const result = computeTargets({
+      ...adultBase,
+      proteinPerKgLbm: 3.1,
+      manualAdjustmentKcal: -1859, // baseTdci 2759 -> adjustedTdciKcal ≈ 900
+    });
+    expect(result.adjustedTdciKcal).toBeCloseTo(900, 0);
+    expect(result.fatFloorViolated).toBe(true);
+  });
+
   it('applies the manual ±kcal adjustment on top of the computed TDCI', () => {
     const result = computeTargets({ ...adultBase, manualAdjustmentKcal: 150 });
     expect(result.baseTdciKcal).toBeCloseTo(2759, 5);
