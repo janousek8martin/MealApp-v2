@@ -27,12 +27,21 @@ export type TargetsInput = {
   activityLevel: ActivityLevel;
   /** Fine-grained override within activityLevel's 3-dot scale; null/undefined = level midpoint. */
   activityMultiplier?: number | null;
+  /** User-supplied known maintenance calories; when set, skips BMR x activity multiplier entirely (BMR is still computed and returned, just unused for TDEE). */
+  customTdeeKcal?: number;
   goal: 'lose' | 'maintain' | 'gain';
   goalBodyFatPct?: number;
   /** Drives the muscle-gain surplus %, when `surplusKcal` isn't explicitly overridden. */
   fitnessExperience?: 'beginner' | 'intermediate' | 'advanced';
   /** User's manual ±kcal correction on top of the computed TDCI. */
   manualAdjustmentKcal?: number;
+  /**
+   * Desired weight-change speed in kg/week (always a positive magnitude,
+   * direction comes from `goal`) - an alternate way to express the deficit
+   * (goal 'lose') or surplus (goal 'gain'), converted via KCAL_PER_KG_FAT.
+   * Ignored when `dailyDeficitKcal`/`surplusKcal` is explicitly set.
+   */
+  goalRateKgPerWeek?: number;
   /** Daily deficit in kcal; defaults to the 0.5 % BW/week equivalent, clamped to the safe band. */
   dailyDeficitKcal?: number;
   /** Surplus for muscle gain; defaults to SURPLUS_KCAL_DEFAULT. */
@@ -111,18 +120,22 @@ export function computeTargets(input: TargetsInput): TargetsResult {
   }
 
   // --- adults: Mifflin-St Jeor → TDEE → goal-specific TDCI ----------------
+  // BMR is always computed (informational), even when customTdeeKcal skips
+  // the activity-multiplier step for the actual TDEE used in calculations.
   const bmr = mifflinStJeorBmr(input);
-  const tdeeKcal = tdee(bmr, input.activityLevel, input.activityMultiplier);
+  const tdeeKcal = input.customTdeeKcal ?? tdee(bmr, input.activityLevel, input.activityMultiplier);
 
   let mode: TargetsResult['mode'] = 'maintenance';
   let baseTdci = tdeeKcal;
 
   if (input.goal === 'lose') {
     mode = 'deficit';
-    const deficit = clampDailyDeficitKcal(
-      input.weightKg,
-      input.dailyDeficitKcal ?? defaultDailyDeficitKcal(input.weightKg),
-    );
+    const requestedDeficit =
+      input.dailyDeficitKcal ??
+      (input.goalRateKgPerWeek !== undefined
+        ? (input.goalRateKgPerWeek * KCAL_PER_KG_FAT) / 7
+        : defaultDailyDeficitKcal(input.weightKg));
+    const deficit = clampDailyDeficitKcal(input.weightKg, requestedDeficit);
     baseTdci = tdeeKcal - deficit;
   } else if (input.goal === 'gain') {
     const isRecomposition =
@@ -137,9 +150,11 @@ export function computeTargets(input: TargetsInput): TargetsResult {
       mode = 'surplus';
       const surplusKcal =
         input.surplusKcal ??
-        (input.fitnessExperience
-          ? tdeeKcal * SURPLUS_PCT_BY_EXPERIENCE[input.fitnessExperience]
-          : SURPLUS_KCAL_DEFAULT);
+        (input.goalRateKgPerWeek !== undefined
+          ? (input.goalRateKgPerWeek * KCAL_PER_KG_FAT) / 7
+          : input.fitnessExperience
+            ? tdeeKcal * SURPLUS_PCT_BY_EXPERIENCE[input.fitnessExperience]
+            : SURPLUS_KCAL_DEFAULT);
       baseTdci = tdeeKcal + surplusKcal;
     }
   }

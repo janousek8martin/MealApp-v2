@@ -137,6 +137,46 @@ describe('computeTargets – adults', () => {
     expect(result.adjustedTdciKcal).toBeCloseTo(2909, 5);
   });
 
+  it('customTdeeKcal skips BMR x activity multiplier for TDEE, but BMR is still returned', () => {
+    const result = computeTargets({ ...adultBase, customTdeeKcal: 3000 });
+    expect(result.bmr).toBeCloseTo(1780, 5);
+    expect(result.tdee).toBe(3000);
+    expect(result.baseTdciKcal).toBe(3000);
+  });
+
+  it('goalRateKgPerWeek converts to a daily deficit via KCAL_PER_KG_FAT, clamped to the safe band', () => {
+    // 0.7 kg/week * 7700 / 7 = 770 kcal/day, within the 440-880 safe band for 80 kg.
+    const result = computeTargets({ ...adultBase, goal: 'lose', goalRateKgPerWeek: 0.7 });
+    expect(result.baseTdciKcal).toBeCloseTo(2759 - 770, 5);
+  });
+
+  it('clamps an out-of-band goalRateKgPerWeek to the safe 0.5-1 % BW/week deficit', () => {
+    // 2 kg/week would be 2200 kcal/day - way past the 880 kcal max for 80 kg.
+    const result = computeTargets({ ...adultBase, goal: 'lose', goalRateKgPerWeek: 2 });
+    expect(result.baseTdciKcal).toBeCloseTo(2759 - 880, 5);
+  });
+
+  it('goalRateKgPerWeek converts to a surplus for a gain goal', () => {
+    const result = computeTargets({
+      ...adultBase,
+      goal: 'gain',
+      goalBodyFatPct: 22,
+      goalRateKgPerWeek: 0.25,
+    });
+    expect(result.mode).toBe('surplus');
+    expect(result.baseTdciKcal).toBeCloseTo(2759 + (0.25 * 7700) / 7, 5);
+  });
+
+  it('an explicit dailyDeficitKcal overrides goalRateKgPerWeek', () => {
+    const result = computeTargets({
+      ...adultBase,
+      goal: 'lose',
+      goalRateKgPerWeek: 0.7,
+      dailyDeficitKcal: 500,
+    });
+    expect(result.baseTdciKcal).toBeCloseTo(2759 - 500, 5);
+  });
+
   it('clamps a requested fat share below the 20 % floor', () => {
     const result = computeTargets({ ...adultBase, fatShareOfTdci: 0.15 });
     expect((result.macros.fatG * 9) / result.adjustedTdciKcal).toBeCloseTo(0.2, 2);

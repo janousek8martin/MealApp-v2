@@ -71,3 +71,45 @@ export const FIBER_G_FEMALE = 28;
 /** Recommend switching to maintenance after this body-fat drop (percentage points). */
 export const DIET_CYCLE_BF_DROP_MALE = 5;
 export const DIET_CYCLE_BF_DROP_FEMALE = 7;
+
+/**
+ * Speed presets for goalRateKgPerWeek (kg/week), shown as slow/recommended/
+ * fast in the Tempo setup card - fine-tunable afterwards in 0.1 kg steps.
+ * TODO(research-b): replace with rešerše (b) findings (deficit rate bounds +
+ * whether macro composition should shift per speed tier).
+ */
+export const SPEED_PRESETS_LOSE: Record<'slow' | 'recommended' | 'fast', number> = {
+  slow: 0.25,
+  recommended: 0.5,
+  fast: 0.75,
+};
+
+/**
+ * TODO(research-b): replace with rešerše (b) findings (gain-rate bounds by
+ * training experience). Currently a flat surplus in kcal, not experience-aware.
+ */
+export const SPEED_PRESETS_GAIN: Record<'slow' | 'recommended' | 'fast', number> = {
+  slow: 150,
+  recommended: 250,
+  fast: 400,
+};
+
+/**
+ * Planned deficit/maintenance cycle length for the weight projection graph
+ * (weeks). TODO(research-c): replace with rešerše (c) findings (MATADOR/
+ * ICECAP diet-break evidence) - currently a placeholder guess, not evidence-
+ * sourced.
+ */
+export const MAINTENANCE_PHASE = {
+  deficitWeeks: 10,
+  maintenanceWeeks: 2,
+};
+
+/**
+ * Default daily drinking-water goal, ml per kg body weight, clamped to a
+ * sane absolute range. TODO(research-d): replace with rešerše (d) findings
+ * (EFSA adequate intakes vs. ml/kg formulas, training-day adjustment).
+ */
+export const WATER_ML_PER_KG = 33;
+export const WATER_GOAL_MIN_ML = 1500;
+export const WATER_GOAL_MAX_ML = 4000;
