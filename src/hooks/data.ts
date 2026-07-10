@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+import { useMemo } from 'react';
 
 import { db } from '@/db/client';
 import {
@@ -208,8 +209,12 @@ export function useProfileTargets(profile: ProfileRow | null) {
  */
 export function useDailyProfileTargets(profile: ProfileRow | null, dateIso: string) {
   const targets = useProfileTargets(profile);
+  const workoutDaysJson = profile?.workoutDaysJson;
+  const workoutDays = useMemo<number[]>(
+    () => (workoutDaysJson ? (JSON.parse(workoutDaysJson) as number[]) : []),
+    [workoutDaysJson],
+  );
   if (!targets || !profile) return null;
-  const workoutDays: number[] = profile.workoutDaysJson ? JSON.parse(profile.workoutDaysJson) : [];
   return applyWorkoutDayCycling(
     {
       kcal: targets.adjustedTdciKcal,

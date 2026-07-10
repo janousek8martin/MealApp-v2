@@ -111,6 +111,22 @@ export default function LibraryScreen() {
     return [...set].sort().map((key) => ({ value: key, label: t(`foodCategory.${key}`) }));
   }, [foodRows, t]);
 
+  // Parsed once per data change instead of on every renderItem call (O3).
+  const recipeTagsById = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const recipe of recipeRows) {
+      map.set(recipe.id, recipe.tagsJson ? (JSON.parse(recipe.tagsJson) as string[]) : []);
+    }
+    return map;
+  }, [recipeRows]);
+  const foodDietFlagsById = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const food of foodRows) {
+      map.set(food.id, food.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : []);
+    }
+    return map;
+  }, [foodRows]);
+
   const filteredRecipes = useMemo(
     () =>
       recipeRows
@@ -123,7 +139,7 @@ export default function LibraryScreen() {
         .filter((recipe) => recipeBudgets.length === 0 || recipeBudgets.includes(recipe.budget))
         .filter((recipe) => {
           if (recipeTags.length === 0) return true;
-          const tags: string[] = recipe.tagsJson ? JSON.parse(recipe.tagsJson) : [];
+          const tags = recipeTagsById.get(recipe.id) ?? [];
           return recipeTags.some((tag) => tags.includes(tag));
         })
         .filter((recipe) => {
@@ -160,6 +176,7 @@ export default function LibraryScreen() {
       recipeExcludeAllergens,
       recipeTagsMap,
       recipeNutritionMap,
+      recipeTagsById,
     ],
   );
 
@@ -170,7 +187,7 @@ export default function LibraryScreen() {
         .filter((food) => foodBudgets.length === 0 || foodBudgets.includes(food.budget))
         .filter((food) => {
           if (foodDiets.length === 0) return true;
-          const flags: string[] = food.dietFlagsJson ? JSON.parse(food.dietFlagsJson) : [];
+          const flags = foodDietFlagsById.get(food.id) ?? [];
           const allergens = foodAllergensMap.get(food.id) ?? [];
           return foodDiets.every((diet) => {
             if (diet === 'gluten_free') return !allergens.includes('gluten');
@@ -191,7 +208,7 @@ export default function LibraryScreen() {
             food.nameEn.toLowerCase().includes(normalizedSearch),
         )
         .sort((a, b) => localizedName(a).localeCompare(localizedName(b), 'cs')),
-    [foodRows, normalizedSearch, foodCategories, foodBudgets, foodDiets, foodExcludeAllergens, foodAllergensMap],
+    [foodRows, normalizedSearch, foodCategories, foodBudgets, foodDiets, foodExcludeAllergens, foodAllergensMap, foodDietFlagsById],
   );
 
   const recipeFilters: RecipeFilter[] = ['all', 'breakfast', 'lunch_dinner', 'snack', 'side'];
@@ -395,7 +412,7 @@ export default function LibraryScreen() {
           renderItem={({ item, index }) => {
             const nutrition = recipeNutritionMap.get(item.id);
             const categoryLabel = t(`library.filter.${item.isSide ? 'side' : item.category}`);
-            const tags: string[] = item.tagsJson ? JSON.parse(item.tagsJson) : [];
+            const tags = recipeTagsById.get(item.id) ?? [];
             const allergens = recipeTagsMap.get(item.id)?.allergens ?? [];
             return (
               <LibraryCard
@@ -442,7 +459,7 @@ export default function LibraryScreen() {
             </View>
           }
           renderItem={({ item, index }) => {
-            const dietFlags: string[] = item.dietFlagsJson ? JSON.parse(item.dietFlagsJson) : [];
+            const dietFlags = foodDietFlagsById.get(item.id) ?? [];
             const allergens = foodAllergensMap.get(item.id) ?? [];
             return (
               <LibraryCard
