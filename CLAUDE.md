@@ -143,11 +143,12 @@ Toto jsou konkrétní vzorce a hodnoty, podložené klinickými studiemi a pozic
   - Muži: `BMR = 10×hmotnost(kg) + 6.25×výška(cm) − 5×věk(roky) + 5`
   - Ženy: `BMR = 10×hmotnost(kg) + 6.25×výška(cm) − 5×věk(roky) − 161`
 - TDEE = BMR × aktivitní koeficient. Aktivitní úroveň se určuje **subjektivní otázkou při onboardingu** (standardní škála, viz níže) – jednoduché a dostatečné, appka to nemusí odvozovat automaticky z tréninkových dnů.
-  - Sedavý životní styl: 1.2
-  - Lehká aktivita (1–3× týdně): 1.375
-  - Střední aktivita (3–5× týdně): 1.55
-  - Vysoká aktivita (6–7× týdně): 1.725
-  - Velmi vysoká aktivita (fyzická práce + trénink): 1.9
+- *(V1 revize po rešerši (a), 2026: původní kombinovaná škála 1.2–1.9 sloučila běžný pohyb s tréninkem do jednoho čísla. Appka místo toho odděluje: otázka "jaký je tvůj životní styl" se ptá čistě na NEAT (pohyb mimo trénink), trénink se dopočítává zvlášť přes tréninkové dny (`WORKOUT_DAY_KCAL_BONUS_PCT` = 12 % kcal bonus na tréninkový den). Koeficienty (FAO/WHO/UNU PAL pásma, zpřesněno DLW literaturou):)*
+  - Většinou sedím: 1.45
+  - Občas na nohou: 1.55
+  - Většinou na nohou: 1.70
+  - Pohyb celý den: 1.82
+  - Fyzicky náročná práce: 2.05
 
 **Bílkovinový cíl:**
 - Počítá se z **odhadované čisté (netukové) tělesné hmoty**, ne z celkové váhy: `LBM = hmotnost × (1 − % tělesného tuku)`. Přesnější hlavně pro profily s vyšším % tuku. Pokud appka % tuku profilu ještě nezná, dočasně použít celkovou váhu jako fallback.

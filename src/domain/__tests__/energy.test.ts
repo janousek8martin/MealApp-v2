@@ -19,16 +19,16 @@ describe('Mifflin-St Jeor BMR', () => {
 });
 
 describe('TDEE', () => {
-  it('uses the activity coefficients from the brief', () => {
-    expect(activityMultiplier('sedentary')).toBe(1.2);
-    expect(activityMultiplier('light')).toBe(1.375);
-    expect(activityMultiplier('moderate')).toBe(1.55);
-    expect(activityMultiplier('active')).toBe(1.725);
-    expect(activityMultiplier('very_active')).toBe(1.9);
+  it('uses the NEAT-only activity coefficients (rešerše-a)', () => {
+    expect(activityMultiplier('sedentary')).toBe(1.45);
+    expect(activityMultiplier('light')).toBe(1.55);
+    expect(activityMultiplier('moderate')).toBe(1.7);
+    expect(activityMultiplier('active')).toBe(1.82);
+    expect(activityMultiplier('very_active')).toBe(2.05);
   });
 
   it('multiplies BMR by the coefficient', () => {
-    expect(tdee(1780, 'moderate')).toBeCloseTo(2759, 5);
+    expect(tdee(1780, 'moderate')).toBeCloseTo(1780 * 1.7, 5);
   });
 
   it('uses the level midpoint when no fine-grained override is given', () => {
@@ -37,8 +37,8 @@ describe('TDEE', () => {
   });
 
   it('uses the profile-chosen fine-grained multiplier when given, overriding the level default', () => {
-    // 'active' midpoint is 1.725, but the profile picked the low dot (1.675).
-    expect(tdee(1780, 'active', 1.675)).toBeCloseTo(1780 * 1.675, 5);
+    // 'active' midpoint is 1.82, but the profile picked the low dot (1.77).
+    expect(tdee(1780, 'active', 1.77)).toBeCloseTo(1780 * 1.77, 5);
   });
 
   it('the medium dot of every 3-dot scale equals that level\'s own coefficient', () => {

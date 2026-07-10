@@ -7,6 +7,7 @@ import {
   FIBER_G_MALE,
   KCAL_PER_G,
   KCAL_PER_KG_FAT,
+  MAX_SURPLUS_KCAL,
   PROTEIN_PER_KG_LBM,
   SURPLUS_KCAL_DEFAULT,
   SURPLUS_PCT_BY_EXPERIENCE,
@@ -148,13 +149,16 @@ export function computeTargets(input: TargetsInput): TargetsResult {
       baseTdci = tdeeKcal;
     } else {
       mode = 'surplus';
-      const surplusKcal =
+      const requestedSurplus =
         input.surplusKcal ??
         (input.goalRateKgPerWeek !== undefined
           ? (input.goalRateKgPerWeek * KCAL_PER_KG_FAT) / 7
           : input.fitnessExperience
             ? tdeeKcal * SURPLUS_PCT_BY_EXPERIENCE[input.fitnessExperience]
             : SURPLUS_KCAL_DEFAULT);
+      // Surpluses beyond this buy fat, not more muscle (rešerše-b) - a hard
+      // ceiling regardless of how the surplus was derived.
+      const surplusKcal = Math.min(requestedSurplus, MAX_SURPLUS_KCAL);
       baseTdci = tdeeKcal + surplusKcal;
     }
   }
