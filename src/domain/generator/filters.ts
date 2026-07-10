@@ -20,12 +20,7 @@ function effectiveIngredientDietFlags(ingredient: IngredientFoodTags): string[] 
   return [...flags];
 }
 
-/**
- * Recipe-level tags are derived from ingredients, never stored: allergens are
- * the union across ingredients (any one triggers it), diet compatibility is
- * the intersection (every ingredient must support the diet).
- */
-export function deriveRecipeTags(ingredients: IngredientFoodTags[]): DerivedRecipeTags {
+function computeRecipeTags(ingredients: IngredientFoodTags[]): DerivedRecipeTags {
   const allergens = new Set<string>();
   let diets: string[] | null = null;
 
@@ -36,6 +31,27 @@ export function deriveRecipeTags(ingredients: IngredientFoodTags[]): DerivedReci
   }
 
   return { allergens: [...allergens], dietFlags: diets ?? [] };
+}
+
+/**
+ * Cached by ingredients-array identity: a candidate's ingredients array is
+ * built once per generator run (see loadGeneratorContext) and reused across
+ * every day/slot pick that run, so recomputing this per pick was pure waste
+ * (O4 in the 2026-07 audit).
+ */
+const recipeTagsCache = new WeakMap<IngredientFoodTags[], DerivedRecipeTags>();
+
+/**
+ * Recipe-level tags are derived from ingredients, never stored: allergens are
+ * the union across ingredients (any one triggers it), diet compatibility is
+ * the intersection (every ingredient must support the diet).
+ */
+export function deriveRecipeTags(ingredients: IngredientFoodTags[]): DerivedRecipeTags {
+  const cached = recipeTagsCache.get(ingredients);
+  if (cached) return cached;
+  const tags = computeRecipeTags(ingredients);
+  recipeTagsCache.set(ingredients, tags);
+  return tags;
 }
 
 /**
