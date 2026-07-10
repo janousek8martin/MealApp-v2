@@ -21,6 +21,8 @@ export type CreateProfileInput = {
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   /** Fine-grained override within activityLevel's 3-dot scale; omitted/null = level midpoint. */
   activityMultiplier?: number | null;
+  /** User-supplied known maintenance calories; when set, skips BMR x activity multiplier entirely. */
+  customTdeeKcal?: number;
   goal?: 'lose' | 'maintain' | 'gain';
   goalWeightKg?: number;
   goalBodyFatPct?: number;
@@ -59,6 +61,7 @@ export async function createProfile(db: AppDb, input: CreateProfileInput): Promi
     heightCm: input.heightCm,
     activityLevel: input.activityLevel,
     activityMultiplier: input.activityMultiplier ?? null,
+    customTdeeKcal: input.customTdeeKcal ?? null,
     // Children are always maintenance – the goal is locked in domain logic too.
     goal: input.profileType === 'child' ? 'maintain' : (input.goal ?? 'maintain'),
     goalWeightKg: input.goalWeightKg,
@@ -107,6 +110,8 @@ export type UpdateProfileInput = {
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   /** Fine-grained override within activityLevel's 3-dot scale; null = level midpoint. */
   activityMultiplier?: number | null;
+  /** User-supplied known maintenance calories; when set, skips BMR x activity multiplier entirely. */
+  customTdeeKcal?: number;
   goal: 'lose' | 'maintain' | 'gain';
   goalWeightKg?: number;
   goalBodyFatPct?: number;
@@ -133,6 +138,7 @@ export async function updateProfile(db: AppDb, profileId: string, input: UpdateP
       heightCm: input.heightCm,
       activityLevel: input.activityLevel,
       activityMultiplier: input.activityMultiplier ?? null,
+      customTdeeKcal: input.customTdeeKcal ?? null,
       goal: input.goal,
       goalWeightKg: input.goalWeightKg ?? null,
       goalBodyFatPct: input.goalBodyFatPct ?? null,

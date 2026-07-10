@@ -25,7 +25,7 @@ export function ActivityInfoModal({ visible, onClose }: Props) {
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.title}>{t('form.activity')}</Text>
+            <Text style={styles.title}>{t('activityQuestion.title')}</Text>
             <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
               <Ionicons name="close" size={22} color={colors.text} />
             </Pressable>

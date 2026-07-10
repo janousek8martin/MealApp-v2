@@ -27,6 +27,7 @@ export function targetsForProfile(
     bodyFatPct: latestMetric.bodyFatPct ?? undefined,
     activityLevel: profile.activityLevel,
     activityMultiplier: profile.activityMultiplier,
+    customTdeeKcal: profile.customTdeeKcal ?? undefined,
     goal: profile.goal,
     goalBodyFatPct: profile.goalBodyFatPct ?? undefined,
     fitnessExperience: profile.fitnessExperience ?? undefined,

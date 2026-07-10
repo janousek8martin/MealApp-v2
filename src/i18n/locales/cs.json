@@ -205,7 +205,6 @@
     "inches": "Palce",
     "weight": "Aktuální váha",
     "bodyFat": "Tělesný tuk (volitelné, doporučeno pro přesnější výpočet kalorií)",
-    "activity": "Úroveň aktivity",
     "goal": "Cíl",
     "goalWeight": "Cílová váha",
     "goalBodyFat": "Cílový tělesný tuk",
@@ -228,18 +227,27 @@
     "activityHigh": "Vyšší"
   },
   "activity": {
-    "sedentary": "Sedavý",
-    "light": "Lehká (1–3× týdně)",
-    "moderate": "Střední (3–5× týdně)",
-    "active": "Vysoká (6–7× týdně)",
-    "very_active": "Velmi vysoká"
+    "sedentary": "Většinou sedím",
+    "light": "Občas na nohou",
+    "moderate": "Většinou na nohou",
+    "active": "Pohyb celý den",
+    "very_active": "Fyzicky náročná práce"
   },
   "activityInfo": {
-    "sedentary": "Kancelářská práce, minimum pohybu, 0–1× cvičení týdně.",
-    "light": "Lehká aktivita nebo cvičení 1–3× týdně.",
-    "moderate": "Středně náročná aktivita nebo cvičení 3–5× týdně.",
-    "active": "Fyzicky náročnější práce nebo cvičení 6–7× týdně.",
-    "very_active": "Fyzicky náročná práce a zároveň intenzivní denní trénink."
+    "sedentary": "Kancelářská práce nebo práce z domova.",
+    "light": "Kombinace sezení a chození.",
+    "moderate": "Pravidelné stání nebo chození.",
+    "active": "Fyzická práce, časté chození.",
+    "very_active": "Namáhavá manuální práce."
+  },
+  "activityQuestion": {
+    "title": "Jaký je tvůj životní styl?",
+    "hint": "Cvičení sem nepočítej – ptáme se jen na běžný pohyb mimo trénink."
+  },
+  "customTdee": {
+    "toggle": "Znám své udržovací kalorie",
+    "label": "Udržovací kalorie",
+    "hint": "Appka přeskočí odhad z aktivity a rovnou z tohoto čísla spočítá deficit/přebytek a makra."
   },
   "bodyFatChart": {
     "open": "Referenční rozmezí",
