@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KitchenUnitsModal } from '@/components/KitchenUnitsModal';
+import { ProfileDropdownMenu } from '@/components/ProfileDropdownMenu';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { ManualAdjustmentCard, MacroOverridesCard } from '@/components/ProfileNutritionCards';
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
@@ -123,35 +123,14 @@ function ProfileSwitcherHeader({
         <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
       </Pressable>
 
-      <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
-          <Pressable style={styles.dropdownSheet} onPress={() => undefined}>
-            {members.map((m) => (
-              <Pressable
-                key={m.id}
-                accessibilityRole="button"
-                style={styles.dropdownRow}
-                onPress={() => {
-                  onSelect(m.id);
-                  setVisible(false);
-                }}>
-                <Text style={styles.dropdownRowLabel}>{m.name}</Text>
-                {m.id === selected?.id ? <Ionicons name="checkmark" size={18} color={colors.primary} /> : null}
-              </Pressable>
-            ))}
-            <Pressable
-              accessibilityRole="button"
-              style={styles.dropdownAdd}
-              onPress={() => {
-                setVisible(false);
-                router.push({ pathname: '/profile/new', params: { householdId } });
-              }}>
-              <Ionicons name="add" size={18} color={colors.primary} />
-              <Text style={styles.dropdownAddLabel}>{t('settings.addProfile')}</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <ProfileDropdownMenu
+        visible={visible}
+        onClose={() => setVisible(false)}
+        householdId={householdId}
+        members={members}
+        selectedId={selected?.id}
+        onSelect={onSelect}
+      />
     </>
   );
 }
@@ -703,44 +682,6 @@ function createStyles(colors: ColorTokens) {
     },
     profileHeaderName: {
       color: colors.text,
-      fontSize: typography.body,
-      fontWeight: '700',
-    },
-    backdrop: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.4)',
-      justifyContent: 'center',
-      padding: spacing.lg,
-    },
-    dropdownSheet: {
-      backgroundColor: colors.background,
-      borderRadius: radius.card,
-      padding: spacing.sm,
-    },
-    dropdownRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: spacing.sm + 2,
-      paddingHorizontal: spacing.md,
-    },
-    dropdownRowLabel: {
-      color: colors.text,
-      fontSize: typography.body,
-      fontWeight: '600',
-    },
-    dropdownAdd: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-      paddingVertical: spacing.sm + 2,
-      paddingHorizontal: spacing.md,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      marginTop: spacing.xs,
-    },
-    dropdownAddLabel: {
-      color: colors.primary,
       fontSize: typography.body,
       fontWeight: '700',
     },
