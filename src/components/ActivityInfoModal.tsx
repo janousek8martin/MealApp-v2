@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { ACTIVITY_MULTIPLIERS } from '@/domain/constants';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
@@ -32,7 +33,10 @@ export function ActivityInfoModal({ visible, onClose }: Props) {
           <ScrollView>
             {ACTIVITY_LEVELS.map((level) => (
               <View key={level} style={styles.row}>
-                <Text style={styles.rowLabel}>{t(`activity.${level}`)}</Text>
+                <View style={styles.rowHeader}>
+                  <Text style={styles.rowLabel}>{t(`activity.${level}`)}</Text>
+                  <Text style={styles.rowMultiplier}>×{ACTIVITY_MULTIPLIERS[level]}</Text>
+                </View>
                 <Text style={styles.rowText}>{t(`activityInfo.${level}`)}</Text>
               </View>
             ))}
@@ -77,11 +81,21 @@ function createStyles(colors: ColorTokens) {
       padding: spacing.sm + 2,
       marginBottom: spacing.sm,
     },
+    rowHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xs,
+    },
     rowLabel: {
       color: colors.text,
       fontSize: typography.body,
       fontWeight: '700',
-      marginBottom: spacing.xs,
+    },
+    rowMultiplier: {
+      color: colors.primary,
+      fontSize: typography.body,
+      fontWeight: '800',
     },
     rowText: {
       color: colors.textSecondary,
