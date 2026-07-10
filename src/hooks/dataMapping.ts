@@ -31,6 +31,7 @@ export function targetsForProfile(
     goal: profile.goal,
     goalBodyFatPct: profile.goalBodyFatPct ?? undefined,
     fitnessExperience: profile.fitnessExperience ?? undefined,
+    goalRateKgPerWeek: profile.goalRateKgPerWeek ?? undefined,
     manualAdjustmentKcal: profile.tdciManualAdjustmentKcal,
     proteinPerKgLbm: overrides.proteinPerKgLbm,
     surplusKcal: overrides.surplusKcal,

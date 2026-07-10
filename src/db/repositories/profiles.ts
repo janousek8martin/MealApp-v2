@@ -37,6 +37,14 @@ export type CreateProfileInput = {
   bodyFatMethod?: 'navy' | 'manual' | 'bia' | 'dexa';
   allergens?: string[];
   diets?: string[];
+  /** Desired weight-change speed in kg/week; undefined = domain default for the goal. */
+  goalRateKgPerWeek?: number;
+  /** Whether the daily water-tracking widget/goal is shown; defaults to true. */
+  trackWater?: boolean;
+  /** Explicit daily water goal in ml; undefined = auto-computed from weight/sex. */
+  waterGoalMl?: number;
+  /** meal_slot_settings.slotKey values this profile eats; undefined = every household slot. */
+  enabledSlotKeys?: string[];
 };
 
 export async function createProfile(db: AppDb, input: CreateProfileInput): Promise<string> {
@@ -70,6 +78,10 @@ export async function createProfile(db: AppDb, input: CreateProfileInput): Promi
     sharesMainMeals: input.sharesMainMeals ?? true,
     snackPositionsJson: JSON.stringify(input.snackPositions ?? ['snack_morning', 'snack_afternoon']),
     workoutDaysJson: JSON.stringify(input.workoutDays ?? []),
+    goalRateKgPerWeek: input.goalRateKgPerWeek ?? null,
+    trackWater: input.trackWater ?? true,
+    waterGoalMl: input.waterGoalMl ?? null,
+    enabledSlotKeysJson: input.enabledSlotKeys ? JSON.stringify(input.enabledSlotKeys) : null,
   });
 
   await db.insert(bodyMetrics).values({

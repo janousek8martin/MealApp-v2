@@ -6,7 +6,8 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HintedScrollView } from '@/components/HintedScrollView';
-import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
+import type { ProfileFormValue } from '@/components/ProfileForm';
+import { ProfileSetupCarousel } from '@/components/profileWizard/ProfileSetupCarousel';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { SwitchRow } from '@/components/ui/SwitchRow';
@@ -255,12 +256,13 @@ export default function WizardScreen() {
             </View>
           ) : null}
 
-          {step === 'profile' ? (
+          {step === 'profile' && householdId ? (
             <View>
               <Text style={styles.title}>{t('wizard.profileTitle', { current: profileIndex + 1, total: totalMembers })}</Text>
               <Text style={styles.subtitle}>{t('wizard.profileSubtitle')}</Text>
-              <ProfileForm
+              <ProfileSetupCarousel
                 key={profileIndex}
+                householdId={householdId}
                 submitLabel={profileIndex + 1 >= totalMembers ? t('wizard.finishProfiles') : t('wizard.nextProfile')}
                 onSubmit={handleCreateProfile}
                 initialProfileType={profileIndex < adults ? 'adult' : 'child'}

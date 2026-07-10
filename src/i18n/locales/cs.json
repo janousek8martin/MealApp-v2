@@ -583,5 +583,60 @@
     "gallon": "1 galon (gal)",
     "oz": "1 unce (oz)",
     "lb": "1 libra (lb)"
+  },
+  "carousel": {
+    "back": "Zpět",
+    "next": "Další",
+    "cardBasics": "Základy",
+    "cardBody": "Tělo",
+    "cardGoal": "Cíl",
+    "cardTempo": "Tempo",
+    "cardLifestyle": "Životní styl",
+    "cardTraining": "Trénink",
+    "cardMeals": "Jídla",
+    "cardWater": "Pitný režim",
+    "cardAllergens": "Alergie",
+    "cardDiet": "Strava",
+    "cardSummary": "Souhrn",
+    "skip": "Žádné"
+  },
+  "tempo": {
+    "title": "Jak rychle?",
+    "hintLose": "Rychlejší tempo znamená větší deficit kalorií — appka ho drží v bezpečném rozmezí.",
+    "hintGain": "Rychlejší tempo znamená větší kalorický přebytek.",
+    "slow": "Pomalu",
+    "recommended": "Doporučeno",
+    "fast": "Rychle",
+    "rateLose": "Tempo hubnutí",
+    "rateGain": "Tempo nabírání",
+    "perWeek": "kg/týden"
+  },
+  "mealSlots": {
+    "title": "Kolik jídel denně chceš?",
+    "hint": "Domácnost sdílí hlavní jídla — vybíráš jen svačiny a volitelné druhé jídlo navíc.",
+    "shared": "sdíleno",
+    "slot": {
+      "breakfast": "Snídaně",
+      "lunch": "Oběd",
+      "dinner": "Večeře",
+      "second_dinner": "Druhá večeře",
+      "snack_morning": "Dopolední svačina",
+      "snack_afternoon": "Odpolední svačina"
+    }
+  },
+  "water": {
+    "title": "Sledovat pitný režim?",
+    "hint": "Denní cíl se spočítá automaticky podle váhy; upravit ho můžeš kdykoliv v nastavení.",
+    "toggle": "Sledovat příjem vody",
+    "cardTitle": "Pitný režim",
+    "goalReached": "Cíl splněn",
+    "addGlass": "+ sklenice",
+    "removeGlass": "− sklenice"
+  },
+  "summary": {
+    "title": "Souhrn",
+    "dailyTarget": "Denní cíl",
+    "projectionTitle": "Předpokládaný vývoj váhy",
+    "recompositionNote": "Rekompozice — kalorie na úrovni udržení, ne deficit."
   }
 }

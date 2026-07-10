@@ -583,5 +583,60 @@
     "gallon": "1 gallon (gal)",
     "oz": "1 ounce (oz)",
     "lb": "1 pound (lb)"
+  },
+  "carousel": {
+    "back": "Back",
+    "next": "Next",
+    "cardBasics": "Basics",
+    "cardBody": "Body",
+    "cardGoal": "Goal",
+    "cardTempo": "Tempo",
+    "cardLifestyle": "Lifestyle",
+    "cardTraining": "Training",
+    "cardMeals": "Meals",
+    "cardWater": "Hydration",
+    "cardAllergens": "Allergies",
+    "cardDiet": "Diet",
+    "cardSummary": "Summary",
+    "skip": "None"
+  },
+  "tempo": {
+    "title": "How fast?",
+    "hintLose": "A faster pace means a bigger calorie deficit - the app keeps it within a safe range.",
+    "hintGain": "A faster pace means a bigger calorie surplus.",
+    "slow": "Slow",
+    "recommended": "Recommended",
+    "fast": "Fast",
+    "rateLose": "Weight-loss pace",
+    "rateGain": "Weight-gain pace",
+    "perWeek": "kg/week"
+  },
+  "mealSlots": {
+    "title": "How many meals a day?",
+    "hint": "The household shares main meals - you're just picking snacks and an optional extra meal.",
+    "shared": "shared",
+    "slot": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner",
+      "second_dinner": "Second dinner",
+      "snack_morning": "Morning snack",
+      "snack_afternoon": "Afternoon snack"
+    }
+  },
+  "water": {
+    "title": "Track your water intake?",
+    "hint": "The daily goal is computed automatically from weight; you can change it anytime in settings.",
+    "toggle": "Track water intake",
+    "cardTitle": "Hydration",
+    "goalReached": "Goal reached",
+    "addGlass": "+ glass",
+    "removeGlass": "- glass"
+  },
+  "summary": {
+    "title": "Summary",
+    "dailyTarget": "Daily target",
+    "projectionTitle": "Projected weight over time",
+    "recompositionNote": "Recomposition - calories at maintenance, not a deficit."
   }
 }
