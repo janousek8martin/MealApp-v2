@@ -57,7 +57,7 @@ export default function TodayScreen() {
   const meals = useMealsForDate(household?.id, today);
   const recipeNutritionMap = useRecipeNutritionMap();
   const foodRows = useFoods();
-  const foodById = new Map(foodRows.map((f) => [f.id, f]));
+  const foodById = useMemo(() => new Map(foodRows.map((f) => [f.id, f])), [foodRows]);
   const portionsForDate = usePortionsForDate(household?.id, today);
   const shoppingItems = useShoppingItems(household?.id);
   const shoppingRemaining = shoppingItems.filter((item) => !item.checked).length;

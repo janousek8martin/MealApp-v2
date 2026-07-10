@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+import { useMemo } from 'react';
 
 import { db } from '@/db/client';
 import {
@@ -162,29 +163,34 @@ export function useRecipeNutritionMap(): Map<string, RecipeNutrition> {
   );
   const { data: foodRows } = useLiveQuery(db.select().from(foods).where(isNull(foods.deletedAt)));
 
-  const map = new Map<string, RecipeNutrition>();
-  if (!recipeRows || !ingredientRows || !foodRows) return map;
+  // Called independently from 4 screens; without memoizing, every one of
+  // them rebuilt this map from scratch on every render (O2 in the 2026-07
+  // audit) even when none of the 3 underlying tables had changed.
+  return useMemo(() => {
+    const map = new Map<string, RecipeNutrition>();
+    if (!recipeRows || !ingredientRows || !foodRows) return map;
 
-  const foodById = new Map(foodRows.map((food) => [food.id, food]));
-  const ingredientsByRecipe = new Map<string, typeof ingredientRows>();
-  for (const ingredient of ingredientRows) {
-    const list = ingredientsByRecipe.get(ingredient.recipeId) ?? [];
-    list.push(ingredient);
-    ingredientsByRecipe.set(ingredient.recipeId, list);
-  }
+    const foodById = new Map(foodRows.map((food) => [food.id, food]));
+    const ingredientsByRecipe = new Map<string, typeof ingredientRows>();
+    for (const ingredient of ingredientRows) {
+      const list = ingredientsByRecipe.get(ingredient.recipeId) ?? [];
+      list.push(ingredient);
+      ingredientsByRecipe.set(ingredient.recipeId, list);
+    }
 
-  for (const recipe of recipeRows) {
-    const ingredients = ingredientsByRecipe.get(recipe.id) ?? [];
-    const nutrition = computeRecipeNutrition(
-      ingredients.flatMap((ingredient) => {
-        const food = foodById.get(ingredient.foodId);
-        return food ? [{ amount: ingredient.amount, food }] : [];
-      }),
-      recipe.servingsBase,
-    );
-    map.set(recipe.id, nutrition);
-  }
-  return map;
+    for (const recipe of recipeRows) {
+      const ingredients = ingredientsByRecipe.get(recipe.id) ?? [];
+      const nutrition = computeRecipeNutrition(
+        ingredients.flatMap((ingredient) => {
+          const food = foodById.get(ingredient.foodId);
+          return food ? [{ amount: ingredient.amount, food }] : [];
+        }),
+        recipe.servingsBase,
+      );
+      map.set(recipe.id, nutrition);
+    }
+    return map;
+  }, [recipeRows, ingredientRows, foodRows]);
 }
 
 export type FoodRow = typeof foods.$inferSelect;
