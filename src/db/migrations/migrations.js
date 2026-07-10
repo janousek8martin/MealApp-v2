@@ -10,6 +10,7 @@ import m0005 from './0005_typical_peter_quill.sql';
 import m0006 from './0006_fancy_sprite.sql';
 import m0007 from './0007_woozy_marvex.sql';
 import m0008 from './0008_dashing_bishop.sql';
+import m0009 from './0009_dry_pet_avengers.sql';
 
   export default {
     journal,
@@ -22,7 +23,8 @@ m0004,
 m0005,
 m0006,
 m0007,
-m0008
+m0008,
+m0009
     }
   }
   

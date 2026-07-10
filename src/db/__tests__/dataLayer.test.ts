@@ -40,11 +40,16 @@ describe('data layer', () => {
       .where(eq(mealSlotSettings.householdId, householdId));
     expect(slots).toHaveLength(defaultSlots.length);
 
-    const totalShare = slots.reduce((sum, slot) => sum + slot.calorieShare, 0);
+    // Only enabled slots participate in generation, so only their shares must
+    // sum to 1 - second_dinner is seeded disabled as an optional 6th slot.
+    const totalShare = slots.filter((slot) => slot.enabled).reduce((sum, slot) => sum + slot.calorieShare, 0);
     expect(totalShare).toBeCloseTo(1, 5);
 
     const snacks = slots.filter((slot) => slot.kind === 'snack');
     expect(snacks.every((slot) => slot.sharing === 'individual')).toBe(true);
+
+    const secondDinner = slots.find((slot) => slot.slotKey === 'second_dinner');
+    expect(secondDinner?.enabled).toBe(false);
   });
 
   it('seeds foods and recipes once and stays idempotent', async () => {

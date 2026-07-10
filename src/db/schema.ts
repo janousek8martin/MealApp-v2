@@ -196,12 +196,22 @@ export const profiles = sqliteTable(
     sharesMainMeals: integer('shares_main_meals', { mode: 'boolean' }).notNull().default(true),
     /** JSON array of ISO weekday numbers (1 = Monday .. 7 = Sunday). */
     workoutDaysJson: text('workout_days_json'),
-    /** JSON array of snack slot keys this profile uses. */
+    /** @deprecated superseded by enabledSlotKeysJson (covers main slots too, not just snacks). Kept for migration history; no longer read. */
     snackPositionsJson: text('snack_positions_json'),
     /** User's manual ±kcal correction applied on top of the computed TDCI. */
     tdciManualAdjustmentKcal: real('tdci_manual_adjustment_kcal').notNull().default(0),
     /** JSON: optional overrides (proteinPerKgLbm, surplusKcal, carbFatSplit...). */
     macroOverridesJson: text('macro_overrides_json'),
+    /** JSON array of meal_slot_settings.slotKey this profile eats; null = every household slot (default). */
+    enabledSlotKeysJson: text('enabled_slot_keys_json'),
+    /** Whether the daily water-tracking widget/goal is shown for this profile. */
+    trackWater: integer('track_water', { mode: 'boolean' }).notNull().default(true),
+    /** Explicit daily water goal in ml; null = auto-computed from weight/sex (see domain/water.ts). */
+    waterGoalMl: real('water_goal_ml'),
+    /** Desired weight-change speed in kg/week (signed: negative losing, positive gaining); null = domain default for the goal. */
+    goalRateKgPerWeek: real('goal_rate_kg_per_week'),
+    /** User-supplied known maintenance calories; when set, skips BMR x activity multiplier entirely. */
+    customTdeeKcal: real('custom_tdee_kcal'),
   },
   (table) => [index('profiles_household_idx').on(table.householdId)],
 );
@@ -271,6 +281,21 @@ export const bodyMetrics = sqliteTable(
     note: text('note'),
   },
   (table) => [index('body_metrics_profile_date_idx').on(table.profileId, table.date)],
+);
+
+/** One row per logged glass/amount; a day's total is the sum for that profile+date. */
+export const waterLogs = sqliteTable(
+  'water_logs',
+  {
+    ...meta,
+    profileId: text('profile_id')
+      .notNull()
+      .references(() => profiles.id),
+    /** 'YYYY-MM-DD' */
+    date: text('date').notNull(),
+    amountMl: real('amount_ml').notNull(),
+  },
+  (table) => [index('water_logs_profile_date_idx').on(table.profileId, table.date)],
 );
 
 // ---------------------------------------------------------------------------
