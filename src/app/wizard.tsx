@@ -10,8 +10,8 @@ import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { SwitchRow } from '@/components/ui/SwitchRow';
-import { ALLERGEN_ICONS, AVOID_FOOD_ICONS, CUISINE_ICONS, DIET_ICONS } from '@/constants/chipIcons';
-import { ALLERGEN_KEYS, AVOID_FOOD_GROUPS, CUISINE_KEYS, DIET_KEYS } from '@/constants/options';
+import { AVOID_FOOD_ICONS, CUISINE_ICONS, DIET_ICONS } from '@/constants/chipIcons';
+import { AVOID_FOOD_GROUPS, CUISINE_KEYS, DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { createHouseholdWithDefaults, saveHouseholdPreferences, updateHouseholdSettings } from '@/db/repositories/households';
 import { createProfile } from '@/db/repositories/profiles';
@@ -81,7 +81,6 @@ export default function WizardScreen() {
 
   const [maxReps, setMaxReps] = useState(2);
   const [allowConsecutive, setAllowConsecutive] = useState(false);
-  const [allergens, setAllergens] = useState<string[]>([]);
   const [diets, setDiets] = useState<string[]>([]);
   const [favoriteCuisines, setFavoriteCuisines] = useState<string[]>([]);
   const [avoidFoodGroupKeys, setAvoidFoodGroupKeys] = useState<string[]>([]);
@@ -115,7 +114,9 @@ export default function WizardScreen() {
       .map((foodKey) => foodIdBySeedKey.get(foodKey))
       .filter((id): id is string => !!id);
     await saveHouseholdPreferences(db, householdId, {
-      allergens,
+      // Allergies are now set per-profile only (see ProfileForm) - household-
+      // wide allergens are no longer collected in the wizard.
+      allergens: [],
       diets,
       avoidedRecipeIds: [],
       avoidedFoodIds,
@@ -213,16 +214,6 @@ export default function WizardScreen() {
                   hint={t('settings.allowConsecutiveDaysHint')}
                   value={allowConsecutive}
                   onChange={setAllowConsecutive}
-                />
-              </View>
-
-              <View style={styles.section}>
-                <ChipSelect
-                  label={t('wizard.householdAllergens')}
-                  multi
-                  options={ALLERGEN_KEYS.map((key) => ({ value: key, label: t(`allergens.${key}`), icon: ALLERGEN_ICONS[key] }))}
-                  value={allergens}
-                  onChange={setAllergens}
                 />
               </View>
 
