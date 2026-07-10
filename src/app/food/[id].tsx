@@ -1,12 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image as RNImage, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image as RNImage, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EditActions } from '@/components/EditActions';
+import { HintedScrollView } from '@/components/HintedScrollView';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
 import { softDeleteFood } from '@/db/repositories/library';
@@ -43,21 +44,20 @@ export default function FoodDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.topBar}>
-          <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}>
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-          </Pressable>
-          <EditActions
-            onEdit={() => router.push({ pathname: '/food/edit', params: { id: food.id } })}
-            onDelete={async () => {
-              await softDeleteFood(db, food.id);
-              router.back();
-            }}
-            deleteConfirmTitle={t('foodDetail.deleteTitle')}
-            deleteConfirmMessage={t('foodDetail.deleteMessage')}
-          />
-        </View>
+      <HintedScrollView contentContainerStyle={styles.content}>
+        <ScreenHeader
+          right={
+            <EditActions
+              onEdit={() => router.push({ pathname: '/food/edit', params: { id: food.id } })}
+              onDelete={async () => {
+                await softDeleteFood(db, food.id);
+                router.back();
+              }}
+              deleteConfirmTitle={t('foodDetail.deleteTitle')}
+              deleteConfirmMessage={t('foodDetail.deleteMessage')}
+            />
+          }
+        />
 
         {photo ? (
           <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" />
@@ -126,7 +126,7 @@ export default function FoodDetailScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </HintedScrollView>
     </SafeAreaView>
   );
 }
@@ -140,22 +140,6 @@ function createStyles(colors: ColorTokens) {
     content: {
       padding: spacing.md,
       paddingBottom: spacing.xl,
-    },
-    topBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: spacing.sm,
-    },
-    back: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     photo: {
       width: '100%',

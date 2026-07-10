@@ -3,11 +3,13 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
+import { HintedScrollView } from '@/components/HintedScrollView';
 import { PhotoPicker } from '@/components/PhotoPicker';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { TextField } from '@/components/ui/TextField';
@@ -145,7 +147,8 @@ export default function RecipeEditScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <HintedScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScreenHeader />
         <Text style={styles.title}>{id ? t('recipeEdit.editTitle') : t('recipeEdit.newTitle')}</Text>
 
         <PhotoPicker uri={photoUri ?? photo?.uri ?? null} onPicked={setPhotoUri} />
@@ -287,7 +290,7 @@ export default function RecipeEditScreen() {
           <Button label={t('common.cancel')} variant="secondary" onPress={() => router.back()} style={styles.action} />
           <Button label={t('common.save')} onPress={save} disabled={!canSave} style={styles.action} />
         </View>
-      </ScrollView>
+      </HintedScrollView>
 
       <FoodPickerModal
         visible={pickerVisible}

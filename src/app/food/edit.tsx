@@ -1,11 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BarcodeScannerModal } from '@/components/BarcodeScannerModal';
+import { HintedScrollView } from '@/components/HintedScrollView';
 import { PhotoPicker } from '@/components/PhotoPicker';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { TextField } from '@/components/ui/TextField';
@@ -175,7 +177,8 @@ export default function FoodEditScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <HintedScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScreenHeader />
         <Text style={styles.title}>{id ? t('foodEdit.editTitle') : t('foodEdit.newTitle')}</Text>
 
         <Button
@@ -300,7 +303,7 @@ export default function FoodEditScreen() {
           <Button label={t('common.cancel')} variant="secondary" onPress={() => router.back()} style={styles.action} />
           <Button label={t('common.save')} onPress={save} disabled={!canSave} style={styles.action} />
         </View>
-      </ScrollView>
+      </HintedScrollView>
 
       <BarcodeScannerModal
         visible={scannerVisible}

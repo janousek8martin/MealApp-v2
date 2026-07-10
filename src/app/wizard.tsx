@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { HintedScrollView } from '@/components/HintedScrollView';
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
@@ -174,7 +175,7 @@ export default function WizardScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <HintedScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {stepLabel ? <Text style={styles.stepLabel}>{stepLabel}</Text> : null}
 
           {step === 'preferences' || step === 'profile' ? (
@@ -283,7 +284,7 @@ export default function WizardScreen() {
               <Button label={t('wizard.enterApp')} onPress={() => router.replace('/(tabs)')} style={styles.cta} />
             </View>
           ) : null}
-        </ScrollView>
+        </HintedScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

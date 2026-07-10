@@ -3,10 +3,12 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image as RNImage, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image as RNImage, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EditActions } from '@/components/EditActions';
+import { HintedScrollView } from '@/components/HintedScrollView';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { ALLERGEN_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
 import { softDeleteRecipe, toggleFavorite } from '@/db/repositories/library';
@@ -53,21 +55,20 @@ export default function RecipeDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.topBar}>
-          <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}>
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-          </Pressable>
-          <EditActions
-            onEdit={() => router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })}
-            onDelete={async () => {
-              await softDeleteRecipe(db, recipe.id);
-              router.back();
-            }}
-            deleteConfirmTitle={t('recipeDetail.deleteTitle')}
-            deleteConfirmMessage={t('recipeDetail.deleteMessage')}
-          />
-        </View>
+      <HintedScrollView contentContainerStyle={styles.content}>
+        <ScreenHeader
+          right={
+            <EditActions
+              onEdit={() => router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })}
+              onDelete={async () => {
+                await softDeleteRecipe(db, recipe.id);
+                router.back();
+              }}
+              deleteConfirmTitle={t('recipeDetail.deleteTitle')}
+              deleteConfirmMessage={t('recipeDetail.deleteMessage')}
+            />
+          }
+        />
 
         {photo ? (
           <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" />
@@ -163,7 +164,7 @@ export default function RecipeDetailScreen() {
             <Text style={styles.instructions}>{instructions}</Text>
           </>
         ) : null}
-      </ScrollView>
+      </HintedScrollView>
     </SafeAreaView>
   );
 }
@@ -188,22 +189,6 @@ function createStyles(colors: ColorTokens) {
     content: {
       padding: spacing.md,
       paddingBottom: spacing.xl,
-    },
-    topBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: spacing.sm,
-    },
-    back: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     photo: {
       width: '100%',
