@@ -11,6 +11,7 @@ import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { ManualAdjustmentCard, MacroOverridesCard } from '@/components/ProfileNutritionCards';
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { ProfilePortionsCard } from '@/components/ProfilePortionsCard';
+import { WaterSettingsCard } from '@/components/WaterSettingsCard';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { Snackbar } from '@/components/ui/Snackbar';
@@ -238,6 +239,10 @@ function ProfileSections({
           profileId={profile.id}
           dailyTargetKcal={targets ? targets.adjustedTdciKcal : null}
         />
+      </AccordionCard>
+
+      <AccordionCard title={t('water.cardTitle')}>
+        <WaterSettingsCard profileId={profile.id} trackWater={profile.trackWater} waterGoalMl={profile.waterGoalMl} />
       </AccordionCard>
 
       {onDelete ? (

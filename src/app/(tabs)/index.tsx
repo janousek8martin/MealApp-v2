@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { HomeHeroCard } from '@/components/HomeHeroCard';
 import { MealSlotCard } from '@/components/MealSlotCard';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
+import { WaterCard } from '@/components/WaterCard';
 import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
 import { generateWeek, setPortionStatus } from '@/db/repositories/plan';
@@ -18,6 +19,7 @@ import {
   useActiveProfile,
   useDailyProfileTargets,
   useHousehold,
+  useLatestBodyMetric,
   useProfileTargets,
 } from '@/hooks/data';
 import { useFoods } from '@/hooks/library';
@@ -52,6 +54,7 @@ export default function TodayScreen() {
   const targets = useProfileTargets(activeProfile);
   const today = todayIsoDate();
   const dailyTargets = useDailyProfileTargets(activeProfile, today);
+  const latestMetric = useLatestBodyMetric(activeProfile?.id);
 
   const slots = useMealSlots(household?.id);
   const meals = useMealsForDate(household?.id, today);
@@ -171,6 +174,15 @@ export default function TodayScreen() {
             <Text style={styles.quickLabel}>{t('today.logWeight')}</Text>
           </Pressable>
         </View>
+
+        {activeProfile?.trackWater && latestMetric ? (
+          <WaterCard
+            profileId={activeProfile.id}
+            sex={activeProfile.sex}
+            weightKg={latestMetric.weightKg}
+            waterGoalMl={activeProfile.waterGoalMl}
+          />
+        ) : null}
 
         {!hasAnyMeal ? (
           <View style={styles.emptyState}>

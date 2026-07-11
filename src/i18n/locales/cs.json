@@ -539,6 +539,8 @@
     "mealTimesHint": "Zobrazí se, když jsou zapnuté připomínky jídel.",
     "slotPortions": "Porce po slotech",
     "slotPortionsHint": "Upravte, jak si tento profil rozvrhne denní kalorický cíl mezi jednotlivé sloty. Beze změny platí výchozí hodnota domácnosti.",
+    "waterGoalOverride": "Vlastní cíl (ml)",
+    "waterGoalAuto": "Automaticky dle váhy",
     "percentOfTdci": "% z TDCI",
     "proteinTargetLabel": "Bílkoviny",
     "fatTargetLabel": "Tuky",

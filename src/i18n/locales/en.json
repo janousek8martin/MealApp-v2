@@ -539,6 +539,8 @@
     "mealTimesHint": "Shown when meal reminders are enabled.",
     "slotPortions": "Slot portions",
     "slotPortionsHint": "Adjust how this profile splits their daily calorie target across slots. Leave unchanged to use the household default.",
+    "waterGoalOverride": "Custom goal (ml)",
+    "waterGoalAuto": "Auto from weight",
     "percentOfTdci": "% of TDCI",
     "proteinTargetLabel": "Protein",
     "fatTargetLabel": "Fat",

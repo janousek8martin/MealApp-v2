@@ -280,6 +280,23 @@ export async function updateProfileMacroOverrides(
     .where(eq(profiles.id, profileId));
 }
 
+export type WaterSettingsPatch = {
+  trackWater: boolean;
+  /** Pass `null` to clear the override and fall back to the weight-based domain default. */
+  waterGoalMl: number | null;
+};
+
+export async function updateProfileWaterSettings(db: AppDb, profileId: string, patch: WaterSettingsPatch): Promise<void> {
+  await db
+    .update(profiles)
+    .set({
+      trackWater: patch.trackWater,
+      waterGoalMl: patch.waterGoalMl,
+      updatedAt: nowIso(),
+    })
+    .where(eq(profiles.id, profileId));
+}
+
 export async function getProfileSlotPortions(db: AppDb, profileId: string) {
   return db
     .select()
