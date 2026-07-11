@@ -109,6 +109,7 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
   const [submitted, setSubmitted] = useState(false);
   const [currentKey, setCurrentKey] = useState<CardKey>('basics');
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const isChild = profileType === 'child';
 
@@ -140,10 +141,26 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
           SPEED_PRESETS_GAIN[tempoPreset] / (7700 / 7);
   const rateKgPerWeek = customRate ?? presetRateKgPerWeek;
 
+  const EXIT_DISTANCE = 24;
+  const ENTER_DISTANCE = 32;
+  const isAnimatingRef = useRef(false);
+
   const goToCard = (key: CardKey, direction: 1 | -1) => {
-    setCurrentKey(key);
-    slideAnim.setValue(direction * 40);
-    Animated.timing(slideAnim, { toValue: 0, duration: 220, useNativeDriver: true }).start();
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: -direction * EXIT_DISTANCE, duration: 140, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 140, useNativeDriver: true }),
+    ]).start(() => {
+      setCurrentKey(key);
+      slideAnim.setValue(direction * ENTER_DISTANCE);
+      Animated.parallel([
+        Animated.timing(slideAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+      ]).start(() => {
+        isAnimatingRef.current = false;
+      });
+    });
   };
 
   const canProceed = (key: CardKey): boolean => {
@@ -261,7 +278,7 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
         <View style={[styles.progressFill, { width: `${((index + 1) / cardKeys.length) * 100}%` }]} />
       </View>
 
-      <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
+      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateX: slideAnim }] }}>
         {currentKey === 'basics' ? (
           <View>
             <Text style={styles.cardTitle}>{t('carousel.cardBasics')}</Text>

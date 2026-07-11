@@ -615,7 +615,7 @@
   },
   "mealSlots": {
     "title": "How many meals a day?",
-    "hint": "The household shares main meals - you're just picking snacks and an optional extra meal.",
+    "hint": "Pick every meal you actually want - skip any of them, including main meals. \"Shared\" means you'll eat the same recipe as the rest of the household on that slot.",
     "shared": "shared",
     "slot": {
       "breakfast": "Breakfast",

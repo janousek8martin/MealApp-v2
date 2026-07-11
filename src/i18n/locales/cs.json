@@ -615,7 +615,7 @@
   },
   "mealSlots": {
     "title": "Kolik jídel denně chceš?",
-    "hint": "Domácnost sdílí hlavní jídla — vybíráš jen svačiny a volitelné druhé jídlo navíc.",
+    "hint": "Vyber si přesně ta jídla, která chceš — klidně vynech i hlavní jídlo. Štítek „sdíleno“ znamená, že v ten slot budeš jíst stejný recept jako zbytek domácnosti.",
     "shared": "sdíleno",
     "slot": {
       "breakfast": "Snídaně",

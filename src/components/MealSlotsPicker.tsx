@@ -9,24 +9,19 @@ import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Props = {
   householdId: string | undefined;
-  /** Locks the household's core main slots (breakfast/lunch/dinner) as always-on when true; second_dinner and snacks stay toggleable either way. */
+  /** Whether this profile is on the household's shared main-meal track - purely informational here (shows a "shared" tag), every slot is freely toggleable regardless. */
   sharesMainMeals: boolean;
   /** null = every currently-available household slot (the default, matching profiles.enabledSlotKeysJson semantics). */
   value: string[] | null;
   onChange: (slotKeys: string[] | null) => void;
 };
 
-/** Main slots besides second_dinner are the shared household backbone - never optional for a profile sharing main meals. */
-function isLockedForSharing(slot: { kind: 'main' | 'snack'; slotKey: string }, sharesMainMeals: boolean): boolean {
-  return sharesMainMeals && slot.kind === 'main' && slot.slotKey !== 'second_dinner';
-}
-
 /**
- * "Which meals do you want per day?" (up to 6, household-defined) - a
- * shared profile sees its core main slots pre-checked and locked (they're
- * the whole point of a shared meal plan); it can still opt in/out of
- * snacks and the optional second_dinner slot. An independent profile
- * (sharesMainMeals=false) can toggle everything freely.
+ * "Which meals do you want per day?" (up to 6, household-defined) - every
+ * slot is freely toggleable, including the core main meals (a profile can
+ * skip breakfast entirely, for instance). Main slots a shared-meals profile
+ * keeps checked show a "shared" tag as a hint that they'll eat the same
+ * recipe as everyone else on that slot.
  */
 export function MealSlotsPicker({ householdId, sharesMainMeals, value, onChange }: Props) {
   const { t } = useTranslation();
@@ -48,14 +43,13 @@ export function MealSlotsPicker({ householdId, sharesMainMeals, value, onChange 
       <Text style={styles.hint}>{t('mealSlots.hint')}</Text>
       <View style={styles.list}>
         {slots.map((slot) => {
-          const locked = isLockedForSharing(slot, sharesMainMeals);
-          const selected = locked || value === null || value.includes(slot.slotKey);
+          const selected = value === null || value.includes(slot.slotKey);
+          const showSharedTag = sharesMainMeals && slot.kind === 'main' && selected;
           return (
             <Pressable
               key={slot.id}
               accessibilityRole="button"
-              accessibilityState={{ selected, disabled: locked }}
-              disabled={locked}
+              accessibilityState={{ selected }}
               onPress={() => toggle(slot.slotKey)}
               style={[styles.row, selected && styles.rowSelected]}>
               <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
@@ -64,7 +58,7 @@ export function MealSlotsPicker({ householdId, sharesMainMeals, value, onChange 
               <Text style={[styles.rowLabel, selected && styles.rowLabelSelected]}>
                 {t(`mealSlots.slot.${slot.slotKey}`, { defaultValue: slot.time })}
               </Text>
-              {locked ? <Text style={styles.lockedTag}>{t('mealSlots.shared')}</Text> : null}
+              {showSharedTag ? <Text style={styles.sharedTag}>{t('mealSlots.shared')}</Text> : null}
             </Pressable>
           );
         })}
@@ -125,7 +119,7 @@ function createStyles(colors: ColorTokens) {
     rowLabelSelected: {
       color: colors.text,
     },
-    lockedTag: {
+    sharedTag: {
       color: colors.textSecondary,
       fontSize: typography.small,
     },

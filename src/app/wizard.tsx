@@ -177,7 +177,10 @@ export default function WizardScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <HintedScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <HintedScrollView
+          ref={scrollRef}
+          contentContainerStyle={[styles.content, step === 'done' && styles.contentCentered]}
+          keyboardShouldPersistTaps="handled">
           {stepLabel ? <Text style={styles.stepLabel}>{stepLabel}</Text> : null}
 
           {step === 'preferences' || step === 'profile' ? (
@@ -295,6 +298,9 @@ function createStyles(colors: ColorTokens) {
     content: {
       padding: spacing.lg,
       flexGrow: 1,
+      justifyContent: 'flex-start',
+    },
+    contentCentered: {
       justifyContent: 'center',
     },
     centered: {
