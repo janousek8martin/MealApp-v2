@@ -40,7 +40,7 @@ import {
   plannedMealPortions,
   plannedMeals,
   profileAvoidedItems,
-  profileFavorites,
+  profileItemRatings,
   profileRestrictions,
   profileSlotPortions,
   profiles,
@@ -80,7 +80,8 @@ type GeneratorContext = {
   snackItems: GeneratorItem[];
   /** Union of every candidate id → its per-portion nutrition, for locked-slot bookkeeping. */
   nutritionById: Map<string, RecipeNutrition>;
-  favoriteRecipeIdsByProfile: Map<string, Set<string>>;
+  /** Liked recipe/food ids per profile – used as a scoring bonus (replaces the old recipe-only favorites). */
+  likedItemIdsByProfile: Map<string, Set<string>>;
   favoriteCuisines: Set<string>;
   expiringFoodIds: Set<string>;
   inStockFoodIds: Set<string>;
@@ -132,10 +133,10 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
   const householdAvoidedFoodIds = householdAvoidRows.filter((r) => r.itemType === 'food').map((r) => r.itemId);
 
   const profileContexts: ProfileContext[] = [];
-  const favoriteRecipeIdsByProfile = new Map<string, Set<string>>();
+  const likedItemIdsByProfile = new Map<string, Set<string>>();
 
   for (const profile of profileRows) {
-    const [restrictionRows, avoidRows, favoriteRows, slotPortionRows, [latestMetric]] = await Promise.all([
+    const [restrictionRows, avoidRows, ratingRows, slotPortionRows, [latestMetric]] = await Promise.all([
       db
         .select()
         .from(profileRestrictions)
@@ -146,8 +147,8 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
         .where(and(eq(profileAvoidedItems.profileId, profile.id), isNull(profileAvoidedItems.deletedAt))),
       db
         .select()
-        .from(profileFavorites)
-        .where(and(eq(profileFavorites.profileId, profile.id), isNull(profileFavorites.deletedAt))),
+        .from(profileItemRatings)
+        .where(and(eq(profileItemRatings.profileId, profile.id), isNull(profileItemRatings.deletedAt))),
       db
         .select()
         .from(profileSlotPortions)
@@ -160,7 +161,9 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
         .limit(1),
     ]);
 
-    favoriteRecipeIdsByProfile.set(profile.id, new Set(favoriteRows.map((r) => r.recipeId)));
+    likedItemIdsByProfile.set(profile.id, new Set(ratingRows.filter((r) => r.rating === 'like').map((r) => r.itemId)));
+    const dislikedRecipeIds = ratingRows.filter((r) => r.rating === 'dislike' && r.itemType === 'recipe').map((r) => r.itemId);
+    const dislikedFoodIds = ratingRows.filter((r) => r.rating === 'dislike' && r.itemType === 'food').map((r) => r.itemId);
 
     const slotOverrides = new Map<string, SlotPortionOverride>();
     for (const row of slotPortionRows) {
@@ -200,10 +203,18 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
         allergens: [...new Set([...householdAllergens, ...restrictionRows.filter((r) => r.kind === 'allergen').map((r) => r.value)])],
         diets: [...new Set([...householdDiets, ...restrictionRows.filter((r) => r.kind === 'diet').map((r) => r.value)])],
         avoidedRecipeIds: [
-          ...new Set([...householdAvoidedRecipeIds, ...avoidRows.filter((r) => r.itemType === 'recipe').map((r) => r.itemId)]),
+          ...new Set([
+            ...householdAvoidedRecipeIds,
+            ...avoidRows.filter((r) => r.itemType === 'recipe').map((r) => r.itemId),
+            ...dislikedRecipeIds,
+          ]),
         ],
         avoidedFoodIds: [
-          ...new Set([...householdAvoidedFoodIds, ...avoidRows.filter((r) => r.itemType === 'food').map((r) => r.itemId)]),
+          ...new Set([
+            ...householdAvoidedFoodIds,
+            ...avoidRows.filter((r) => r.itemType === 'food').map((r) => r.itemId),
+            ...dislikedFoodIds,
+          ]),
         ],
       },
       dailyTarget,
@@ -354,16 +365,16 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     mainItems,
     snackItems,
     nutritionById,
-    favoriteRecipeIdsByProfile,
+    likedItemIdsByProfile,
     expiringFoodIds,
     inStockFoodIds,
   };
 }
 
-function unionFavorites(subset: ProfileContext[], ctx: GeneratorContext): Set<string> {
+function unionLiked(subset: ProfileContext[], ctx: GeneratorContext): Set<string> {
   const result = new Set<string>();
   for (const profile of subset) {
-    for (const id of ctx.favoriteRecipeIdsByProfile.get(profile.id) ?? []) result.add(id);
+    for (const id of ctx.likedItemIdsByProfile.get(profile.id) ?? []) result.add(id);
   }
   return result;
 }
@@ -592,7 +603,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
           sharedProfilesForSlot.map((p) => p.restrictions),
           repetitionCtx,
           {
-            favoriteRecipeIds: unionFavorites(sharedProfilesForSlot, ctx),
+            likedItemIds: unionLiked(sharedProfilesForSlot, ctx),
             favoriteCuisines: ctx.favoriteCuisines,
             expiringFoodIds: ctx.expiringFoodIds,
             inStockFoodIds: ctx.inStockFoodIds,
@@ -632,7 +643,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
         [profile.restrictions],
         repetitionCtx,
         {
-          favoriteRecipeIds: ctx.favoriteRecipeIdsByProfile.get(profile.id) ?? new Set(),
+          likedItemIds: ctx.likedItemIdsByProfile.get(profile.id) ?? new Set(),
           favoriteCuisines: ctx.favoriteCuisines,
           expiringFoodIds: ctx.expiringFoodIds,
           inStockFoodIds: ctx.inStockFoodIds,
@@ -809,7 +820,7 @@ export async function regenerateSlot(
       relevantProfiles.map((p) => p.restrictions),
       repetitionCtx,
       {
-        favoriteRecipeIds: unionFavorites(relevantProfiles, ctx),
+        likedItemIds: unionLiked(relevantProfiles, ctx),
         favoriteCuisines: ctx.favoriteCuisines,
         expiringFoodIds: ctx.expiringFoodIds,
         inStockFoodIds: ctx.inStockFoodIds,

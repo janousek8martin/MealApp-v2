@@ -6,7 +6,7 @@ import {
   foodRestrictions,
   foods,
   photos,
-  profileFavorites,
+  profileItemRatings,
   recipeIngredients,
   recipes,
 } from '@/db/schema';
@@ -172,13 +172,46 @@ export function usePhotoMap() {
   return map;
 }
 
-export function useFavoriteRecipeIds(profileId: string | undefined) {
+/** Map of itemId -> this profile's rating, for one item type (recipe or food). */
+export function useRatingsMap(
+  profileId: string | undefined,
+  itemType: 'recipe' | 'food',
+): Map<string, 'like' | 'dislike'> {
   const { data } = useLiveQuery(
     db
       .select()
-      .from(profileFavorites)
-      .where(and(eq(profileFavorites.profileId, profileId ?? ''), isNull(profileFavorites.deletedAt))),
-    [profileId],
+      .from(profileItemRatings)
+      .where(
+        and(
+          eq(profileItemRatings.profileId, profileId ?? ''),
+          eq(profileItemRatings.itemType, itemType),
+          isNull(profileItemRatings.deletedAt),
+        ),
+      ),
+    [profileId, itemType],
   );
-  return new Set((data ?? []).map((row) => row.recipeId));
+  return new Map((data ?? []).map((row) => [row.itemId, row.rating]));
+}
+
+/** A single item's rating for one profile; null when unrated. */
+export function useItemRating(
+  profileId: string | undefined,
+  itemType: 'recipe' | 'food',
+  itemId: string | undefined,
+): 'like' | 'dislike' | null {
+  const { data } = useLiveQuery(
+    db
+      .select()
+      .from(profileItemRatings)
+      .where(
+        and(
+          eq(profileItemRatings.profileId, profileId ?? ''),
+          eq(profileItemRatings.itemType, itemType),
+          eq(profileItemRatings.itemId, itemId ?? ''),
+          isNull(profileItemRatings.deletedAt),
+        ),
+      ),
+    [profileId, itemType, itemId],
+  );
+  return data?.[0]?.rating ?? null;
 }

@@ -247,18 +247,19 @@ export const profileAvoidedItems = sqliteTable(
   (table) => [index('profile_avoided_profile_idx').on(table.profileId)],
 );
 
-export const profileFavorites = sqliteTable(
-  'profile_favorites',
+/** Per-profile like/dislike on a recipe or food. One active row per (profileId, itemType, itemId). */
+export const profileItemRatings = sqliteTable(
+  'profile_item_ratings',
   {
     ...meta,
     profileId: text('profile_id')
       .notNull()
       .references(() => profiles.id),
-    recipeId: text('recipe_id')
-      .notNull()
-      .references(() => recipes.id),
+    itemType: text('item_type', { enum: ['food', 'recipe'] }).notNull(),
+    itemId: text('item_id').notNull(),
+    rating: text('rating', { enum: ['like', 'dislike'] }).notNull(),
   },
-  (table) => [index('profile_favorites_profile_idx').on(table.profileId)],
+  (table) => [index('profile_item_ratings_profile_idx').on(table.profileId)],
 );
 
 /**

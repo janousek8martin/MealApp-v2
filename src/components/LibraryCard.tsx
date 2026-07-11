@@ -14,7 +14,8 @@ type Props = {
   photoUri?: string | null;
   /** Fallback block color when there is no photo yet. */
   accent?: string;
-  favorite?: boolean;
+  /** Active profile's current like/dislike on this item; null/undefined = unrated. Display-only – change it from the detail screen. */
+  rating?: 'like' | 'dislike' | null;
   /** All tags shown in one wrapping row at the bottom of the card (budget included). */
   tags?: LibraryCardTag[];
   /** Allergens, shown in the same row as `tags` but visually flagged since they're safety-relevant. */
@@ -30,7 +31,7 @@ export function LibraryCard({
   subtitle,
   photoUri,
   accent,
-  favorite,
+  rating,
   tags,
   allergenTags,
   onPress,
@@ -56,7 +57,8 @@ export function LibraryCard({
           <Text style={styles.title} numberOfLines={1}>
             {title}
           </Text>
-          {favorite ? <Ionicons name="heart" size={16} color={colors.success} /> : null}
+          {rating === 'like' ? <Ionicons name="thumbs-up" size={15} color={colors.success} /> : null}
+          {rating === 'dislike' ? <Ionicons name="thumbs-down" size={15} color={colors.danger} /> : null}
         </View>
         <Text style={styles.subtitle} numberOfLines={1}>
           {subtitle}

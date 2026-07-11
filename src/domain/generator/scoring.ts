@@ -4,7 +4,7 @@ import type { RecipeCandidate, ScoredCandidate, ScoringContext } from './types';
 
 const BASE_SCORE = 100;
 const REPETITION_PENALTY_WEIGHT = 40;
-const FAVORITE_BONUS = 20;
+const LIKED_BONUS = 20;
 const BUDGET_SCORE: Record<RecipeCandidate['budget'], number> = {
   cheap: 10,
   average: 4,
@@ -42,7 +42,7 @@ function macroFitScore(candidate: RecipeCandidate, target: ScoringContext['macro
 
 /**
  * Higher is better. Combines: repetition penalty (relative to the recipe's
- * effective weekly limit), a favorite bonus, a budget/quality nudge, bonuses
+ * effective weekly limit), a liked-item bonus, a budget/quality nudge, bonuses
  * for using pantry ingredients close to expiring or already in stock, and a
  * macro-fit nudge.
  */
@@ -51,7 +51,7 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
   const limit = effectiveMaxRepetitions(candidate, ctx);
   const repetitionPenalty = limit > 0 ? (used / limit) * REPETITION_PENALTY_WEIGHT : 0;
 
-  const favoriteBonus = ctx.favoriteRecipeIds.has(candidate.id) ? FAVORITE_BONUS : 0;
+  const likedBonus = ctx.likedItemIds.has(candidate.id) ? LIKED_BONUS : 0;
   const budgetScore = BUDGET_SCORE[candidate.budget];
   const fiberScore = Math.min(
     (candidate.nutritionPerPortion.fiberG ?? 0) * FIBER_SCORE_PER_GRAM,
@@ -67,7 +67,7 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
   return (
     BASE_SCORE -
     repetitionPenalty +
-    favoriteBonus +
+    likedBonus +
     budgetScore +
     fiberScore +
     pantryBonus +

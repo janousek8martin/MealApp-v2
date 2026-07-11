@@ -1,8 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image as RNImage, StyleSheet, Text, View } from 'react-native';
+import { Image as RNImage, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EditActions } from '@/components/EditActions';
@@ -10,8 +11,9 @@ import { HintedScrollView } from '@/components/HintedScrollView';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
-import { softDeleteFood } from '@/db/repositories/library';
-import { useFood, useFoodAllergens, usePhoto } from '@/hooks/library';
+import { setRating, softDeleteFood } from '@/db/repositories/library';
+import { useActiveProfile, useHousehold } from '@/hooks/data';
+import { useFood, useFoodAllergens, useItemRating, usePhoto } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
@@ -24,10 +26,18 @@ export default function FoodDetailScreen() {
   const food = useFood(id);
   const allergens = useFoodAllergens(id);
   const photo = usePhoto('food', id);
+  const { household } = useHousehold();
+  const activeProfile = useActiveProfile(household?.id);
+  const rating = useItemRating(activeProfile?.id, 'food', food?.id);
 
   if (!food) {
     return <SafeAreaView style={styles.safeArea} />;
   }
+
+  const rate = (next: 'like' | 'dislike') => {
+    if (!activeProfile) return;
+    void setRating(db, activeProfile.id, 'food', food.id, rating === next ? null : next);
+  };
 
   const micronutrients = food.micronutrientsJson
     ? (JSON.parse(food.micronutrientsJson) as Record<string, number>)
@@ -65,7 +75,25 @@ export default function FoodDetailScreen() {
           <View style={[styles.photo, styles.photoPlaceholder]} />
         )}
 
-        <Text style={styles.title}>{localizedName(food)}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{localizedName(food)}</Text>
+          <View style={styles.ratingRow}>
+            <Pressable accessibilityRole="button" onPress={() => rate('like')} hitSlop={8}>
+              <Ionicons
+                name={rating === 'like' ? 'thumbs-up' : 'thumbs-up-outline'}
+                size={24}
+                color={rating === 'like' ? colors.success : colors.textSecondary}
+              />
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => rate('dislike')} hitSlop={8}>
+              <Ionicons
+                name={rating === 'dislike' ? 'thumbs-down' : 'thumbs-down-outline'}
+                size={24}
+                color={rating === 'dislike' ? colors.danger : colors.textSecondary}
+              />
+            </Pressable>
+          </View>
+        </View>
         <Text style={styles.meta}>
           {t(`foodCategory.${food.category}`)} · {t(`budget.${food.budget}`)}
           {food.shelfLifeDays ? ` · ${t('foodDetail.shelfLife', { count: food.shelfLifeDays })}` : ''}
@@ -149,11 +177,23 @@ function createStyles(colors: ColorTokens) {
     photoPlaceholder: {
       backgroundColor: colors.mint,
     },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: spacing.md,
+      gap: spacing.sm,
+    },
+    ratingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
     title: {
       color: colors.text,
       fontSize: typography.title,
       fontWeight: '800',
-      marginTop: spacing.md,
+      flex: 1,
     },
     meta: {
       color: colors.textSecondary,

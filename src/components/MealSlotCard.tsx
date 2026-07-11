@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useFood, usePhoto, useRecipe } from '@/hooks/library';
+import { useFood, useItemRating, usePhoto, useRecipe } from '@/hooks/library';
 import { type MealRow, useMealExtras, usePortionsForMeal } from '@/hooks/plan';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -88,6 +88,7 @@ export function MealSlotCard({
   const portions = usePortionsForMeal(meal?.id);
   const extras = useMealExtras(meal?.id);
   const myPortion = portions.find((p) => p.profileId === activeProfileId);
+  const rating = useItemRating(activeProfileId, meal?.itemType ?? 'recipe', meal?.itemId);
 
   if (!meal) {
     return (
@@ -144,9 +145,13 @@ export function MealSlotCard({
         )}
         <View style={styles.headerText}>
           <Text style={styles.slotLabel}>{slotLabel}</Text>
-          <Text style={styles.name} numberOfLines={1}>
-            {name}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name} numberOfLines={1}>
+              {name}
+            </Text>
+            {rating === 'like' ? <Ionicons name="thumbs-up" size={13} color={colors.success} /> : null}
+            {rating === 'dislike' ? <Ionicons name="thumbs-down" size={13} color={colors.danger} /> : null}
+          </View>
           {scaled ? (
             <Text style={styles.kcal}>
               {scaled.kcal} kcal · <Text style={styles.macroInitial}>{t('macros.proteinInitial')}</Text>
@@ -287,11 +292,17 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small,
       fontWeight: '600',
     },
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      marginTop: 2,
+    },
     name: {
       color: colors.text,
       fontSize: typography.body,
       fontWeight: '700',
-      marginTop: 2,
+      flexShrink: 1,
     },
     kcal: {
       color: colors.textSecondary,

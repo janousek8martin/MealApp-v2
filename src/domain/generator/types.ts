@@ -67,7 +67,8 @@ export type RepetitionContext = {
 };
 
 export type ScoringContext = RepetitionContext & {
-  favoriteRecipeIds: Set<string>;
+  /** Recipe/food ids this rating context's profile(s) like – a scoring bonus (also covers what used to be "favorites"). */
+  likedItemIds: Set<string>;
   /** Household-preferred cuisine keys from the onboarding wizard – a soft scoring nudge, never a filter. */
   favoriteCuisines?: Set<string>;
   /** Food ids in the pantry that are close to expiring. */

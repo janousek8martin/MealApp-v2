@@ -1,13 +1,16 @@
-import { eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { newId } from '../id';
 import { createHouseholdWithDefaults, defaultSlots, saveHouseholdPreferences } from '../repositories/households';
+import { setRating } from '../repositories/library';
+import { createProfile } from '../repositories/profiles';
 import {
   foods,
   householdAvoidedItems,
   householdSettings,
   households,
   mealSlotSettings,
+  profileItemRatings,
   profiles,
   recipeIngredients,
   recipes,
@@ -15,6 +18,20 @@ import {
 import { seedIfEmpty } from '../seed';
 import { nowIso } from '../time';
 import { createTestDb } from '../testing/testDb';
+
+function validProfileInput(householdId: string) {
+  return {
+    householdId,
+    name: 'Martin',
+    profileType: 'adult' as const,
+    sex: 'male' as const,
+    birthDate: '1990-05-01',
+    heightCm: 180,
+    activityLevel: 'moderate' as const,
+    goal: 'lose' as const,
+    weightKg: 80,
+  };
+}
 
 describe('data layer', () => {
   it('applies migrations and creates a household with default settings and slots', async () => {
@@ -105,6 +122,34 @@ describe('data layer', () => {
       'food-1',
       'food-2',
     ]);
+  });
+
+  it('setRating upserts a like/dislike and clears it when set to null', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test household');
+    const profileId = await createProfile(db, validProfileInput(householdId));
+
+    await setRating(db, profileId, 'recipe', 'recipe-1', 'like');
+    let rows = await db
+      .select()
+      .from(profileItemRatings)
+      .where(eq(profileItemRatings.profileId, profileId));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ itemType: 'recipe', itemId: 'recipe-1', rating: 'like' });
+
+    // Switching to dislike updates the existing row rather than inserting a second one.
+    await setRating(db, profileId, 'recipe', 'recipe-1', 'dislike');
+    rows = await db.select().from(profileItemRatings).where(eq(profileItemRatings.profileId, profileId));
+    expect(rows).toHaveLength(1);
+    expect(rows[0].rating).toBe('dislike');
+
+    // Clearing (null) soft-deletes the row instead of leaving a stale rating.
+    await setRating(db, profileId, 'recipe', 'recipe-1', null);
+    rows = await db
+      .select()
+      .from(profileItemRatings)
+      .where(and(eq(profileItemRatings.profileId, profileId), isNull(profileItemRatings.deletedAt)));
+    expect(rows).toHaveLength(0);
   });
 
   it('enforces foreign keys', async () => {

@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { newId } from '../id';
-import { foodRestrictions, foods, photos, profileFavorites, recipeIngredients, recipes } from '../schema';
+import { foodRestrictions, foods, photos, profileItemRatings, recipeIngredients, recipes } from '../schema';
 import { nowIso } from '../time';
 import type { AppDb } from '../types';
 
@@ -175,34 +175,51 @@ export async function softDeleteRecipe(db: AppDb, recipeId: string): Promise<voi
 }
 
 // ---------------------------------------------------------------------------
-// Favorites & photos
+// Ratings (like/dislike) & photos
 // ---------------------------------------------------------------------------
 
-export async function toggleFavorite(db: AppDb, profileId: string, recipeId: string): Promise<void> {
+/** Sets a profile's like/dislike on a recipe or food; pass `null` to clear it. */
+export async function setRating(
+  db: AppDb,
+  profileId: string,
+  itemType: 'recipe' | 'food',
+  itemId: string,
+  rating: 'like' | 'dislike' | null,
+): Promise<void> {
   const now = nowIso();
   const existing = await db
     .select()
-    .from(profileFavorites)
+    .from(profileItemRatings)
     .where(
       and(
-        eq(profileFavorites.profileId, profileId),
-        eq(profileFavorites.recipeId, recipeId),
-        isNull(profileFavorites.deletedAt),
+        eq(profileItemRatings.profileId, profileId),
+        eq(profileItemRatings.itemType, itemType),
+        eq(profileItemRatings.itemId, itemId),
+        isNull(profileItemRatings.deletedAt),
       ),
     );
 
+  if (rating === null) {
+    if (existing.length > 0) {
+      await db
+        .update(profileItemRatings)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(eq(profileItemRatings.id, existing[0].id));
+    }
+    return;
+  }
+
   if (existing.length > 0) {
-    await db
-      .update(profileFavorites)
-      .set({ deletedAt: now, updatedAt: now })
-      .where(eq(profileFavorites.id, existing[0].id));
+    await db.update(profileItemRatings).set({ rating, updatedAt: now }).where(eq(profileItemRatings.id, existing[0].id));
   } else {
-    await db.insert(profileFavorites).values({
+    await db.insert(profileItemRatings).values({
       id: newId(),
       createdAt: now,
       updatedAt: now,
       profileId,
-      recipeId,
+      itemType,
+      itemId,
+      rating,
     });
   }
 }

@@ -17,10 +17,10 @@ import type { foods, recipes } from '@/db/schema';
 import { isLowCarbRecipe } from '@/domain/generator/filters';
 import { useActiveProfile, useHousehold } from '@/hooks/data';
 import {
-  useFavoriteRecipeIds,
   useFoodAllergensMap,
   useFoods,
   usePhotoMap,
+  useRatingsMap,
   useRecipes,
   useRecipeTagsMap,
 } from '@/hooks/library';
@@ -74,7 +74,8 @@ export default function LibraryScreen() {
   const recipeRows = useRecipes();
   const foodRows = useFoods();
   const photoMap = usePhotoMap();
-  const favoriteIds = useFavoriteRecipeIds(activeProfile?.id);
+  const recipeRatings = useRatingsMap(activeProfile?.id, 'recipe');
+  const foodRatings = useRatingsMap(activeProfile?.id, 'food');
   const recipeTagsMap = useRecipeTagsMap();
   const foodAllergensMap = useFoodAllergensMap();
   const recipeNutritionMap = useRecipeNutritionMap();
@@ -420,7 +421,7 @@ export default function LibraryScreen() {
                 subtitle={nutrition ? `${categoryLabel} · ${Math.round(nutrition.kcal)} kcal` : categoryLabel}
                 photoUri={photoMap.get(`recipe:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
-                favorite={favoriteIds.has(item.id)}
+                rating={recipeRatings.get(item.id) ?? null}
                 tags={[
                   { label: t(`budget.${item.budget}`) },
                   ...tags.map((tag) => ({ label: t(`recipeTags.${tag}`) })),
@@ -467,6 +468,7 @@ export default function LibraryScreen() {
                 subtitle={`${Math.round(item.kcalPer100)} kcal / 100 ${item.baseUnit === 'piece' ? 'g' : item.baseUnit}`}
                 photoUri={photoMap.get(`food:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
+                rating={foodRatings.get(item.id) ?? null}
                 tags={[
                   { label: t(`budget.${item.budget}`) },
                   ...dietFlags.map((flag) => ({ label: t(`diets.${flag}`), icon: DIET_ICONS[flag] })),

@@ -29,7 +29,7 @@ export function pickMealForSlot(
   repetitionCtx: RepetitionContext,
   scoringExtras: Pick<
     ScoringContext,
-    'favoriteRecipeIds' | 'expiringFoodIds' | 'inStockFoodIds' | 'macroFitTarget' | 'favoriteCuisines'
+    'likedItemIds' | 'expiringFoodIds' | 'inStockFoodIds' | 'macroFitTarget' | 'favoriteCuisines'
   >,
   rng: Rng,
   dailyTargetsKcal: number[] = [],

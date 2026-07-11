@@ -11,11 +11,11 @@ import { HintedScrollView } from '@/components/HintedScrollView';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ALLERGEN_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
-import { softDeleteRecipe, toggleFavorite } from '@/db/repositories/library';
+import { setRating, softDeleteRecipe } from '@/db/repositories/library';
 import { useActiveProfile, useHousehold, useHouseholdSettings } from '@/hooks/data';
 import {
   recipeNutritionOf,
-  useFavoriteRecipeIds,
+  useItemRating,
   usePhoto,
   usePhotoMap,
   useRecipe,
@@ -40,7 +40,7 @@ export default function RecipeDetailScreen() {
   const unitDisplayMode = householdSettings?.kitchenUnitDisplayMode ?? 'hybrid';
   const showKitchenEquivalent = unitDisplayMode === 'hybrid' || unitDisplayMode === 'kitchen';
   const activeProfile = useActiveProfile(household?.id);
-  const favoriteIds = useFavoriteRecipeIds(activeProfile?.id);
+  const rating = useItemRating(activeProfile?.id, 'recipe', recipe?.id);
   const recipeTagsMap = useRecipeTagsMap();
   const photoMap = usePhotoMap();
 
@@ -51,7 +51,11 @@ export default function RecipeDetailScreen() {
   const allergens = recipeTagsMap.get(recipe.id)?.allergens ?? [];
   const nutrition = recipeNutritionOf(ingredientRows, recipe.servingsBase);
   const instructions = localizedInstructions(recipe);
-  const isFavorite = favoriteIds.has(recipe.id);
+
+  const rate = (next: 'like' | 'dislike') => {
+    if (!activeProfile) return;
+    void setRating(db, activeProfile.id, 'recipe', recipe.id, rating === next ? null : next);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -78,15 +82,22 @@ export default function RecipeDetailScreen() {
 
         <View style={styles.titleRow}>
           <Text style={styles.title}>{localizedName(recipe)}</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => activeProfile && toggleFavorite(db, activeProfile.id, recipe.id)}>
-            <Ionicons
-              name={isFavorite ? 'heart' : 'heart-outline'}
-              size={26}
-              color={isFavorite ? colors.success : colors.textSecondary}
-            />
-          </Pressable>
+          <View style={styles.ratingRow}>
+            <Pressable accessibilityRole="button" onPress={() => rate('like')} hitSlop={8}>
+              <Ionicons
+                name={rating === 'like' ? 'thumbs-up' : 'thumbs-up-outline'}
+                size={24}
+                color={rating === 'like' ? colors.success : colors.textSecondary}
+              />
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => rate('dislike')} hitSlop={8}>
+              <Ionicons
+                name={rating === 'dislike' ? 'thumbs-down' : 'thumbs-down-outline'}
+                size={24}
+                color={rating === 'dislike' ? colors.danger : colors.textSecondary}
+              />
+            </Pressable>
+          </View>
         </View>
         <Text style={styles.meta}>
           {t(`library.filter.${recipe.isSide ? 'side' : recipe.category}`)} · {t(`budget.${recipe.budget}`)}
@@ -204,6 +215,11 @@ function createStyles(colors: ColorTokens) {
       justifyContent: 'space-between',
       marginTop: spacing.md,
       gap: spacing.sm,
+    },
+    ratingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
     },
     title: {
       color: colors.text,

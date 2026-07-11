@@ -21,7 +21,7 @@ function ctx(overrides: Partial<ScoringContext> = {}): ScoringContext {
     weekCounts: new Map(),
     previousDayRecipeIds: new Set(),
     household: { defaultMaxRepetitionsPerWeek: 2, defaultAllowConsecutiveDays: false },
-    favoriteRecipeIds: new Set(),
+    likedItemIds: new Set(),
     expiringFoodIds: new Set(),
     inStockFoodIds: new Set(),
     ...overrides,
@@ -47,10 +47,10 @@ describe('scoreCandidate', () => {
     expect(looseLimit).toBeGreaterThan(tightLimit);
   });
 
-  it('rewards favorites', () => {
-    const notFavorite = scoreCandidate(candidate(), ctx());
-    const favorite = scoreCandidate(candidate(), ctx({ favoriteRecipeIds: new Set(['r1']) }));
-    expect(favorite).toBeGreaterThan(notFavorite);
+  it('rewards liked items', () => {
+    const notLiked = scoreCandidate(candidate(), ctx());
+    const liked = scoreCandidate(candidate(), ctx({ likedItemIds: new Set(['r1']) }));
+    expect(liked).toBeGreaterThan(notLiked);
   });
 
   it('rewards cheaper recipes over more expensive ones', () => {
