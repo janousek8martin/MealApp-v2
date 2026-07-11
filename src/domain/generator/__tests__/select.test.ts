@@ -12,6 +12,7 @@ function item(id: string, overrides: Partial<RecipeCandidate> = {}): GeneratorIt
     ingredients: [],
     maxRepetitionsPerWeek: null,
     allowConsecutiveDays: null,
+    canServeCold: false,
     ...overrides,
   };
   return { itemType: 'recipe', candidate };
@@ -110,6 +111,39 @@ describe('pickMealForSlot', () => {
       [2000],
     );
     expect(result?.candidate.id).toBe('oversized');
+  });
+
+  it('restricts to cold-eligible candidates when requireColdEligible is set and at least one exists', () => {
+    const candidates = [item('warm', { canServeCold: false }), item('cold', { canServeCold: true })];
+    const rng = createSeededRng(2);
+    for (let i = 0; i < 20; i += 1) {
+      const result = pickMealForSlot(
+        candidates,
+        [noRestrictions],
+        repetitionCtx(),
+        { likedItemIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
+        rng,
+        [],
+        undefined,
+        true,
+      );
+      expect(result?.candidate.id).toBe('cold');
+    }
+  });
+
+  it('falls back to a non-cold-eligible candidate rather than leaving the slot empty when none are cold-eligible', () => {
+    const candidates = [item('warm', { canServeCold: false })];
+    const result = pickMealForSlot(
+      candidates,
+      [noRestrictions],
+      repetitionCtx(),
+      { likedItemIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
+      createSeededRng(1),
+      [],
+      undefined,
+      true,
+    );
+    expect(result?.candidate.id).toBe('warm');
   });
 });
 

@@ -40,6 +40,8 @@ export function pickMealForSlot(
   rng: Rng,
   dailyTargetsKcal: number[] = [],
   shortlistSize: number = DEFAULT_SHORTLIST_SIZE,
+  /** On a cold-dinner day, restrict to cold-eligible candidates when at least one exists – never allowed to empty the slot on its own. */
+  requireColdEligible: boolean = false,
 ): GeneratorItem | null {
   const passesSafetyFilters = (item: GeneratorItem) =>
     isRecipeAllowedForProfiles(item.candidate, restrictions) && passesRepetitionRules(item.candidate, repetitionCtx);
@@ -47,6 +49,10 @@ export function pickMealForSlot(
     !dailyTargetsKcal.some((target) => exceedsCandidateCalorieCap(item.candidate.nutritionPerPortion.kcal, target));
 
   let allowed = candidates.filter((item) => passesSafetyFilters(item) && withinCalorieCap(item));
+  if (requireColdEligible) {
+    const coldOnly = allowed.filter((item) => item.candidate.canServeCold);
+    if (coldOnly.length > 0) allowed = coldOnly;
+  }
   if (allowed.length === 0) allowed = candidates.filter(passesSafetyFilters);
   if (allowed.length === 0) return null;
 

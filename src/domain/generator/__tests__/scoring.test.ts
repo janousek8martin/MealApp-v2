@@ -12,6 +12,7 @@ function candidate(overrides: Partial<RecipeCandidate> = {}): RecipeCandidate {
     ingredients: [],
     maxRepetitionsPerWeek: null,
     allowConsecutiveDays: null,
+    canServeCold: false,
     ...overrides,
   };
 }

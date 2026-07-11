@@ -537,6 +537,34 @@ export default function SettingsScreen() {
             value={settings.defaultAllowConsecutiveDays}
             onChange={(v) => updateHouseholdSettings(db, household.id, { defaultAllowConsecutiveDays: v })}
           />
+
+          <View style={styles.stepperRow}>
+            <Text style={styles.slotLabel}>{t('settings.coldDinnerFrequency')}</Text>
+            <View style={styles.stepper}>
+              <Button
+                variant="secondary"
+                label="–"
+                style={styles.stepperButton}
+                onPress={() =>
+                  updateHouseholdSettings(db, household.id, {
+                    coldDinnerFrequencyPerWeek: Math.max(0, settings.coldDinnerFrequencyPerWeek - 1),
+                  })
+                }
+              />
+              <Text style={styles.stepperValue}>{settings.coldDinnerFrequencyPerWeek}</Text>
+              <Button
+                variant="secondary"
+                label="+"
+                style={styles.stepperButton}
+                onPress={() =>
+                  updateHouseholdSettings(db, household.id, {
+                    coldDinnerFrequencyPerWeek: Math.min(7, settings.coldDinnerFrequencyPerWeek + 1),
+                  })
+                }
+              />
+            </View>
+          </View>
+          <Text style={styles.cardHint}>{t('settings.coldDinnerFrequencyHint')}</Text>
         </AccordionCard>
 
         <AccordionCard title={t('settings.notifications')}>

@@ -32,6 +32,8 @@ export type RecipeCandidate = {
   maxRepetitionsPerWeek: number | null;
   /** Per-recipe override; null = use the household default. */
   allowConsecutiveDays: boolean | null;
+  /** Can be eaten cold – eligible for the generator's cold-dinner day selection. */
+  canServeCold: boolean;
 };
 
 /** Recipe tags derived from its ingredients – never stored, always computed. */

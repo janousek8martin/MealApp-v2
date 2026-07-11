@@ -82,6 +82,7 @@ export type HouseholdSettingsPatch = Partial<{
   fiberMode: 'efsa_min' | 'gender_specific';
   notifications: NotificationSettings;
   kitchenUnitDisplayMode: 'grams' | 'hybrid' | 'kitchen';
+  coldDinnerFrequencyPerWeek: number;
 }>;
 
 export async function updateHouseholdSettings(

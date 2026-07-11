@@ -59,6 +59,7 @@ export default function FoodEditScreen() {
   const [shelfLifeDays, setShelfLifeDays] = useState('');
   const [storage, setStorage] = useState<string | null>(null);
   const [snackSuitable, setSnackSuitable] = useState(false);
+  const [canServeCold, setCanServeCold] = useState(false);
   const [allergens, setAllergens] = useState<string[]>([]);
   const [dietFlags, setDietFlags] = useState<string[]>([]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -93,6 +94,7 @@ export default function FoodEditScreen() {
     setShelfLifeDays(existing.shelfLifeDays !== null ? String(existing.shelfLifeDays) : '');
     setStorage(existing.storage);
     setSnackSuitable(existing.snackSuitable);
+    setCanServeCold(existing.canServeCold);
     setDietFlags(existing.dietFlagsJson ? (JSON.parse(existing.dietFlagsJson) as string[]) : []);
     setBarcode(existing.barcode);
   }, [existing, loadedId]);
@@ -139,6 +141,7 @@ export default function FoodEditScreen() {
         shelfLifeDays: num(shelfLifeDays),
         storage: (storage ?? null) as 'pantry' | 'fridge' | 'freezer' | null,
         snackSuitable,
+        canServeCold,
         dietFlags,
         allergens,
         barcode,
@@ -279,6 +282,16 @@ export default function FoodEditScreen() {
           <Switch
             value={snackSuitable}
             onValueChange={setSnackSuitable}
+            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            thumbColor={colors.surface}
+          />
+        </View>
+
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>{t('foodEdit.canServeCold')}</Text>
+          <Switch
+            value={canServeCold}
+            onValueChange={setCanServeCold}
             trackColor={{ true: colors.primaryLight, false: colors.border }}
             thumbColor={colors.surface}
           />

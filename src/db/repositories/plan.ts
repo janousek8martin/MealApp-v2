@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lt } from 'drizzle-orm';
 
+import { isColdDinnerDay } from '@/domain/generator/coldDinner';
 import { createSeededRng, type Rng } from '@/domain/generator/rng';
 import {
   deriveRecipeTags,
@@ -16,6 +17,7 @@ import {
 } from '@/domain/generator/portions';
 import { computeRecipeNutrition, type RecipeNutrition } from '@/domain/recipeNutrition';
 import {
+  DEFAULT_SHORTLIST_SIZE,
   pickMealForSlot,
   pickSnackForSlot,
   recordPick,
@@ -89,7 +91,11 @@ function isSlotEnabledForProfile(profile: ProfileContext, slotKey: string): bool
 }
 
 type GeneratorContext = {
-  settings: { defaultMaxRepetitionsPerWeek: number; defaultAllowConsecutiveDays: boolean };
+  settings: {
+    defaultMaxRepetitionsPerWeek: number;
+    defaultAllowConsecutiveDays: boolean;
+    coldDinnerFrequencyPerWeek: number;
+  };
   slots: SlotRow[];
   profiles: ProfileContext[];
   mainItems: GeneratorItem[];
@@ -321,6 +327,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
       })),
       maxRepetitionsPerWeek: recipe.maxRepetitionsPerWeek,
       allowConsecutiveDays: recipe.allowConsecutiveDays,
+      canServeCold: recipe.canServeCold,
     };
 
     const item: GeneratorItem = { itemType: 'recipe', candidate };
@@ -363,6 +370,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
       ],
       maxRepetitionsPerWeek: null,
       allowConsecutiveDays: null,
+      canServeCold: food.canServeCold,
     };
     snackItems.push({ itemType: 'food', candidate });
   }
@@ -386,6 +394,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     settings: {
       defaultMaxRepetitionsPerWeek: settingsRow?.defaultMaxRepetitionsPerWeek ?? 2,
       defaultAllowConsecutiveDays: settingsRow?.defaultAllowConsecutiveDays ?? false,
+      coldDinnerFrequencyPerWeek: settingsRow?.coldDinnerFrequencyPerWeek ?? 0,
     },
     slots,
     profiles: profileContexts,
@@ -683,6 +692,7 @@ async function generateIndividualMainMeal(
   consumedSoFar: Map<string, MacroTotal>,
   rng: Rng,
   excludeIds: Set<string> = new Set(),
+  requireColdEligible: boolean = false,
 ): Promise<RepetitionContext> {
   if (!profile.dailyTarget) return repetitionCtx;
   const pool = excludeIds.size > 0 ? candidates.filter((item) => !excludeIds.has(item.candidate.id)) : candidates;
@@ -701,6 +711,8 @@ async function generateIndividualMainMeal(
     },
     rng,
     [profile.dailyTarget.kcal],
+    DEFAULT_SHORTLIST_SIZE,
+    requireColdEligible,
   );
   if (!picked) return repetitionCtx;
   const multiplier = scalingMultiplier(
@@ -736,6 +748,8 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
     const category = slot.slotKey === 'breakfast' ? 'breakfast' : 'lunch_dinner';
     const candidates = ctx.mainItems.filter((item) => item.candidate.category === category);
     const sharedProfilesForSlot = sharedProfiles.filter((p) => isSlotEnabledForProfile(p, slot.slotKey));
+    const coldToday =
+      slot.slotKey === 'dinner' && isColdDinnerDay(date, householdId, ctx.settings.coldDinnerFrequencyPerWeek);
 
     if (slot.sharing === 'shared' && sharedProfilesForSlot.length > 0) {
       const key = slotTrackKey(slot.slotKey, null);
@@ -760,6 +774,8 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
           },
           rng,
           sharedProfilesForSlot.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),
+          DEFAULT_SHORTLIST_SIZE,
+          coldToday,
         );
         if (picked) {
           // A "serve_separately" resolution carves the profiles who dislike this
@@ -805,6 +821,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
               consumedSoFar,
               rng,
               new Set([picked.candidate.id]),
+              coldToday,
             );
           }
         }
@@ -829,6 +846,8 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
         ctx,
         consumedSoFar,
         rng,
+        new Set(),
+        coldToday,
       );
     }
   }
@@ -1002,6 +1021,8 @@ export async function regenerateSlot(
       },
       createSeededRng(rngSeed ?? Date.now()),
       relevantProfiles.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),
+      DEFAULT_SHORTLIST_SIZE,
+      slot.slotKey === 'dinner' && isColdDinnerDay(date, householdId, ctx.settings.coldDinnerFrequencyPerWeek),
     );
   }
   if (!picked) return;

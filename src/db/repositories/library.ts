@@ -38,6 +38,8 @@ export type FoodInput = {
   allergens: string[];
   /** EAN scanned via the barcode scanner (item 10); null when entered manually. */
   barcode?: string | null;
+  /** Can be eaten cold; defaults to false. */
+  canServeCold?: boolean;
 };
 
 /** Serializes only the micronutrients the user actually filled in – an omitted field stays unknown, never becomes 0. */
@@ -70,6 +72,7 @@ export async function upsertFood(db: AppDb, input: FoodInput, foodId?: string): 
     snackSuitable: input.snackSuitable,
     dietFlagsJson: JSON.stringify(input.dietFlags),
     barcode: input.barcode ?? null,
+    canServeCold: input.canServeCold ?? false,
     updatedAt: now,
   };
 
@@ -122,6 +125,8 @@ export type RecipeInput = {
   maxRepetitionsPerWeek?: number | null;
   allowConsecutiveDays?: boolean | null;
   ingredients: { foodId: string; amount: number }[];
+  /** Can be served cold; defaults to false. */
+  canServeCold?: boolean;
 };
 
 export async function upsertRecipe(db: AppDb, input: RecipeInput, recipeId?: string): Promise<string> {
@@ -141,6 +146,7 @@ export async function upsertRecipe(db: AppDb, input: RecipeInput, recipeId?: str
     prepTimeMinutes: input.prepTimeMinutes ?? null,
     maxRepetitionsPerWeek: input.maxRepetitionsPerWeek ?? null,
     allowConsecutiveDays: input.allowConsecutiveDays ?? null,
+    canServeCold: input.canServeCold ?? false,
     updatedAt: now,
   };
 

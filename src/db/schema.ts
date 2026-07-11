@@ -62,6 +62,8 @@ export const householdSettings = sqliteTable('household_settings', {
   kitchenUnitDisplayMode: text('kitchen_unit_display_mode', { enum: ['grams', 'hybrid', 'kitchen'] })
     .notNull()
     .default('hybrid'),
+  /** How many dinners per week the generator should try to make cold-eligible; 0 = off (default). */
+  coldDinnerFrequencyPerWeek: integer('cold_dinner_frequency_per_week').notNull().default(0),
 });
 
 /**
@@ -354,6 +356,8 @@ export const foods = sqliteTable('foods', {
   shelfLifeDays: integer('shelf_life_days'),
   storage: text('storage', { enum: ['pantry', 'fridge', 'freezer'] }),
   snackSuitable: integer('snack_suitable', { mode: 'boolean' }).notNull().default(false),
+  /** Can be eaten cold – lets this food stand in for a main dish on a cold-dinner day. */
+  canServeCold: integer('can_serve_cold', { mode: 'boolean' }).notNull().default(false),
   /** EAN – reserved for the V1.x barcode scanner. */
   barcode: text('barcode'),
   /** Audit reference: 'usda:fdc/171287', 'nutridatabaze:123', 'user'. */
@@ -396,6 +400,8 @@ export const recipes = sqliteTable('recipes', {
   maxRepetitionsPerWeek: integer('max_repetitions_per_week'),
   /** Per-recipe override for batch cooking on consecutive days; null = household default. */
   allowConsecutiveDays: integer('allow_consecutive_days', { mode: 'boolean' }),
+  /** Can be served cold – eligible for the generator's cold-dinner day selection. */
+  canServeCold: integer('can_serve_cold', { mode: 'boolean' }).notNull().default(false),
   source: text('source').notNull().default('user'),
 });
 
