@@ -180,6 +180,7 @@ export default function TodayScreen() {
             profileId={activeProfile.id}
             sex={activeProfile.sex}
             weightKg={latestMetric.weightKg}
+            trackWater={activeProfile.trackWater}
             waterGoalMl={activeProfile.waterGoalMl}
           />
         ) : null}

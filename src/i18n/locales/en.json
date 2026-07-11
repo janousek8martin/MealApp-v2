@@ -633,7 +633,12 @@
     "cardTitle": "Hydration",
     "goalReached": "Goal reached",
     "addGlass": "+ glass",
-    "removeGlass": "- glass"
+    "removeGlass": "- glass",
+    "banner": "Water added here counts toward your daily hydration goal.",
+    "totalLabel": "Total",
+    "addCustom": "Add custom",
+    "customAmount": "Amount",
+    "settingsLink": "Water settings"
   },
   "summary": {
     "title": "Summary",

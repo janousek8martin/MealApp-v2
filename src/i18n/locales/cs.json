@@ -633,7 +633,12 @@
     "cardTitle": "Pitný režim",
     "goalReached": "Cíl splněn",
     "addGlass": "+ sklenice",
-    "removeGlass": "− sklenice"
+    "removeGlass": "− sklenice",
+    "banner": "Voda zapsaná tady se počítá do tvého denního cíle pitného režimu.",
+    "totalLabel": "Celkem",
+    "addCustom": "Přidat vlastní",
+    "customAmount": "Množství",
+    "settingsLink": "Nastavení vody"
   },
   "summary": {
     "title": "Souhrn",
