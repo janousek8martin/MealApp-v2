@@ -4,6 +4,7 @@ import type {
   IngredientFoodTags,
   RecipeCandidate,
   RecipeNutritionPerPortion,
+  RecipeResolution,
   RepetitionContext,
 } from './types';
 
@@ -93,6 +94,29 @@ export function isRecipeAllowedForProfiles(
     if (ingredientFoodIds.some((id) => profile.avoidedFoodIds.includes(id))) return false;
     return true;
   });
+}
+
+/**
+ * A "rare" or "serve_separately" resolution means the recipe should stay a
+ * valid shared-slot candidate even though a disliking profile's own
+ * `avoidedRecipeIds` would otherwise make it invisible to
+ * `isRecipeAllowedForProfiles` – "rare" lets it through with a heavy scoring
+ * penalty (see `scoreCandidate`), "serve_separately" lets it through so the
+ * caller can carve disliking profiles out into their own pick afterward.
+ * "never" is intentionally NOT relaxed here – it should behave exactly like
+ * an ordinary dislike (hard-excluded).
+ */
+export function relaxAvoidedRecipesForResolutions(
+  restrictions: DietRestrictions[],
+  resolutions: Map<string, RecipeResolution>,
+): DietRestrictions[] {
+  return restrictions.map((r) => ({
+    ...r,
+    avoidedRecipeIds: r.avoidedRecipeIds.filter((id) => {
+      const resolution = resolutions.get(id);
+      return resolution !== 'rare' && resolution !== 'serve_separately';
+    }),
+  }));
 }
 
 /**

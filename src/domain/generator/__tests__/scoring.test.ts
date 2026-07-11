@@ -92,6 +92,18 @@ describe('scoreCandidate', () => {
     expect(expiring).toBeGreaterThan(inStock);
   });
 
+  it('heavily penalizes a recipe resolved as "rare" after a like/dislike conflict', () => {
+    const base = scoreCandidate(candidate(), ctx());
+    const rare = scoreCandidate(candidate(), ctx({ rareRecipeIds: new Set(['r1']) }));
+    expect(rare).toBeLessThan(base);
+  });
+
+  it('does not penalize a recipe absent from the rare set', () => {
+    const base = scoreCandidate(candidate(), ctx());
+    const other = scoreCandidate(candidate(), ctx({ rareRecipeIds: new Set(['other-recipe']) }));
+    expect(other).toBe(base);
+  });
+
   it('does not change the score when there is no macro-fit target (default candidate() has no override)', () => {
     expect(scoreCandidate(candidate(), ctx())).toBe(scoreCandidate(candidate(), ctx({ macroFitTarget: undefined })));
   });

@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image as RNImage, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image as RNImage, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EditActions } from '@/components/EditActions';
@@ -12,6 +12,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { ALLERGEN_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
 import { setRating, softDeleteRecipe } from '@/db/repositories/library';
+import { detectRecipeRatingConflict, setRecipeResolution } from '@/db/repositories/ratings';
 import { useActiveProfile, useHousehold, useHouseholdSettings } from '@/hooks/data';
 import {
   recipeNutritionOf,
@@ -52,9 +53,27 @@ export default function RecipeDetailScreen() {
   const nutrition = recipeNutritionOf(ingredientRows, recipe.servingsBase);
   const instructions = localizedInstructions(recipe);
 
-  const rate = (next: 'like' | 'dislike') => {
+  const rate = async (next: 'like' | 'dislike') => {
     if (!activeProfile) return;
-    void setRating(db, activeProfile.id, 'recipe', recipe.id, rating === next ? null : next);
+    await setRating(db, activeProfile.id, 'recipe', recipe.id, rating === next ? null : next);
+    if (!household) return;
+    const conflict = await detectRecipeRatingConflict(db, household.id, recipe.id);
+    if (!conflict) return;
+    Alert.alert(t('recipeDetail.ratingConflictTitle'), t('recipeDetail.ratingConflictMessage'), [
+      {
+        text: t('recipeDetail.ratingConflictServeSeparately'),
+        onPress: () => void setRecipeResolution(db, household.id, recipe.id, 'serve_separately'),
+      },
+      {
+        text: t('recipeDetail.ratingConflictRare'),
+        onPress: () => void setRecipeResolution(db, household.id, recipe.id, 'rare'),
+      },
+      {
+        text: t('recipeDetail.ratingConflictNever'),
+        style: 'destructive',
+        onPress: () => void setRecipeResolution(db, household.id, recipe.id, 'never'),
+      },
+    ]);
   };
 
   return (

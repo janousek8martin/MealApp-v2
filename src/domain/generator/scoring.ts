@@ -22,6 +22,8 @@ const FAVORITE_CUISINE_BONUS = 8;
 const MACRO_FIT_BONUS_MAX = 15;
 /** Converts a per-kcal-gram ratio difference into score points (calibrated so a ~0.05 g/kcal miss costs the whole bonus). */
 const MACRO_FIT_DISTANCE_SCALE = 300;
+/** Large enough that a "rare" conflict resolution almost always loses the weighted-random shortlist, but not impossible. */
+const RARE_RECIPE_PENALTY = 60;
 
 /**
  * Soft bonus for a recipe whose protein/fat density already matches the
@@ -63,6 +65,7 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
   const stockBonus = stockCount * PANTRY_STOCK_BONUS_PER_INGREDIENT;
   const macroBonus = macroFitScore(candidate, ctx.macroFitTarget);
   const cuisineBonus = candidate.cuisine && ctx.favoriteCuisines?.has(candidate.cuisine) ? FAVORITE_CUISINE_BONUS : 0;
+  const rarePenalty = ctx.rareRecipeIds?.has(candidate.id) ? RARE_RECIPE_PENALTY : 0;
 
   return (
     BASE_SCORE -
@@ -73,7 +76,8 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
     pantryBonus +
     stockBonus +
     macroBonus +
-    cuisineBonus
+    cuisineBonus -
+    rarePenalty
   );
 }
 

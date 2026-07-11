@@ -5,7 +5,7 @@ import { computeRecipeNutrition } from '../../domain/recipeNutrition';
 import { computeTargets } from '../../domain/targets';
 import { startOfWeek, weekDates } from '../../domain/week';
 import { createHouseholdWithDefaults, updateHouseholdSettings } from '../repositories/households';
-import { upsertFood, upsertRecipe } from '../repositories/library';
+import { setRating, upsertFood, upsertRecipe } from '../repositories/library';
 import {
   addMealExtra,
   assignManualMeal,
@@ -15,6 +15,7 @@ import {
   setPortionStatus,
 } from '../repositories/plan';
 import { createProfile, updateProfileMacroOverrides, upsertProfileSlotPortion } from '../repositories/profiles';
+import { setRecipeResolution } from '../repositories/ratings';
 import { foods, mealSlotSettings, plannedMealExtras, plannedMealPortions, plannedMeals, profiles, recipeIngredients, recipes } from '../schema';
 import { seedIfEmpty } from '../seed';
 import { createTestDb } from '../testing/testDb';
@@ -320,6 +321,66 @@ describe('plan generator (repository)', () => {
       );
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every((row) => row.itemId !== oversizedRecipeId)).toBe(true);
+  });
+
+  it('splits a "serve_separately"-resolved recipe into a shared row for the liking profile and an individual row for the disliking one', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    // A is allergic to nuts so recipeY (which contains a nut ingredient) is
+    // never a valid SHARED candidate, leaving recipeX as the shared group's
+    // only option regardless of scoring/RNG – makes the pick deterministic.
+    const profileAId = await createAdult(db, householdId, { name: 'A', allergens: ['nuts'] });
+    const profileBId = await createAdult(db, householdId, { name: 'B' });
+
+    const plainFoodId = await upsertFood(db, {
+      nameCs: 'Kuře', nameEn: 'Chicken', category: 'meat', baseUnit: 'g',
+      kcalPer100: 165, proteinPer100: 31, carbsPer100: 0, fatPer100: 3.6,
+      budget: 'average', snackSuitable: false, dietFlags: [], allergens: [],
+    });
+    const recipeXId = await upsertRecipe(db, {
+      nameCs: 'Recept X', nameEn: 'Recipe X', category: 'lunch_dinner', isSide: false,
+      budget: 'average', servingsBase: 1, ingredients: [{ foodId: plainFoodId, amount: 300 }],
+    });
+
+    const nutFoodId = await upsertFood(db, {
+      nameCs: 'Ořechy', nameEn: 'Nuts', category: 'nuts', baseUnit: 'g',
+      kcalPer100: 600, proteinPer100: 20, carbsPer100: 20, fatPer100: 50,
+      budget: 'average', snackSuitable: false, dietFlags: [], allergens: ['nuts'],
+    });
+    const recipeYId = await upsertRecipe(db, {
+      nameCs: 'Recept Y', nameEn: 'Recipe Y', category: 'lunch_dinner', isSide: false,
+      budget: 'average', servingsBase: 1, ingredients: [{ foodId: nutFoodId, amount: 100 }],
+    });
+
+    await setRating(db, profileAId, 'recipe', recipeXId, 'like');
+    await setRating(db, profileBId, 'recipe', recipeXId, 'dislike');
+    await setRecipeResolution(db, householdId, recipeXId, 'serve_separately');
+
+    await generateWeek(db, householdId, FUTURE_MONDAY, 1);
+
+    const lunchDate = weekDates(FUTURE_MONDAY)[0];
+    const meals = await db
+      .select()
+      .from(plannedMeals)
+      .where(
+        and(
+          eq(plannedMeals.householdId, householdId),
+          eq(plannedMeals.date, lunchDate),
+          eq(plannedMeals.slotKey, 'lunch'),
+          isNull(plannedMeals.deletedAt),
+        ),
+      );
+
+    const sharedRow = meals.find((m) => m.profileId === null);
+    const individualRow = meals.find((m) => m.profileId === profileBId);
+    expect(sharedRow?.itemId).toBe(recipeXId);
+    expect(individualRow?.itemId).toBe(recipeYId);
+
+    const sharedPortions = await db
+      .select()
+      .from(plannedMealPortions)
+      .where(and(eq(plannedMealPortions.plannedMealId, sharedRow!.id), isNull(plannedMealPortions.deletedAt)));
+    expect(sharedPortions.map((p) => p.profileId)).toEqual([profileAId]);
   });
 
   it("favors a main-slot recipe matching a profile's protein/fat slot override over one that doesn't (item 7)", async () => {

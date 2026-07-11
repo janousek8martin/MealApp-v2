@@ -428,7 +428,12 @@
     "instructions": "Instructions",
     "kitchenEquivalentCup": "about {{fraction}} cup",
     "kitchenEquivalentTbsp": "about {{count}} tbsp",
-    "kitchenEquivalentTsp": "about {{count}} tsp"
+    "kitchenEquivalentTsp": "about {{count}} tsp",
+    "ratingConflictTitle": "Disagreement on this recipe",
+    "ratingConflictMessage": "One household member likes this recipe, another doesn't. How should meal planning handle it?",
+    "ratingConflictServeSeparately": "Serve separately",
+    "ratingConflictNever": "Never",
+    "ratingConflictRare": "Rarely"
   },
   "recipeEdit": {
     "newTitle": "New recipe",

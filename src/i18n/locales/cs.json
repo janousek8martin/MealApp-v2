@@ -428,7 +428,12 @@
     "instructions": "Postup",
     "kitchenEquivalentCup": "cca {{fraction}} hrnku",
     "kitchenEquivalentTbsp": "cca {{count}} lžíce",
-    "kitchenEquivalentTsp": "cca {{count}} lžička"
+    "kitchenEquivalentTsp": "cca {{count}} lžička",
+    "ratingConflictTitle": "Rozdílný názor na recept",
+    "ratingConflictMessage": "Jeden člen domácnosti má tento recept rád, jiný ne. Jak s tím má appka naložit při plánování jídel?",
+    "ratingConflictServeSeparately": "Podávat odděleně",
+    "ratingConflictNever": "Nikdy",
+    "ratingConflictRare": "Vzácně"
   },
   "recipeEdit": {
     "newTitle": "Nový recept",

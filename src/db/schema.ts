@@ -263,6 +263,26 @@ export const profileItemRatings = sqliteTable(
 );
 
 /**
+ * How to resolve a household recipe where one profile likes it and another
+ * dislikes it (see profileItemRatings) – set once via the conflict dialog,
+ * one active row per (householdId, recipeId).
+ */
+export const householdRecipeOverrides = sqliteTable(
+  'household_recipe_overrides',
+  {
+    ...meta,
+    householdId: text('household_id')
+      .notNull()
+      .references(() => households.id),
+    recipeId: text('recipe_id')
+      .notNull()
+      .references(() => recipes.id),
+    resolution: text('resolution', { enum: ['serve_separately', 'never', 'rare'] }).notNull(),
+  },
+  (table) => [index('household_recipe_overrides_household_idx').on(table.householdId)],
+);
+
+/**
  * Weight / body-composition log. The profile's current weight and body fat
  * are always the most recent row here – they are not duplicated on profiles.
  */

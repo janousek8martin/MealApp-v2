@@ -4,6 +4,7 @@ import {
   findRestrictionConflicts,
   isRecipeAllowedForProfiles,
   passesRepetitionRules,
+  relaxAvoidedRecipesForResolutions,
 } from '../filters';
 import type { DietRestrictions, RecipeCandidate, RepetitionContext } from '../types';
 
@@ -141,6 +142,47 @@ describe('isRecipeAllowedForProfiles', () => {
     expect(
       isRecipeAllowedForProfiles(grilledChicken, [{ ...noRestrictions, diets: ['low_carb'] }]),
     ).toBe(true);
+  });
+});
+
+describe('relaxAvoidedRecipesForResolutions', () => {
+  const noRestrictions: DietRestrictions = {
+    allergens: [],
+    diets: [],
+    avoidedRecipeIds: [],
+    avoidedFoodIds: [],
+  };
+
+  it('removes a "rare"-resolved recipe from a disliking profile\'s avoid list', () => {
+    const relaxed = relaxAvoidedRecipesForResolutions(
+      [{ ...noRestrictions, avoidedRecipeIds: ['r1'] }],
+      new Map([['r1', 'rare']]),
+    );
+    expect(relaxed[0].avoidedRecipeIds).toEqual([]);
+  });
+
+  it('removes a "serve_separately"-resolved recipe from a disliking profile\'s avoid list', () => {
+    const relaxed = relaxAvoidedRecipesForResolutions(
+      [{ ...noRestrictions, avoidedRecipeIds: ['r1'] }],
+      new Map([['r1', 'serve_separately']]),
+    );
+    expect(relaxed[0].avoidedRecipeIds).toEqual([]);
+  });
+
+  it('keeps a "never"-resolved recipe excluded, same as an ordinary dislike', () => {
+    const relaxed = relaxAvoidedRecipesForResolutions(
+      [{ ...noRestrictions, avoidedRecipeIds: ['r1'] }],
+      new Map([['r1', 'never']]),
+    );
+    expect(relaxed[0].avoidedRecipeIds).toEqual(['r1']);
+  });
+
+  it('leaves other avoided recipes untouched', () => {
+    const relaxed = relaxAvoidedRecipesForResolutions(
+      [{ ...noRestrictions, avoidedRecipeIds: ['r1', 'r2'] }],
+      new Map([['r1', 'rare']]),
+    );
+    expect(relaxed[0].avoidedRecipeIds).toEqual(['r2']);
   });
 });
 

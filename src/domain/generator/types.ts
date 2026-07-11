@@ -42,6 +42,9 @@ export type DerivedRecipeTags = {
   dietFlags: string[];
 };
 
+/** How a household resolved a like/dislike conflict on a recipe (see householdRecipeOverrides). */
+export type RecipeResolution = 'serve_separately' | 'never' | 'rare';
+
 export type DietRestrictions = {
   /** Allergens this profile must avoid. */
   allergens: string[];
@@ -75,6 +78,8 @@ export type ScoringContext = RepetitionContext & {
   expiringFoodIds: Set<string>;
   /** Food ids currently in pantry stock (quantity > 0), regardless of expiry. */
   inStockFoodIds: Set<string>;
+  /** Recipe ids resolved as "rare" after a like/dislike conflict – heavily discounted, not excluded. */
+  rareRecipeIds?: Set<string>;
   /**
    * Per-kcal protein/fat density the slot is aiming for (see
    * `resolveMainSlotTarget`/`portions.ts`) – a soft scoring nudge toward

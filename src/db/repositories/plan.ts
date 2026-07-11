@@ -1,7 +1,12 @@
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { createSeededRng, type Rng } from '@/domain/generator/rng';
-import { deriveRecipeTags, findRestrictionConflicts, type RestrictionConflict } from '@/domain/generator/filters';
+import {
+  deriveRecipeTags,
+  findRestrictionConflicts,
+  relaxAvoidedRecipesForResolutions,
+  type RestrictionConflict,
+} from '@/domain/generator/filters';
 import {
   resolveMainSlotTarget,
   resolveSlotCalorieShare,
@@ -16,7 +21,14 @@ import {
   recordPick,
   type GeneratorItem,
 } from '@/domain/generator/select';
-import type { DietRestrictions, DerivedRecipeTags, IngredientFoodTags, RecipeCandidate, RepetitionContext } from '@/domain/generator/types';
+import type {
+  DietRestrictions,
+  DerivedRecipeTags,
+  IngredientFoodTags,
+  RecipeCandidate,
+  RecipeResolution,
+  RepetitionContext,
+} from '@/domain/generator/types';
 import { addDays, previousDay, startOfWeek, weekDates } from '@/domain/week';
 import { applyWorkoutDayCycling } from '@/domain/workoutDays';
 // Reused so the generator's daily target computation can never drift from
@@ -25,6 +37,7 @@ import { applyWorkoutDayCycling } from '@/domain/workoutDays';
 import { targetsForProfile } from '@/hooks/dataMapping';
 
 import { newId } from '../id';
+import { getRecipeResolutions } from './ratings';
 import { deductPantryForConsumption, mealIngredientNeeds, restockPantryForConsumption } from './shopping';
 import {
   bodyMetrics,
@@ -85,6 +98,8 @@ type GeneratorContext = {
   favoriteCuisines: Set<string>;
   expiringFoodIds: Set<string>;
   inStockFoodIds: Set<string>;
+  /** How the household resolved each recipe's like/dislike conflict, if any (see householdRecipeOverrides). */
+  recipeResolutions: Map<string, RecipeResolution>;
 };
 
 // ---------------------------------------------------------------------------
@@ -96,6 +111,8 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     .select()
     .from(householdSettings)
     .where(and(eq(householdSettings.householdId, householdId), isNull(householdSettings.deletedAt)));
+
+  const recipeResolutions = await getRecipeResolutions(db, householdId);
 
   const slots = await db
     .select()
@@ -368,6 +385,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     likedItemIdsByProfile,
     expiringFoodIds,
     inStockFoodIds,
+    recipeResolutions,
   };
 }
 
@@ -375,6 +393,14 @@ function unionLiked(subset: ProfileContext[], ctx: GeneratorContext): Set<string
   const result = new Set<string>();
   for (const profile of subset) {
     for (const id of ctx.likedItemIdsByProfile.get(profile.id) ?? []) result.add(id);
+  }
+  return result;
+}
+
+function rareRecipeIds(ctx: GeneratorContext): Set<string> {
+  const result = new Set<string>();
+  for (const [recipeId, resolution] of ctx.recipeResolutions) {
+    if (resolution === 'rare') result.add(recipeId);
   }
   return result;
 }
@@ -570,6 +596,55 @@ async function insertPlannedMeal(
 // Day generation
 // ---------------------------------------------------------------------------
 
+/**
+ * Picks and inserts one profile's own main-meal row for a slot (as opposed
+ * to the shared branch's single row covering several profiles at once).
+ * Used both for profiles with `sharesMainMeals: false` and, via `excludeIds`,
+ * to carve a disliking profile out of a "serve_separately"-resolved shared
+ * pick (see the shared branch in `generateDay`/`regenerateSlot`).
+ */
+async function generateIndividualMainMeal(
+  db: AppDb,
+  householdId: string,
+  date: string,
+  slot: SlotRow,
+  profile: ProfileContext,
+  candidates: GeneratorItem[],
+  repetitionCtx: RepetitionContext,
+  ctx: GeneratorContext,
+  consumedSoFar: Map<string, MacroTotal>,
+  rng: Rng,
+  excludeIds: Set<string> = new Set(),
+): Promise<RepetitionContext> {
+  if (!profile.dailyTarget) return repetitionCtx;
+  const pool = excludeIds.size > 0 ? candidates.filter((item) => !excludeIds.has(item.candidate.id)) : candidates;
+  const picked = pickMealForSlot(
+    pool,
+    [profile.restrictions],
+    repetitionCtx,
+    {
+      likedItemIds: ctx.likedItemIdsByProfile.get(profile.id) ?? new Set(),
+      favoriteCuisines: ctx.favoriteCuisines,
+      expiringFoodIds: ctx.expiringFoodIds,
+      inStockFoodIds: ctx.inStockFoodIds,
+      rareRecipeIds: rareRecipeIds(ctx),
+      macroFitTarget: averageMacroFitTarget([profile], slot),
+    },
+    rng,
+    [profile.dailyTarget.kcal],
+  );
+  if (!picked) return repetitionCtx;
+  const multiplier = scalingMultiplier(
+    profile.dailyTarget.kcal * resolveSlotCalorieShare(slot.calorieShare, profile.slotOverrides.get(slot.id)),
+    picked.candidate.nutritionPerPortion.kcal,
+  );
+  await insertPlannedMeal(db, householdId, date, slot.slotKey, profile.id, picked.itemType, picked.candidate.id, [
+    { profileId: profile.id, multiplier },
+  ]);
+  addConsumed(consumedSoFar, profile.id, picked.candidate.nutritionPerPortion, multiplier);
+  return recordPick(repetitionCtx, picked.candidate.id);
+}
+
 async function generateDay(db: AppDb, householdId: string, date: string, rng: Rng): Promise<void> {
   if (date < todayIsoDate()) return; // past days are read-only, per the approved plan
 
@@ -600,21 +675,38 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
       } else {
         const picked = pickMealForSlot(
           candidates,
-          sharedProfilesForSlot.map((p) => p.restrictions),
+          relaxAvoidedRecipesForResolutions(
+            sharedProfilesForSlot.map((p) => p.restrictions),
+            ctx.recipeResolutions,
+          ),
           repetitionCtx,
           {
             likedItemIds: unionLiked(sharedProfilesForSlot, ctx),
             favoriteCuisines: ctx.favoriteCuisines,
             expiringFoodIds: ctx.expiringFoodIds,
             inStockFoodIds: ctx.inStockFoodIds,
+            rareRecipeIds: rareRecipeIds(ctx),
             macroFitTarget: averageMacroFitTarget(sharedProfilesForSlot, slot),
           },
           rng,
           sharedProfilesForSlot.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),
         );
         if (picked) {
+          // A "serve_separately" resolution carves the profiles who dislike this
+          // recipe out of the shared row into their own individual pick, so the
+          // rest of the household still gets it while they get something else.
+          const separatelyServed =
+            ctx.recipeResolutions.get(picked.candidate.id) === 'serve_separately'
+              ? sharedProfilesForSlot.filter(
+                  (p) =>
+                    p.restrictions.avoidedRecipeIds.includes(picked.candidate.id) &&
+                    !lockedKeys.has(slotTrackKey(slot.slotKey, p.id)),
+                )
+              : [];
+          const separatelyServedIds = new Set(separatelyServed.map((p) => p.id));
+
           const portions = sharedProfilesForSlot
-            .filter((p) => p.dailyTarget !== null)
+            .filter((p) => p.dailyTarget !== null && !separatelyServedIds.has(p.id))
             .map((p) => ({
               profileId: p.id,
               multiplier: scalingMultiplier(
@@ -622,10 +714,28 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
                 picked.candidate.nutritionPerPortion.kcal,
               ),
             }));
-          await insertPlannedMeal(db, householdId, date, slot.slotKey, null, picked.itemType, picked.candidate.id, portions);
-          repetitionCtx = recordPick(repetitionCtx, picked.candidate.id);
-          for (const portion of portions) {
-            addConsumed(consumedSoFar, portion.profileId, picked.candidate.nutritionPerPortion, portion.multiplier);
+          if (portions.length > 0) {
+            await insertPlannedMeal(db, householdId, date, slot.slotKey, null, picked.itemType, picked.candidate.id, portions);
+            repetitionCtx = recordPick(repetitionCtx, picked.candidate.id);
+            for (const portion of portions) {
+              addConsumed(consumedSoFar, portion.profileId, picked.candidate.nutritionPerPortion, portion.multiplier);
+            }
+          }
+
+          for (const profile of separatelyServed) {
+            repetitionCtx = await generateIndividualMainMeal(
+              db,
+              householdId,
+              date,
+              slot,
+              profile,
+              candidates,
+              repetitionCtx,
+              ctx,
+              consumedSoFar,
+              rng,
+              new Set([picked.candidate.id]),
+            );
           }
         }
       }
@@ -638,30 +748,18 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
         await accumulateLockedMeal(db, householdId, date, slot.slotKey, profile.id, ctx, consumedSoFar);
         continue;
       }
-      const picked = pickMealForSlot(
+      repetitionCtx = await generateIndividualMainMeal(
+        db,
+        householdId,
+        date,
+        slot,
+        profile,
         candidates,
-        [profile.restrictions],
         repetitionCtx,
-        {
-          likedItemIds: ctx.likedItemIdsByProfile.get(profile.id) ?? new Set(),
-          favoriteCuisines: ctx.favoriteCuisines,
-          expiringFoodIds: ctx.expiringFoodIds,
-          inStockFoodIds: ctx.inStockFoodIds,
-          macroFitTarget: averageMacroFitTarget([profile], slot),
-        },
+        ctx,
+        consumedSoFar,
         rng,
-        [profile.dailyTarget.kcal],
       );
-      if (!picked) continue;
-      const multiplier = scalingMultiplier(
-        profile.dailyTarget.kcal * resolveSlotCalorieShare(slot.calorieShare, profile.slotOverrides.get(slot.id)),
-        picked.candidate.nutritionPerPortion.kcal,
-      );
-      await insertPlannedMeal(db, householdId, date, slot.slotKey, profile.id, picked.itemType, picked.candidate.id, [
-        { profileId: profile.id, multiplier },
-      ]);
-      repetitionCtx = recordPick(repetitionCtx, picked.candidate.id);
-      addConsumed(consumedSoFar, profile.id, picked.candidate.nutritionPerPortion, multiplier);
     }
   }
 
@@ -815,15 +913,20 @@ export async function regenerateSlot(
     const pool = ctx.mainItems.filter(
       (item) => item.candidate.category === category && item.candidate.id !== meal.itemId,
     );
+    // Manual single-slot swap: unlike generateDay, this always keeps the
+    // whole relevantProfiles group on one row, even for a "serve_separately"
+    // pick – splitting a swap into two rows is out of scope for V1 (see the
+    // approved plan's phase L notes).
     picked = pickMealForSlot(
       pool,
-      relevantProfiles.map((p) => p.restrictions),
+      relaxAvoidedRecipesForResolutions(relevantProfiles.map((p) => p.restrictions), ctx.recipeResolutions),
       repetitionCtx,
       {
         likedItemIds: unionLiked(relevantProfiles, ctx),
         favoriteCuisines: ctx.favoriteCuisines,
         expiringFoodIds: ctx.expiringFoodIds,
         inStockFoodIds: ctx.inStockFoodIds,
+        rareRecipeIds: rareRecipeIds(ctx),
         macroFitTarget: averageMacroFitTarget(relevantProfiles, slot),
       },
       createSeededRng(rngSeed ?? Date.now()),
