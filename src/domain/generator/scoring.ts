@@ -14,6 +14,8 @@ const BUDGET_SCORE: Record<RecipeCandidate['budget'], number> = {
 const FIBER_SCORE_PER_GRAM = 0.6;
 const FIBER_SCORE_CAP = 8;
 const PANTRY_EXPIRY_BONUS_PER_INGREDIENT = 6;
+/** Smaller than the expiry bonus – "use it before it spoils" should always outrank "it's just in stock". */
+const PANTRY_STOCK_BONUS_PER_INGREDIENT = 3;
 /** Soft nudge for a recipe matching one of the household's preferred cuisines. */
 const FAVORITE_CUISINE_BONUS = 8;
 /** Max bonus for a recipe whose protein/fat density (per kcal) exactly matches the slot's macro-fit target. */
@@ -40,8 +42,9 @@ function macroFitScore(candidate: RecipeCandidate, target: ScoringContext['macro
 
 /**
  * Higher is better. Combines: repetition penalty (relative to the recipe's
- * effective weekly limit), a favorite bonus, a budget/quality nudge, a bonus
- * for using pantry ingredients close to expiring, and a macro-fit nudge.
+ * effective weekly limit), a favorite bonus, a budget/quality nudge, bonuses
+ * for using pantry ingredients close to expiring or already in stock, and a
+ * macro-fit nudge.
  */
 export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext): number {
   const used = ctx.weekCounts.get(candidate.id) ?? 0;
@@ -56,11 +59,21 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
   );
   const expiringCount = candidate.ingredients.filter((i) => ctx.expiringFoodIds.has(i.foodId)).length;
   const pantryBonus = expiringCount * PANTRY_EXPIRY_BONUS_PER_INGREDIENT;
+  const stockCount = candidate.ingredients.filter((i) => ctx.inStockFoodIds.has(i.foodId)).length;
+  const stockBonus = stockCount * PANTRY_STOCK_BONUS_PER_INGREDIENT;
   const macroBonus = macroFitScore(candidate, ctx.macroFitTarget);
   const cuisineBonus = candidate.cuisine && ctx.favoriteCuisines?.has(candidate.cuisine) ? FAVORITE_CUISINE_BONUS : 0;
 
   return (
-    BASE_SCORE - repetitionPenalty + favoriteBonus + budgetScore + fiberScore + pantryBonus + macroBonus + cuisineBonus
+    BASE_SCORE -
+    repetitionPenalty +
+    favoriteBonus +
+    budgetScore +
+    fiberScore +
+    pantryBonus +
+    stockBonus +
+    macroBonus +
+    cuisineBonus
   );
 }
 

@@ -23,6 +23,7 @@ function ctx(overrides: Partial<ScoringContext> = {}): ScoringContext {
     household: { defaultMaxRepetitionsPerWeek: 2, defaultAllowConsecutiveDays: false },
     favoriteRecipeIds: new Set(),
     expiringFoodIds: new Set(),
+    inStockFoodIds: new Set(),
     ...overrides,
   };
 }
@@ -75,6 +76,20 @@ describe('scoreCandidate', () => {
     const base = scoreCandidate(withExpiring, ctx());
     const boosted = scoreCandidate(withExpiring, ctx({ expiringFoodIds: new Set(['spinach']) }));
     expect(boosted).toBeGreaterThan(base);
+  });
+
+  it('rewards recipes using ingredients already in pantry stock', () => {
+    const withStock = candidate({ ingredients: [{ foodId: 'flour', allergens: [], dietFlags: [] }] });
+    const base = scoreCandidate(withStock, ctx());
+    const boosted = scoreCandidate(withStock, ctx({ inStockFoodIds: new Set(['flour']) }));
+    expect(boosted).toBeGreaterThan(base);
+  });
+
+  it('rewards a soon-to-expire ingredient more than a merely in-stock one', () => {
+    const withIngredient = candidate({ ingredients: [{ foodId: 'spinach', allergens: [], dietFlags: [] }] });
+    const inStock = scoreCandidate(withIngredient, ctx({ inStockFoodIds: new Set(['spinach']) }));
+    const expiring = scoreCandidate(withIngredient, ctx({ expiringFoodIds: new Set(['spinach']) }));
+    expect(expiring).toBeGreaterThan(inStock);
   });
 
   it('does not change the score when there is no macro-fit target (default candidate() has no override)', () => {

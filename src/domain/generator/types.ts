@@ -72,6 +72,8 @@ export type ScoringContext = RepetitionContext & {
   favoriteCuisines?: Set<string>;
   /** Food ids in the pantry that are close to expiring. */
   expiringFoodIds: Set<string>;
+  /** Food ids currently in pantry stock (quantity > 0), regardless of expiry. */
+  inStockFoodIds: Set<string>;
   /**
    * Per-kcal protein/fat density the slot is aiming for (see
    * `resolveMainSlotTarget`/`portions.ts`) – a soft scoring nudge toward

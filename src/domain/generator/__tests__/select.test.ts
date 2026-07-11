@@ -42,7 +42,7 @@ describe('pickMealForSlot', () => {
       [glutenItem],
       [{ ...noRestrictions, allergens: ['gluten'] }],
       repetitionCtx(),
-      { favoriteRecipeIds: new Set(), expiringFoodIds: new Set() },
+      { favoriteRecipeIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
       createSeededRng(1),
     );
     expect(result).toBeNull();
@@ -60,7 +60,7 @@ describe('pickMealForSlot', () => {
         candidates,
         [{ ...noRestrictions, allergens: ['gluten'] }],
         repetitionCtx(),
-        { favoriteRecipeIds: new Set(), expiringFoodIds: new Set() },
+        { favoriteRecipeIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
         rng,
       );
       expect(result?.candidate.id).not.toBe('a');
@@ -74,7 +74,7 @@ describe('pickMealForSlot', () => {
         candidates,
         [noRestrictions],
         repetitionCtx(),
-        { favoriteRecipeIds: new Set(), expiringFoodIds: new Set() },
+        { favoriteRecipeIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
         createSeededRng(77),
       )?.candidate.id;
     expect(pick()).toBe(pick());
@@ -91,7 +91,7 @@ describe('pickMealForSlot', () => {
         candidates,
         [noRestrictions],
         repetitionCtx(),
-        { favoriteRecipeIds: new Set(), expiringFoodIds: new Set() },
+        { favoriteRecipeIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
         rng,
         [2000],
       );
@@ -105,7 +105,7 @@ describe('pickMealForSlot', () => {
       candidates,
       [noRestrictions],
       repetitionCtx(),
-      { favoriteRecipeIds: new Set(), expiringFoodIds: new Set() },
+      { favoriteRecipeIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
       createSeededRng(1),
       [2000],
     );

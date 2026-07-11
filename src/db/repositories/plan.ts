@@ -83,6 +83,7 @@ type GeneratorContext = {
   favoriteRecipeIdsByProfile: Map<string, Set<string>>;
   favoriteCuisines: Set<string>;
   expiringFoodIds: Set<string>;
+  inStockFoodIds: Set<string>;
 };
 
 // ---------------------------------------------------------------------------
@@ -336,6 +337,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
   const expiringFoodIds = new Set(
     pantryRows.filter((row) => row.expiresAt !== null && row.expiresAt <= soon).map((row) => row.foodId),
   );
+  const inStockFoodIds = new Set(pantryRows.filter((row) => row.quantity > 0).map((row) => row.foodId));
 
   const favoriteCuisines = new Set<string>(
     settingsRow?.favoriteCuisinesJson ? (JSON.parse(settingsRow.favoriteCuisinesJson) as string[]) : [],
@@ -354,6 +356,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     nutritionById,
     favoriteRecipeIdsByProfile,
     expiringFoodIds,
+    inStockFoodIds,
   };
 }
 
@@ -592,6 +595,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
             favoriteRecipeIds: unionFavorites(sharedProfilesForSlot, ctx),
             favoriteCuisines: ctx.favoriteCuisines,
             expiringFoodIds: ctx.expiringFoodIds,
+            inStockFoodIds: ctx.inStockFoodIds,
             macroFitTarget: averageMacroFitTarget(sharedProfilesForSlot, slot),
           },
           rng,
@@ -631,6 +635,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
           favoriteRecipeIds: ctx.favoriteRecipeIdsByProfile.get(profile.id) ?? new Set(),
           favoriteCuisines: ctx.favoriteCuisines,
           expiringFoodIds: ctx.expiringFoodIds,
+          inStockFoodIds: ctx.inStockFoodIds,
           macroFitTarget: averageMacroFitTarget([profile], slot),
         },
         rng,
@@ -807,6 +812,7 @@ export async function regenerateSlot(
         favoriteRecipeIds: unionFavorites(relevantProfiles, ctx),
         favoriteCuisines: ctx.favoriteCuisines,
         expiringFoodIds: ctx.expiringFoodIds,
+        inStockFoodIds: ctx.inStockFoodIds,
         macroFitTarget: averageMacroFitTarget(relevantProfiles, slot),
       },
       createSeededRng(rngSeed ?? Date.now()),
