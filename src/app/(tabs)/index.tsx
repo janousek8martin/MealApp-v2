@@ -182,6 +182,7 @@ export default function TodayScreen() {
             weightKg={latestMetric.weightKg}
             trackWater={activeProfile.trackWater}
             waterGoalMl={activeProfile.waterGoalMl}
+            waterGlassMl={activeProfile.waterGlassMl}
           />
         ) : null}
 

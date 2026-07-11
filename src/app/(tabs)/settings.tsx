@@ -242,7 +242,12 @@ function ProfileSections({
       </AccordionCard>
 
       <AccordionCard title={t('water.cardTitle')}>
-        <WaterSettingsCard profileId={profile.id} trackWater={profile.trackWater} waterGoalMl={profile.waterGoalMl} />
+        <WaterSettingsCard
+          profileId={profile.id}
+          trackWater={profile.trackWater}
+          waterGoalMl={profile.waterGoalMl}
+          waterGlassMl={profile.waterGlassMl}
+        />
       </AccordionCard>
 
       {onDelete ? (

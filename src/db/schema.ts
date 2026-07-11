@@ -208,6 +208,8 @@ export const profiles = sqliteTable(
     trackWater: integer('track_water', { mode: 'boolean' }).notNull().default(true),
     /** Explicit daily water goal in ml; null = auto-computed from weight/sex (see domain/water.ts). */
     waterGoalMl: real('water_goal_ml'),
+    /** Size of one logged serving ("glass") in ml; null = the 250 ml default. */
+    waterGlassMl: real('water_glass_ml'),
     /** Desired weight-change speed in kg/week (signed: negative losing, positive gaining); null = domain default for the goal. */
     goalRateKgPerWeek: real('goal_rate_kg_per_week'),
     /** User-supplied known maintenance calories; when set, skips BMR x activity multiplier entirely. */

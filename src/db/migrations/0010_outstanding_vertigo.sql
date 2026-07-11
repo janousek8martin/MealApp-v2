@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `water_glass_ml` real;

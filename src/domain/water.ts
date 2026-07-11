@@ -1,5 +1,8 @@
 import { WATER_GOAL_MAX_ML, WATER_GOAL_MIN_ML, WATER_ML_PER_KG, type Sex } from './constants';
 
+/** Default size of one logged serving ("glass"), used when the profile hasn't set waterGlassMl. */
+export const DEFAULT_GLASS_ML = 250;
+
 /**
  * Default daily drinking-water goal in ml, for profiles that haven't set an
  * explicit `waterGoalMl` override. Placeholder ml/kg formula - see

@@ -47,9 +47,6 @@ type AppState = {
   setRestoreScrollEnabled: (enabled: boolean) => void;
   restoreScrollTimeoutSec: number;
   setRestoreScrollTimeoutSec: (seconds: number) => void;
-  /** One-time dismissal of the water widget's explainer banner. */
-  waterBannerDismissed: boolean;
-  setWaterBannerDismissed: (dismissed: boolean) => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -67,8 +64,6 @@ export const useAppStore = create<AppState>()(
       setRestoreScrollEnabled: (enabled) => set({ restoreScrollEnabled: enabled }),
       restoreScrollTimeoutSec: 1,
       setRestoreScrollTimeoutSec: (seconds) => set({ restoreScrollTimeoutSec: seconds }),
-      waterBannerDismissed: false,
-      setWaterBannerDismissed: (dismissed) => set({ waterBannerDismissed: dismissed }),
     }),
     {
       name: 'mealapp-app-state',
@@ -87,9 +82,6 @@ export const useAppStore = create<AppState>()(
         if (version < 4) {
           state.restoreScrollEnabled = false;
           state.restoreScrollTimeoutSec = 1;
-        }
-        if (version < 5) {
-          state.waterBannerDismissed = false;
         }
         return state as AppState;
       },

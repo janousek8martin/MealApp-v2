@@ -541,6 +541,7 @@
     "slotPortionsHint": "Upravte, jak si tento profil rozvrhne denní kalorický cíl mezi jednotlivé sloty. Beze změny platí výchozí hodnota domácnosti.",
     "waterGoalOverride": "Vlastní cíl (ml)",
     "waterGoalAuto": "Automaticky dle váhy",
+    "waterGlassSize": "Velikost jedné dávky (ml)",
     "percentOfTdci": "% z TDCI",
     "proteinTargetLabel": "Bílkoviny",
     "fatTargetLabel": "Tuky",
@@ -631,13 +632,8 @@
     "hint": "Denní cíl se spočítá automaticky podle váhy; upravit ho můžeš kdykoliv v nastavení.",
     "toggle": "Sledovat příjem vody",
     "cardTitle": "Pitný režim",
-    "goalReached": "Cíl splněn",
     "addGlass": "+ sklenice",
     "removeGlass": "− sklenice",
-    "banner": "Voda zapsaná tady se počítá do tvého denního cíle pitného režimu.",
-    "totalLabel": "Celkem",
-    "addCustom": "Přidat vlastní",
-    "customAmount": "Množství",
     "settingsLink": "Nastavení vody"
   },
   "summary": {

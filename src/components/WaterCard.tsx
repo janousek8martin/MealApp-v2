@@ -1,20 +1,23 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { WaterSettingsCard } from '@/components/WaterSettingsCard';
-import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
 import { logWater } from '@/db/repositories/water';
 import { todayIsoDate } from '@/db/time';
-import { defaultWaterGoalMl } from '@/domain/water';
+import { DEFAULT_GLASS_ML, defaultWaterGoalMl } from '@/domain/water';
 import { useWaterTotal } from '@/hooks/water';
-import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
-const GLASS_ML = 250;
+const TANK_WIDTH = 76;
+const TANK_HEIGHT = 96;
+/** One wave period; the strip is two periods wide and loops by one period. */
+const WAVE_PERIOD = 80;
+const WAVE_STRIP_HEIGHT = 12;
 
 type Props = {
   profileId: string;
@@ -23,55 +26,60 @@ type Props = {
   trackWater: boolean;
   /** Explicit override; falls back to the weight-based domain default. */
   waterGoalMl: number | null;
+  /** Size of one logged serving; falls back to DEFAULT_GLASS_ML. */
+  waterGlassMl: number | null;
 };
 
-function parseNumber(value: string): number | null {
-  const parsed = Number(value.replace(',', '.'));
-  return Number.isFinite(parsed) && value.trim() !== '' ? parsed : null;
-}
-
 /**
- * Home-screen hydration widget: a row of tappable glasses (the next empty
- * one shows a "+", tapping the last filled one removes a glass), a one-time
- * explainer banner, a total row with % of the daily goal, and quick links
- * for logging a custom amount and opening the water settings in place.
+ * Home-screen hydration widget: a small water tank whose animated, gently
+ * waving surface rises with every logged glass, plus -/+ controls (the glass
+ * icon between them shows what one tap means) and a link to the per-profile
+ * water settings (goal + glass size) opened in place.
  */
-export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl }: Props) {
+export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, waterGlassMl }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const today = todayIsoDate();
   const totalMl = useWaterTotal(profileId, today);
   const goalMl = waterGoalMl ?? defaultWaterGoalMl(weightKg, sex);
+  const glassMl = waterGlassMl ?? DEFAULT_GLASS_ML;
   const progress = goalMl > 0 ? Math.min(1, totalMl / goalMl) : 0;
   const reached = totalMl >= goalMl;
 
-  const bannerDismissed = useAppStore((s) => s.waterBannerDismissed);
-  const setBannerDismissed = useAppStore((s) => s.setWaterBannerDismissed);
-
-  const [customVisible, setCustomVisible] = useState(false);
-  const [customText, setCustomText] = useState('');
   const [settingsVisible, setSettingsVisible] = useState(false);
 
-  const glassCount = Math.max(1, Math.ceil(goalMl / GLASS_ML));
-  const filledCount = Math.min(glassCount, Math.floor(totalMl / GLASS_ML));
+  // Endless horizontal drift of the wave strip (native driver, transform only).
+  const waveAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(waveAnim, { toValue: 1, duration: 1800, easing: Easing.linear, useNativeDriver: true }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [waveAnim]);
+  const waveTranslate = waveAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -WAVE_PERIOD] });
 
-  // Toggle semantics: tapping an empty glass fills everything up to and
-  // including it; tapping a filled glass un-fills it and everything after
-  // (so tapping the last filled one removes exactly one glass).
-  const onGlassPress = (index: number) => {
-    const targetMl = (index < filledCount ? index : index + 1) * GLASS_ML;
-    const delta = targetMl - totalMl;
-    if (delta !== 0) void logWater(db, profileId, delta, today);
-  };
+  // Water level follows progress with a short ease (height = layout prop, JS driver).
+  const levelAnim = useRef(new Animated.Value(progress)).current;
+  useEffect(() => {
+    Animated.timing(levelAnim, {
+      toValue: progress,
+      duration: 450,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [progress, levelAnim]);
+  const waterHeight = levelAnim.interpolate({ inputRange: [0, 1], outputRange: [0, TANK_HEIGHT] });
 
-  const addCustom = () => {
-    const amount = parseNumber(customText);
-    if (amount === null || amount <= 0) return;
-    void logWater(db, profileId, amount, today);
-    setCustomText('');
-    setCustomVisible(false);
-  };
+  const wavePath = useMemo(() => {
+    const w = WAVE_PERIOD;
+    const mid = WAVE_STRIP_HEIGHT / 2;
+    return (
+      `M0 ${mid} Q${w / 4} 0 ${w / 2} ${mid} T${w} ${mid} T${w * 1.5} ${mid} T${w * 2} ${mid} ` +
+      `V${WAVE_STRIP_HEIGHT} H0 Z`
+    );
+  }, []);
 
   return (
     <View style={styles.card}>
@@ -83,79 +91,45 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl }:
         </Text>
       </View>
 
-      <View style={styles.glassesRow}>
-        {Array.from({ length: glassCount }, (_, index) => {
-          const filled = index < filledCount;
-          const isNext = index === filledCount;
-          return (
+      <View style={styles.contentRow}>
+        <View style={styles.tank}>
+          <Animated.View style={[styles.water, { height: waterHeight }]}>
+            <Animated.View style={[styles.waveStrip, { transform: [{ translateX: waveTranslate }] }]}>
+              <Svg width={WAVE_PERIOD * 2} height={WAVE_STRIP_HEIGHT}>
+                <Path d={wavePath} fill={colors.primary} />
+              </Svg>
+            </Animated.View>
+            <View style={styles.waterBody} />
+          </Animated.View>
+        </View>
+
+        <View style={styles.controlsCol}>
+          <Text style={[styles.percentText, reached && styles.amountReached]}>{Math.round(progress * 100)} %</Text>
+          <View style={styles.buttonsRow}>
             <Pressable
-              key={index}
               accessibilityRole="button"
-              accessibilityLabel={filled ? t('water.removeGlass') : t('water.addGlass')}
-              onPress={() => onGlassPress(index)}
-              style={[styles.glass, filled && styles.glassFilled, isNext && styles.glassNext]}>
-              {isNext ? (
-                <Ionicons name="add" size={18} color={colors.primary} />
-              ) : (
-                <MaterialCommunityIcons
-                  name={filled ? 'cup-water' : 'cup-outline'}
-                  size={20}
-                  color={filled ? colors.primary : colors.border}
-                />
-              )}
+              accessibilityLabel={t('water.removeGlass')}
+              style={styles.glassButton}
+              onPress={() => void logWater(db, profileId, -Math.min(glassMl, totalMl), today)}>
+              <Ionicons name="remove" size={20} color={colors.primary} />
             </Pressable>
-          );
-        })}
-      </View>
-
-      {!bannerDismissed ? (
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>{t('water.banner')}</Text>
-          <Pressable accessibilityRole="button" onPress={() => setBannerDismissed(true)} hitSlop={8}>
-            <Ionicons name="close" size={16} color={colors.text} />
-          </Pressable>
-        </View>
-      ) : null}
-
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>
-          {t('water.totalLabel')} – {Math.round(totalMl)} / {Math.round(goalMl)} ml
-        </Text>
-        <Text style={[styles.totalPercent, reached && styles.amountReached]}>{Math.round(progress * 100)} %</Text>
-      </View>
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-      </View>
-
-      {customVisible ? (
-        <View style={styles.customRow}>
-          <View style={styles.customField}>
-            <TextField
-              label={t('water.customAmount')}
-              value={customText}
-              onChangeText={setCustomText}
-              keyboardType="decimal-pad"
-              suffix="ml"
-            />
+            <View style={styles.glassIconWrap}>
+              <MaterialCommunityIcons name="cup-water" size={26} color={colors.primary} />
+              <Text style={styles.glassIconLabel}>{Math.round(glassMl)} ml</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('water.addGlass')}
+              style={[styles.glassButton, styles.glassButtonPrimary]}
+              onPress={() => void logWater(db, profileId, glassMl, today)}>
+              <Ionicons name="add" size={20} color={colors.onPrimary} />
+            </Pressable>
           </View>
-          <Pressable accessibilityRole="button" style={styles.customAddButton} onPress={addCustom}>
-            <Ionicons name="checkmark" size={18} color={colors.onPrimary} />
+          <Pressable accessibilityRole="button" style={styles.settingsLink} onPress={() => setSettingsVisible(true)}>
+            <Ionicons name="settings-outline" size={14} color={colors.primary} />
+            <Text style={styles.settingsLinkLabel}>{t('water.settingsLink')}</Text>
           </Pressable>
         </View>
-      ) : null}
-
-      <View style={styles.footerRow}>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.footerLink}
-          onPress={() => setCustomVisible((prev) => !prev)}>
-          <Ionicons name="add" size={16} color={colors.primary} />
-          <Text style={styles.footerLinkLabel}>{t('water.addCustom')}</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" style={styles.footerLink} onPress={() => setSettingsVisible(true)}>
-          <Ionicons name="settings-outline" size={16} color={colors.primary} />
-          <Text style={styles.footerLinkLabel}>{t('water.settingsLink')}</Text>
-        </Pressable>
       </View>
 
       <Modal visible={settingsVisible} transparent animationType="fade" onRequestClose={() => setSettingsVisible(false)}>
@@ -167,7 +141,12 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl }:
                 <Ionicons name="close" size={22} color={colors.text} />
               </Pressable>
             </View>
-            <WaterSettingsCard profileId={profileId} trackWater={trackWater} waterGoalMl={waterGoalMl} />
+            <WaterSettingsCard
+              profileId={profileId}
+              trackWater={trackWater}
+              waterGoalMl={waterGoalMl}
+              waterGlassMl={waterGlassMl}
+            />
           </Pressable>
         </Pressable>
       </Modal>
@@ -207,102 +186,80 @@ function createStyles(colors: ColorTokens) {
       color: colors.success,
       fontWeight: '700',
     },
-    glassesRow: {
+    contentRow: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing.xs + 2,
-      marginBottom: spacing.sm,
+      alignItems: 'center',
+      gap: spacing.md,
     },
-    glass: {
-      width: 38,
-      height: 42,
-      borderRadius: radius.input - 4,
+    tank: {
+      width: TANK_WIDTH,
+      height: TANK_HEIGHT,
+      borderRadius: radius.input,
       borderWidth: 1.5,
+      borderColor: colors.border,
+      backgroundColor: colors.background,
+      overflow: 'hidden',
+      justifyContent: 'flex-end',
+    },
+    water: {
+      overflow: 'hidden',
+    },
+    waveStrip: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: WAVE_PERIOD * 2,
+      height: WAVE_STRIP_HEIGHT,
+    },
+    waterBody: {
+      flex: 1,
+      marginTop: WAVE_STRIP_HEIGHT - 1,
+      backgroundColor: colors.primary,
+    },
+    controlsCol: {
+      flex: 1,
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    percentText: {
+      color: colors.textSecondary,
+      fontSize: typography.subtitle,
+      fontWeight: '800',
+    },
+    buttonsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    glassButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      borderWidth: 1,
       borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    glassFilled: {
+    glassButtonPrimary: {
+      backgroundColor: colors.primary,
       borderColor: colors.primary,
-      backgroundColor: colors.mint,
     },
-    glassNext: {
-      borderColor: colors.primary,
-      backgroundColor: colors.mint,
-    },
-    banner: {
-      flexDirection: 'row',
+    glassIconWrap: {
       alignItems: 'center',
-      gap: spacing.sm,
-      backgroundColor: colors.mint,
-      borderRadius: radius.input,
-      paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.md,
-      marginBottom: spacing.sm,
+      gap: 2,
     },
-    bannerText: {
-      flex: 1,
-      color: colors.text,
-      fontSize: typography.small,
-      lineHeight: 18,
-    },
-    totalRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: spacing.xs,
-    },
-    totalLabel: {
+    glassIconLabel: {
       color: colors.textSecondary,
-      fontSize: typography.small,
+      fontSize: typography.small - 1,
       fontWeight: '600',
     },
-    totalPercent: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
-      fontWeight: '700',
-    },
-    progressTrack: {
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: colors.background,
-      overflow: 'hidden',
-      marginBottom: spacing.sm,
-    },
-    progressFill: {
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: colors.primary,
-    },
-    customRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      marginBottom: spacing.xs,
-    },
-    customField: {
-      flex: 1,
-    },
-    customAddButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    footerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    footerLink: {
+    settingsLink: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      paddingVertical: spacing.xs,
+      paddingVertical: 2,
     },
-    footerLinkLabel: {
+    settingsLinkLabel: {
       color: colors.primary,
       fontSize: typography.small,
       fontWeight: '700',

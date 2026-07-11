@@ -284,6 +284,8 @@ export type WaterSettingsPatch = {
   trackWater: boolean;
   /** Pass `null` to clear the override and fall back to the weight-based domain default. */
   waterGoalMl: number | null;
+  /** Size of one logged serving in ml; `null` = the 250 ml default. */
+  waterGlassMl: number | null;
 };
 
 export async function updateProfileWaterSettings(db: AppDb, profileId: string, patch: WaterSettingsPatch): Promise<void> {
@@ -292,6 +294,7 @@ export async function updateProfileWaterSettings(db: AppDb, profileId: string, p
     .set({
       trackWater: patch.trackWater,
       waterGoalMl: patch.waterGoalMl,
+      waterGlassMl: patch.waterGlassMl,
       updatedAt: nowIso(),
     })
     .where(eq(profiles.id, profileId));

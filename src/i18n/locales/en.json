@@ -541,6 +541,7 @@
     "slotPortionsHint": "Adjust how this profile splits their daily calorie target across slots. Leave unchanged to use the household default.",
     "waterGoalOverride": "Custom goal (ml)",
     "waterGoalAuto": "Auto from weight",
+    "waterGlassSize": "Serving size (ml)",
     "percentOfTdci": "% of TDCI",
     "proteinTargetLabel": "Protein",
     "fatTargetLabel": "Fat",
@@ -631,13 +632,8 @@
     "hint": "The daily goal is computed automatically from weight; you can change it anytime in settings.",
     "toggle": "Track water intake",
     "cardTitle": "Hydration",
-    "goalReached": "Goal reached",
     "addGlass": "+ glass",
     "removeGlass": "- glass",
-    "banner": "Water added here counts toward your daily hydration goal.",
-    "totalLabel": "Total",
-    "addCustom": "Add custom",
-    "customAmount": "Amount",
     "settingsLink": "Water settings"
   },
   "summary": {

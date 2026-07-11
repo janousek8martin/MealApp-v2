@@ -71,6 +71,13 @@
       "when": 1783703976562,
       "tag": "0009_dry_pet_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1783764458776,
+      "tag": "0010_outstanding_vertigo",
+      "breakpoints": true
     }
   ]
 }
