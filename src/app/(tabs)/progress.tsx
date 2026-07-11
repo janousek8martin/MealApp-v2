@@ -11,11 +11,13 @@ import { TdciCard } from '@/components/TdciCard';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { WeightChart } from '@/components/WeightChart';
+import { WeightProjectionChart } from '@/components/WeightProjectionChart';
 import { db } from '@/db/client';
 import { addBodyMetric } from '@/db/repositories/profiles';
 import { todayIsoDate } from '@/db/time';
 import { estimateAdaptiveTdee } from '@/domain/adaptiveTdee';
 import { shouldRecommendMaintenance } from '@/domain/goals';
+import { computeWeightProjection } from '@/domain/projection';
 import { addDays } from '@/domain/week';
 import { useLoggedDailyKcal } from '@/hooks/adaptiveTdee';
 import {
@@ -33,6 +35,13 @@ import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 function num(value: string): number | null {
   const parsed = Number(value.replace(',', '.'));
   return Number.isFinite(parsed) && value.trim() !== '' ? parsed : null;
+}
+
+/** Whole weeks between two 'YYYY-MM-DD' dates, rounded to the nearest week. */
+function weeksBetween(fromIso: string, toIso: string): number {
+  const from = new Date(fromIso).getTime();
+  const to = new Date(toIso).getTime();
+  return Math.round((to - from) / (7 * 24 * 60 * 60 * 1000));
 }
 
 /** Fixed in V1 (see the approved adaptive-TDEE proposal); a configurable 14-28 day range is a future refinement. */
@@ -62,6 +71,29 @@ export default function ProgressScreen() {
     loggedDailyKcal,
     windowDays: ADAPTIVE_TDEE_WINDOW_DAYS,
   });
+
+  // Only shown when the profile went through the Tempo card (phase F) and
+  // set an explicit rate - a guessed default rate here could be misleading.
+  // Anchored at the first weigh-in (not "today") so real weigh-ins and the
+  // plan share one week-0 reference and can be overlaid on the same chart.
+  const projection = useMemo(() => {
+    if (
+      !activeProfile ||
+      activeProfile.goal === 'maintain' ||
+      activeProfile.goalWeightKg === null ||
+      activeProfile.goalRateKgPerWeek === null ||
+      history.length === 0
+    ) {
+      return null;
+    }
+    return computeWeightProjection(history[0].weightKg, activeProfile.goalWeightKg, activeProfile.goalRateKgPerWeek);
+  }, [activeProfile, history]);
+
+  const actualPoints = useMemo(() => {
+    if (!projection || history.length === 0) return undefined;
+    const startDate = history[0].date;
+    return history.map((h) => ({ week: weeksBetween(startDate, h.date), weightKg: h.weightKg }));
+  }, [projection, history]);
 
   const [weight, setWeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
@@ -205,6 +237,13 @@ export default function ProgressScreen() {
                 {t('progress.goalBodyFatLabel')}: {activeProfile.goalBodyFatPct} %
               </Text>
             ) : null}
+          </View>
+        ) : null}
+
+        {projection ? (
+          <View style={styles.chartSection}>
+            <Text style={styles.cardTitle}>{t('summary.projectionTitle')}</Text>
+            <WeightProjectionChart projection={projection} actualPoints={actualPoints} />
           </View>
         ) : null}
       </ScrollView>
