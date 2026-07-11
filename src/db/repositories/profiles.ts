@@ -45,6 +45,8 @@ export type CreateProfileInput = {
   waterGoalMl?: number;
   /** meal_slot_settings.slotKey values this profile eats; undefined = every household slot. */
   enabledSlotKeys?: string[];
+  /** "I want to try new foods" – nudges the generator toward less-recently-served recipes; defaults to false. */
+  wantsNewFoods?: boolean;
 };
 
 export async function createProfile(db: AppDb, input: CreateProfileInput): Promise<string> {
@@ -82,6 +84,7 @@ export async function createProfile(db: AppDb, input: CreateProfileInput): Promi
     trackWater: input.trackWater ?? true,
     waterGoalMl: input.waterGoalMl ?? null,
     enabledSlotKeysJson: input.enabledSlotKeys ? JSON.stringify(input.enabledSlotKeys) : null,
+    wantsNewFoods: input.wantsNewFoods ?? false,
   });
 
   await db.insert(bodyMetrics).values({
@@ -132,6 +135,8 @@ export type UpdateProfileInput = {
   workoutDays: number[];
   allergens: string[];
   diets: string[];
+  /** "I want to try new foods" – nudges the generator toward less-recently-served recipes. */
+  wantsNewFoods: boolean;
 };
 
 /** Updates a profile's editable fields and replaces its allergen/diet restrictions. */
@@ -157,6 +162,7 @@ export async function updateProfile(db: AppDb, profileId: string, input: UpdateP
       fitnessExperience: input.fitnessExperience ?? null,
       sharesMainMeals: input.sharesMainMeals,
       workoutDaysJson: JSON.stringify(input.workoutDays),
+      wantsNewFoods: input.wantsNewFoods,
       updatedAt: now,
     })
     .where(eq(profiles.id, profileId));

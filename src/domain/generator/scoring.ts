@@ -24,6 +24,8 @@ const MACRO_FIT_BONUS_MAX = 15;
 const MACRO_FIT_DISTANCE_SCALE = 300;
 /** Large enough that a "rare" conflict resolution almost always loses the weighted-random shortlist, but not impossible. */
 const RARE_RECIPE_PENALTY = 60;
+/** Soft nudge toward recipes a "wants new foods" profile hasn't had recently. */
+const NOVELTY_BONUS = 10;
 
 /**
  * Soft bonus for a recipe whose protein/fat density already matches the
@@ -66,6 +68,8 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
   const macroBonus = macroFitScore(candidate, ctx.macroFitTarget);
   const cuisineBonus = candidate.cuisine && ctx.favoriteCuisines?.has(candidate.cuisine) ? FAVORITE_CUISINE_BONUS : 0;
   const rarePenalty = ctx.rareRecipeIds?.has(candidate.id) ? RARE_RECIPE_PENALTY : 0;
+  const noveltyBonus =
+    ctx.noveltyBonus && !ctx.noveltyBonus.recentRecipeIds.has(candidate.id) ? NOVELTY_BONUS : 0;
 
   return (
     BASE_SCORE -
@@ -77,7 +81,8 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
     stockBonus +
     macroBonus +
     cuisineBonus -
-    rarePenalty
+    rarePenalty +
+    noveltyBonus
   );
 }
 

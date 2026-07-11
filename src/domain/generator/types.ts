@@ -81,6 +81,13 @@ export type ScoringContext = RepetitionContext & {
   /** Recipe ids resolved as "rare" after a like/dislike conflict – heavily discounted, not excluded. */
   rareRecipeIds?: Set<string>;
   /**
+   * Present only when at least one sharing profile opted into "wants new
+   * foods" – recipes NOT in `recentRecipeIds` (this recent-history union)
+   * get a novelty bonus. Absent entirely when no sharing profile opted in,
+   * so households not using the toggle pay no scoring difference at all.
+   */
+  noveltyBonus?: { recentRecipeIds: Set<string> };
+  /**
    * Per-kcal protein/fat density the slot is aiming for (see
    * `resolveMainSlotTarget`/`portions.ts`) – a soft scoring nudge toward
    * recipes whose macro ratio already matches a profile's slot target, since

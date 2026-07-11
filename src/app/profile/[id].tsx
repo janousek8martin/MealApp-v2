@@ -66,6 +66,7 @@ export default function ProfileOverviewScreen() {
       fitnessExperience: value.fitnessExperience,
       workoutDays: value.workoutDays ?? [],
       sharesMainMeals: value.sharesMainMeals ?? true,
+      wantsNewFoods: value.wantsNewFoods ?? false,
       allergens: value.allergens ?? [],
       diets: value.diets ?? [],
     });

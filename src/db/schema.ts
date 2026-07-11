@@ -214,6 +214,8 @@ export const profiles = sqliteTable(
     goalRateKgPerWeek: real('goal_rate_kg_per_week'),
     /** User-supplied known maintenance calories; when set, skips BMR x activity multiplier entirely. */
     customTdeeKcal: real('custom_tdee_kcal'),
+    /** "I want to try new foods" – nudges the generator toward recipes this profile hasn't had recently. */
+    wantsNewFoods: integer('wants_new_foods', { mode: 'boolean' }).notNull().default(false),
   },
   (table) => [index('profiles_household_idx').on(table.householdId)],
 );

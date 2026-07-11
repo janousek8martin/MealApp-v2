@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lt } from 'drizzle-orm';
 
 import { createSeededRng, type Rng } from '@/domain/generator/rng';
 import {
@@ -65,6 +65,8 @@ import type { AppDb } from '../types';
 
 /** Pantry items expiring within this many days score a bonus for the recipes that use them. */
 const PANTRY_EXPIRY_WINDOW_DAYS = 3;
+/** How far back "wants new foods" looks to decide whether a recipe counts as recently served. */
+const NOVELTY_LOOKBACK_DAYS = 21;
 
 type SlotRow = typeof mealSlotSettings.$inferSelect;
 type MacroTotal = { kcal: number; proteinG: number; carbsG: number; fatG: number };
@@ -78,6 +80,7 @@ type ProfileContext = {
   dailyTarget: MacroTotal | null;
   /** Per-slot portion overrides (P2-C), keyed by mealSlotSettings.id. */
   slotOverrides: Map<string, SlotPortionOverride>;
+  wantsNewFoods: boolean;
 };
 
 /** null enabledSlotKeys means every household slot is in play (the default). */
@@ -100,6 +103,8 @@ type GeneratorContext = {
   inStockFoodIds: Set<string>;
   /** How the household resolved each recipe's like/dislike conflict, if any (see householdRecipeOverrides). */
   recipeResolutions: Map<string, RecipeResolution>;
+  /** Recipe ids served to each "wants new foods" profile within the lookback window; empty for profiles who didn't opt in (never queried for them). */
+  recentRecipeIdsByProfile: Map<string, Set<string>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -151,6 +156,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
 
   const profileContexts: ProfileContext[] = [];
   const likedItemIdsByProfile = new Map<string, Set<string>>();
+  const recentRecipeIdsByProfile = new Map<string, Set<string>>();
 
   for (const profile of profileRows) {
     const [restrictionRows, avoidRows, ratingRows, slotPortionRows, [latestMetric]] = await Promise.all([
@@ -181,6 +187,10 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     likedItemIdsByProfile.set(profile.id, new Set(ratingRows.filter((r) => r.rating === 'like').map((r) => r.itemId)));
     const dislikedRecipeIds = ratingRows.filter((r) => r.rating === 'dislike' && r.itemType === 'recipe').map((r) => r.itemId);
     const dislikedFoodIds = ratingRows.filter((r) => r.rating === 'dislike' && r.itemType === 'food').map((r) => r.itemId);
+
+    if (profile.wantsNewFoods) {
+      recentRecipeIdsByProfile.set(profile.id, await loadRecentRecipeIdsForProfile(db, householdId, profile.id, date));
+    }
 
     const slotOverrides = new Map<string, SlotPortionOverride>();
     for (const row of slotPortionRows) {
@@ -236,6 +246,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
       },
       dailyTarget,
       slotOverrides,
+      wantsNewFoods: profile.wantsNewFoods,
     });
   }
 
@@ -386,6 +397,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     expiringFoodIds,
     inStockFoodIds,
     recipeResolutions,
+    recentRecipeIdsByProfile,
   };
 }
 
@@ -403,6 +415,21 @@ function rareRecipeIds(ctx: GeneratorContext): Set<string> {
     if (resolution === 'rare') result.add(recipeId);
   }
   return result;
+}
+
+/**
+ * Undefined unless at least one profile in `subset` opted into "wants new
+ * foods" – when several such profiles share a slot, their recent-history
+ * sets are unioned so a recipe recent for ANY of them isn't treated as novel.
+ */
+function unionNoveltyBonus(subset: ProfileContext[], ctx: GeneratorContext): { recentRecipeIds: Set<string> } | undefined {
+  const opted = subset.filter((p) => p.wantsNewFoods);
+  if (opted.length === 0) return undefined;
+  const result = new Set<string>();
+  for (const profile of opted) {
+    for (const id of ctx.recentRecipeIdsByProfile.get(profile.id) ?? []) result.add(id);
+  }
+  return { recentRecipeIds: result };
 }
 
 /**
@@ -530,6 +557,47 @@ async function loadDayRecipeIds(db: AppDb, householdId: string, date: string): P
   return new Set(rows.map((r) => r.itemId));
 }
 
+/** Only called for profiles with `wantsNewFoods: true` – gated to keep the cost at zero for households not using the feature. */
+async function loadRecentRecipeIdsForProfile(
+  db: AppDb,
+  householdId: string,
+  profileId: string,
+  beforeDate: string,
+): Promise<Set<string>> {
+  const startDate = addDays(beforeDate, -NOVELTY_LOOKBACK_DAYS);
+  const meals = await db
+    .select()
+    .from(plannedMeals)
+    .where(
+      and(
+        eq(plannedMeals.householdId, householdId),
+        eq(plannedMeals.itemType, 'recipe'),
+        gte(plannedMeals.date, startDate),
+        lt(plannedMeals.date, beforeDate),
+        isNull(plannedMeals.deletedAt),
+      ),
+    );
+  if (meals.length === 0) return new Set();
+
+  const portions = await db
+    .select()
+    .from(plannedMealPortions)
+    .where(
+      and(
+        inArray(plannedMealPortions.plannedMealId, meals.map((m) => m.id)),
+        eq(plannedMealPortions.profileId, profileId),
+        isNull(plannedMealPortions.deletedAt),
+      ),
+    );
+  const mealById = new Map(meals.map((m) => [m.id, m]));
+  const recipeIds = new Set<string>();
+  for (const portion of portions) {
+    const meal = mealById.get(portion.plannedMealId);
+    if (meal) recipeIds.add(meal.itemId);
+  }
+  return recipeIds;
+}
+
 /** Adds an already-locked meal's nutrition contribution to the running daily totals (for snack remainder maths). */
 async function accumulateLockedMeal(
   db: AppDb,
@@ -628,6 +696,7 @@ async function generateIndividualMainMeal(
       expiringFoodIds: ctx.expiringFoodIds,
       inStockFoodIds: ctx.inStockFoodIds,
       rareRecipeIds: rareRecipeIds(ctx),
+      noveltyBonus: unionNoveltyBonus([profile], ctx),
       macroFitTarget: averageMacroFitTarget([profile], slot),
     },
     rng,
@@ -686,6 +755,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
             expiringFoodIds: ctx.expiringFoodIds,
             inStockFoodIds: ctx.inStockFoodIds,
             rareRecipeIds: rareRecipeIds(ctx),
+            noveltyBonus: unionNoveltyBonus(sharedProfilesForSlot, ctx),
             macroFitTarget: averageMacroFitTarget(sharedProfilesForSlot, slot),
           },
           rng,
@@ -927,6 +997,7 @@ export async function regenerateSlot(
         expiringFoodIds: ctx.expiringFoodIds,
         inStockFoodIds: ctx.inStockFoodIds,
         rareRecipeIds: rareRecipeIds(ctx),
+        noveltyBonus: unionNoveltyBonus(relevantProfiles, ctx),
         macroFitTarget: averageMacroFitTarget(relevantProfiles, slot),
       },
       createSeededRng(rngSeed ?? Date.now()),

@@ -213,6 +213,8 @@
     "diets": "Stravovací režim",
     "sharesMainMeals": "Sdílí hlavní jídla",
     "sharesMainMealsHint": "Vypněte, pokud má mít člen vlastní, nezávisle generovaný jídelníček.",
+    "wantsNewFoods": "Chci zkoušet nová jídla",
+    "wantsNewFoodsHint": "Appka bude při plánování mírně upřednostňovat recepty, které jste v poslední době neměli.",
     "workoutDays": "Tréninkové dny",
     "workoutDaysHint": "V tréninkové dny appka mírně navýší kalorie (do sacharidů), ve volných dnech je přiměřeně sníží tak, aby týdenní průměr odpovídal cíli.",
     "required": "Povinné pole",

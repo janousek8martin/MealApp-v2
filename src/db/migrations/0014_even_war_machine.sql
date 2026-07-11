@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `wants_new_foods` integer DEFAULT false NOT NULL;

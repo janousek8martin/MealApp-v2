@@ -3,7 +3,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { ageYears } from '../../domain/age';
 import { computeRecipeNutrition } from '../../domain/recipeNutrition';
 import { computeTargets } from '../../domain/targets';
-import { startOfWeek, weekDates } from '../../domain/week';
+import { addDays, startOfWeek, weekDates } from '../../domain/week';
 import { createHouseholdWithDefaults, updateHouseholdSettings } from '../repositories/households';
 import { setRating, upsertFood, upsertRecipe } from '../repositories/library';
 import {
@@ -381,6 +381,24 @@ describe('plan generator (repository)', () => {
       .from(plannedMealPortions)
       .where(and(eq(plannedMealPortions.plannedMealId, sharedRow!.id), isNull(plannedMealPortions.deletedAt)));
     expect(sharedPortions.map((p) => p.profileId)).toEqual([profileAId]);
+  });
+
+  it('generates two consecutive weeks without error for a profile with "wants new foods" enabled (exercises the recent-history lookup)', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await createAdult(db, householdId, { wantsNewFoods: true });
+    await seedIfEmpty(db);
+
+    await generateWeek(db, householdId, FUTURE_MONDAY, 1);
+    // The second week's generation reads the first week's history for novelty scoring.
+    const secondMonday = addDays(FUTURE_MONDAY, 7);
+    await generateWeek(db, householdId, secondMonday, 2);
+
+    const rows = await db.select().from(plannedMeals).where(eq(plannedMeals.householdId, householdId));
+    const firstWeekRows = rows.filter((r) => weekDates(FUTURE_MONDAY).includes(r.date));
+    const secondWeekRows = rows.filter((r) => weekDates(secondMonday).includes(r.date));
+    expect(firstWeekRows.length).toBeGreaterThan(0);
+    expect(secondWeekRows.length).toBeGreaterThan(0);
   });
 
   it("favors a main-slot recipe matching a profile's protein/fat slot override over one that doesn't (item 7)", async () => {

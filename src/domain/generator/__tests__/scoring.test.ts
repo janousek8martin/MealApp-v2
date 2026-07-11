@@ -104,6 +104,22 @@ describe('scoreCandidate', () => {
     expect(other).toBe(base);
   });
 
+  it('rewards a recipe not present in the recent-history union when novelty is active', () => {
+    const base = scoreCandidate(candidate(), ctx());
+    const novel = scoreCandidate(candidate(), ctx({ noveltyBonus: { recentRecipeIds: new Set() } }));
+    expect(novel).toBeGreaterThan(base);
+  });
+
+  it('does not reward a recently-served recipe even when novelty is active', () => {
+    const base = scoreCandidate(candidate(), ctx());
+    const recent = scoreCandidate(candidate(), ctx({ noveltyBonus: { recentRecipeIds: new Set(['r1']) } }));
+    expect(recent).toBe(base);
+  });
+
+  it('does not change the score when no sharing profile opted into novelty (noveltyBonus absent)', () => {
+    expect(scoreCandidate(candidate(), ctx())).toBe(scoreCandidate(candidate(), ctx({ noveltyBonus: undefined })));
+  });
+
   it('does not change the score when there is no macro-fit target (default candidate() has no override)', () => {
     expect(scoreCandidate(candidate(), ctx())).toBe(scoreCandidate(candidate(), ctx({ macroFitTarget: undefined })));
   });
