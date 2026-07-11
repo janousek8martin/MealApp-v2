@@ -126,6 +126,42 @@ describe('plan generator (repository)', () => {
     }
   });
 
+  it('a profile without a slot in enabledSlotKeys never gets a meal there (phase H)', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await createAdult(db, householdId, {
+      enabledSlotKeys: ['breakfast', 'lunch', 'dinner', 'snack_morning'], // no snack_afternoon
+    });
+    await seedIfEmpty(db);
+
+    await generateWeek(db, householdId, FUTURE_MONDAY, 1234);
+
+    const dates = weekDates(FUTURE_MONDAY);
+    const rows = await db.select().from(plannedMeals).where(eq(plannedMeals.householdId, householdId));
+    for (const date of dates) {
+      expect(rows.find((r) => r.date === date && r.slotKey === 'snack_afternoon')).toBeUndefined();
+      expect(rows.find((r) => r.date === date && r.slotKey === 'snack_morning')).toBeDefined();
+    }
+  });
+
+  it('skips a shared main slot entirely when no sharing profile has it enabled (phase H)', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await createAdult(db, householdId, {
+      enabledSlotKeys: ['breakfast', 'lunch', 'snack_morning', 'snack_afternoon'], // no dinner
+    });
+    await seedIfEmpty(db);
+
+    await generateWeek(db, householdId, FUTURE_MONDAY, 1234);
+
+    const dates = weekDates(FUTURE_MONDAY);
+    const rows = await db.select().from(plannedMeals).where(eq(plannedMeals.householdId, householdId));
+    for (const date of dates) {
+      expect(rows.find((r) => r.date === date && r.slotKey === 'dinner')).toBeUndefined();
+      expect(rows.find((r) => r.date === date && r.slotKey === 'lunch')).toBeDefined();
+    }
+  });
+
   it("keeps a full day's planned calories within ±100 kcal of the profile's daily target", async () => {
     const db = createTestDb();
     const householdId = await createHouseholdWithDefaults(db, 'Test');

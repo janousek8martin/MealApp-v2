@@ -59,12 +59,18 @@ type MacroTotal = { kcal: number; proteinG: number; carbsG: number; fatG: number
 type ProfileContext = {
   id: string;
   sharesMainMeals: boolean;
-  snackSlotKeys: string[];
+  /** meal_slot_settings.slotKey values this profile eats; null = every household slot (default). Supersedes the old snack-only snackPositionsJson. */
+  enabledSlotKeys: string[] | null;
   restrictions: DietRestrictions;
   dailyTarget: MacroTotal | null;
   /** Per-slot portion overrides (P2-C), keyed by mealSlotSettings.id. */
   slotOverrides: Map<string, SlotPortionOverride>;
 };
+
+/** null enabledSlotKeys means every household slot is in play (the default). */
+function isSlotEnabledForProfile(profile: ProfileContext, slotKey: string): boolean {
+  return profile.enabledSlotKeys === null || profile.enabledSlotKeys.includes(slotKey);
+}
 
 type GeneratorContext = {
   settings: { defaultMaxRepetitionsPerWeek: number; defaultAllowConsecutiveDays: boolean };
@@ -188,7 +194,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     profileContexts.push({
       id: profile.id,
       sharesMainMeals: profile.sharesMainMeals,
-      snackSlotKeys: profile.snackPositionsJson ? (JSON.parse(profile.snackPositionsJson) as string[]) : [],
+      enabledSlotKeys: profile.enabledSlotKeysJson ? (JSON.parse(profile.enabledSlotKeysJson) as string[]) : null,
       restrictions: {
         allergens: [...new Set([...householdAllergens, ...restrictionRows.filter((r) => r.kind === 'allergen').map((r) => r.value)])],
         diets: [...new Set([...householdDiets, ...restrictionRows.filter((r) => r.kind === 'diet').map((r) => r.value)])],
@@ -571,27 +577,28 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
   for (const slot of ctx.slots.filter((s) => s.kind === 'main')) {
     const category = slot.slotKey === 'breakfast' ? 'breakfast' : 'lunch_dinner';
     const candidates = ctx.mainItems.filter((item) => item.candidate.category === category);
+    const sharedProfilesForSlot = sharedProfiles.filter((p) => isSlotEnabledForProfile(p, slot.slotKey));
 
-    if (slot.sharing === 'shared' && sharedProfiles.length > 0) {
+    if (slot.sharing === 'shared' && sharedProfilesForSlot.length > 0) {
       const key = slotTrackKey(slot.slotKey, null);
       if (lockedKeys.has(key)) {
         await accumulateLockedMeal(db, householdId, date, slot.slotKey, null, ctx, consumedSoFar);
       } else {
         const picked = pickMealForSlot(
           candidates,
-          sharedProfiles.map((p) => p.restrictions),
+          sharedProfilesForSlot.map((p) => p.restrictions),
           repetitionCtx,
           {
-            favoriteRecipeIds: unionFavorites(sharedProfiles, ctx),
+            favoriteRecipeIds: unionFavorites(sharedProfilesForSlot, ctx),
             favoriteCuisines: ctx.favoriteCuisines,
             expiringFoodIds: ctx.expiringFoodIds,
-            macroFitTarget: averageMacroFitTarget(sharedProfiles, slot),
+            macroFitTarget: averageMacroFitTarget(sharedProfilesForSlot, slot),
           },
           rng,
-          sharedProfiles.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),
+          sharedProfilesForSlot.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),
         );
         if (picked) {
-          const portions = sharedProfiles
+          const portions = sharedProfilesForSlot
             .filter((p) => p.dailyTarget !== null)
             .map((p) => ({
               profileId: p.id,
@@ -610,7 +617,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
     }
 
     for (const profile of independentProfiles) {
-      if (!profile.dailyTarget) continue;
+      if (!profile.dailyTarget || !isSlotEnabledForProfile(profile, slot.slotKey)) continue;
       const key = slotTrackKey(slot.slotKey, profile.id);
       if (lockedKeys.has(key)) {
         await accumulateLockedMeal(db, householdId, date, slot.slotKey, profile.id, ctx, consumedSoFar);
@@ -644,7 +651,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
 
   for (const slot of ctx.slots.filter((s) => s.kind === 'snack')) {
     for (const profile of ctx.profiles) {
-      if (!profile.dailyTarget || !profile.snackSlotKeys.includes(slot.slotKey)) continue;
+      if (!profile.dailyTarget || !isSlotEnabledForProfile(profile, slot.slotKey)) continue;
       const key = slotTrackKey(slot.slotKey, profile.id);
       if (lockedKeys.has(key)) {
         await accumulateLockedMeal(db, householdId, date, slot.slotKey, profile.id, ctx, consumedSoFar);
@@ -769,7 +776,7 @@ export async function regenerateSlot(
   const relevantProfiles =
     profileId !== null
       ? ctx.profiles.filter((p) => p.id === profileId)
-      : ctx.profiles.filter((p) => p.sharesMainMeals);
+      : ctx.profiles.filter((p) => p.sharesMainMeals && isSlotEnabledForProfile(p, slot.slotKey));
   if (relevantProfiles.length === 0) return;
 
   let picked: GeneratorItem | null;
@@ -979,7 +986,7 @@ export async function assignManualMeal(
   const relevantProfiles =
     profileId !== null
       ? ctx.profiles.filter((p) => p.id === profileId)
-      : ctx.profiles.filter((p) => p.sharesMainMeals);
+      : ctx.profiles.filter((p) => p.sharesMainMeals && isSlotEnabledForProfile(p, slot.slotKey));
   if (relevantProfiles.length === 0) return { conflicts: [] };
 
   const tags = await loadItemTags(db, itemType, itemId);
