@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,14 +16,23 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AdjustServingsModal } from '@/components/AdjustServingsModal';
 import { FoodPickerModal } from '@/components/FoodPickerModal';
+import { MealActionsMenu } from '@/components/MealActionsMenu';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { PlanDayList } from '@/components/PlanDayList';
 import { ProfileDropdownChip } from '@/components/ProfileDropdownChip';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
-import { addMealExtra, assignManualMeal, generateWeek, regenerateDay } from '@/db/repositories/plan';
+import {
+  addMealExtra,
+  assignManualMeal,
+  generateWeek,
+  regenerateDay,
+  saveMealAsRecipe,
+  updatePortionMultiplier,
+} from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
 import type { RestrictionConflict } from '@/domain/generator/filters';
 import { jumpDirection, paneDates, weekJumpTarget, type PagerTransition } from '@/domain/planPager';
@@ -34,10 +43,12 @@ import {
   useMealSlots,
   usePortionsForMeal,
   useRecipeNutritionMap,
+  type MealRow,
   type SlotRow,
 } from '@/hooks/plan';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
+import { confirmDeleteMeal } from '@/utils/mealActions';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
@@ -93,6 +104,13 @@ export default function PlanScreen() {
   const [extraMealId, setExtraMealId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<'week' | 'day' | null>(null);
   const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>({});
+  const [clipboard, setClipboard] = useState<{ itemType: 'recipe' | 'food'; itemId: string } | null>(null);
+  // Target outlives the menu's visibility: the adjust-servings modal opened
+  // from the menu still needs to know which meal it's editing.
+  const [menuTarget, setMenuTarget] = useState<{ meal: MealRow; slot: SlotRow } | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [adjustServingsVisible, setAdjustServingsVisible] = useState(false);
+  const menuPortions = usePortionsForMeal(menuTarget?.meal.id);
 
   // Which profiles a manual-assignment pick would apply to, for allergen
   // flagging in the pickers – mirrors assignManualMeal's own relevantProfiles
@@ -266,6 +284,41 @@ export default function PlanScreen() {
     }
   };
 
+  const closeMenu = () => setMenuVisible(false);
+
+  const handleCopy = () => {
+    if (!menuTarget) return;
+    setClipboard({ itemType: menuTarget.meal.itemType, itemId: menuTarget.meal.itemId });
+  };
+
+  const handlePaste = () => {
+    if (!menuTarget || !household || !clipboard) return;
+    const { slot, meal } = menuTarget;
+    const assign = (acknowledgeConflict: boolean) =>
+      assignManualMeal(db, household.id, selectedDate, slot.slotKey, meal.profileId, clipboard.itemType, clipboard.itemId, acknowledgeConflict);
+    void (async () => {
+      const { conflicts } = await assign(false);
+      if (conflicts.length > 0) {
+        Alert.alert(t('planScreen.conflictTitle'), describeConflicts(conflicts, t), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('planScreen.addAnyway'), style: 'destructive', onPress: () => void assign(true) },
+        ]);
+      }
+    })();
+  };
+
+  const handleClear = () => {
+    if (!menuTarget || !household) return;
+    void confirmDeleteMeal(t, household.id, menuTarget.meal);
+  };
+
+  const handleSaveAsRecipe = () => {
+    if (!menuTarget || !activeProfile) return;
+    void saveMealAsRecipe(db, menuTarget.meal.id, activeProfile.id).then((newRecipeId) => {
+      router.push({ pathname: '/recipe/edit', params: { id: newRecipeId } });
+    });
+  };
+
   const panes = paneDates(selectedDate, transition ?? undefined);
   const isPast = selectedDate < today;
   // Rendering slid one pane to the left keeps the middle (selected) pane in
@@ -374,6 +427,10 @@ export default function PlanScreen() {
                 }
                 onPickMeal={setPickerSlot}
                 onAddExtra={setExtraMealId}
+                onOpenMenu={(meal, slot) => {
+                  setMenuTarget({ meal, slot });
+                  setMenuVisible(true);
+                }}
                 scrollRef={scrollRef}
                 onScroll={(e) => {
                   onRestoreScroll(e);
@@ -457,6 +514,36 @@ export default function PlanScreen() {
               }
             })();
             setExtraMealId(null);
+          }}
+        />
+      ) : null}
+
+      {menuTarget && menuVisible ? (
+        <MealActionsMenu
+          visible
+          onClose={closeMenu}
+          hasClipboard={clipboard !== null}
+          onCopy={handleCopy}
+          onPaste={handlePaste}
+          onClear={handleClear}
+          onAdjustServings={() => setAdjustServingsVisible(true)}
+          onSaveAsRecipe={handleSaveAsRecipe}
+        />
+      ) : null}
+
+      {adjustServingsVisible && menuTarget && activeProfile ? (
+        <AdjustServingsModal
+          visible
+          initialMultiplier={menuPortions.find((p) => p.profileId === activeProfile.id)?.multiplier ?? 1}
+          onClose={() => {
+            setAdjustServingsVisible(false);
+            setMenuTarget(null);
+          }}
+          onConfirm={(multiplier) => {
+            const portion = menuPortions.find((p) => p.profileId === activeProfile.id);
+            if (portion) void updatePortionMultiplier(db, portion.id, multiplier);
+            setAdjustServingsVisible(false);
+            setMenuTarget(null);
           }}
         />
       ) : null}

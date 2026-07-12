@@ -12,7 +12,9 @@ import {
   generateWeek,
   regenerateDay,
   regenerateSlot,
+  saveMealAsRecipe,
   setPortionStatus,
+  updatePortionMultiplier,
 } from '../repositories/plan';
 import { createProfile, updateProfileMacroOverrides, upsertProfileSlotPortion } from '../repositories/profiles';
 import { setRecipeResolution } from '../repositories/ratings';
@@ -674,6 +676,114 @@ describe('plan generator (repository)', () => {
       .where(and(eq(plannedMealPortions.plannedMealId, meal.id), isNull(plannedMealPortions.deletedAt)));
     expect(portions).toHaveLength(1);
     expect(portions[0].multiplier).toBeGreaterThan(0);
+  });
+
+  it('updatePortionMultiplier updates the multiplier and refuses once the portion is eaten', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await createAdult(db, householdId);
+    await seedIfEmpty(db);
+
+    const [recipe] = await db.select().from(recipes).where(eq(recipes.category, 'lunch_dinner'));
+    await assignManualMeal(db, householdId, FUTURE_MONDAY, 'lunch', null, 'recipe', recipe.id);
+    const [meal] = await db
+      .select()
+      .from(plannedMeals)
+      .where(
+        and(
+          eq(plannedMeals.householdId, householdId),
+          eq(plannedMeals.date, FUTURE_MONDAY),
+          eq(plannedMeals.slotKey, 'lunch'),
+        ),
+      );
+    const [portion] = await db
+      .select()
+      .from(plannedMealPortions)
+      .where(and(eq(plannedMealPortions.plannedMealId, meal.id), isNull(plannedMealPortions.deletedAt)));
+
+    expect(await updatePortionMultiplier(db, portion.id, 1.5)).toBe(true);
+    const [updated] = await db.select().from(plannedMealPortions).where(eq(plannedMealPortions.id, portion.id));
+    expect(updated.multiplier).toBe(1.5);
+
+    await setPortionStatus(db, portion.id, 'eaten');
+    expect(await updatePortionMultiplier(db, portion.id, 2)).toBe(false);
+    const [afterRefuse] = await db.select().from(plannedMealPortions).where(eq(plannedMealPortions.id, portion.id));
+    expect(afterRefuse.multiplier).toBe(1.5);
+  });
+
+  it('saveMealAsRecipe clones a recipe-backed meal, scaling ingredient amounts by the portion multiplier', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    const profileId = await createAdult(db, householdId);
+
+    const foodId = await upsertFood(db, {
+      nameCs: 'Kuře', nameEn: 'Chicken', category: 'meat', baseUnit: 'g',
+      kcalPer100: 165, proteinPer100: 31, carbsPer100: 0, fatPer100: 3.6,
+      budget: 'average', snackSuitable: false, dietFlags: [], allergens: [],
+    });
+    const recipeId = await upsertRecipe(db, {
+      nameCs: 'Recept', nameEn: 'Recipe', category: 'lunch_dinner', isSide: false,
+      budget: 'average', servingsBase: 1, ingredients: [{ foodId, amount: 200 }],
+    });
+
+    await assignManualMeal(db, householdId, FUTURE_MONDAY, 'lunch', null, 'recipe', recipeId);
+    const [meal] = await db
+      .select()
+      .from(plannedMeals)
+      .where(
+        and(
+          eq(plannedMeals.householdId, householdId),
+          eq(plannedMeals.date, FUTURE_MONDAY),
+          eq(plannedMeals.slotKey, 'lunch'),
+        ),
+      );
+    const [portion] = await db
+      .select()
+      .from(plannedMealPortions)
+      .where(and(eq(plannedMealPortions.plannedMealId, meal.id), isNull(plannedMealPortions.deletedAt)));
+    await updatePortionMultiplier(db, portion.id, 2);
+
+    const newRecipeId = await saveMealAsRecipe(db, meal.id, profileId);
+    const newIngredients = await db
+      .select()
+      .from(recipeIngredients)
+      .where(and(eq(recipeIngredients.recipeId, newRecipeId), isNull(recipeIngredients.deletedAt)));
+    expect(newIngredients).toHaveLength(1);
+    expect(newIngredients[0].foodId).toBe(foodId);
+    expect(newIngredients[0].amount).toBe(400);
+  });
+
+  it('saveMealAsRecipe approximates a food-backed meal as a single 100g-times-multiplier ingredient', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    const profileId = await createAdult(db, householdId);
+
+    const foodId = await upsertFood(db, {
+      nameCs: 'Jogurt', nameEn: 'Yogurt', category: 'dairy', baseUnit: 'g',
+      kcalPer100: 60, proteinPer100: 10, carbsPer100: 4, fatPer100: 0.2,
+      budget: 'cheap', snackSuitable: true, dietFlags: [], allergens: [],
+    });
+
+    await assignManualMeal(db, householdId, FUTURE_MONDAY, 'snack_morning', null, 'food', foodId);
+    const [meal] = await db
+      .select()
+      .from(plannedMeals)
+      .where(
+        and(
+          eq(plannedMeals.householdId, householdId),
+          eq(plannedMeals.date, FUTURE_MONDAY),
+          eq(plannedMeals.slotKey, 'snack_morning'),
+        ),
+      );
+
+    const newRecipeId = await saveMealAsRecipe(db, meal.id, profileId);
+    const newIngredients = await db
+      .select()
+      .from(recipeIngredients)
+      .where(and(eq(recipeIngredients.recipeId, newRecipeId), isNull(recipeIngredients.deletedAt)));
+    expect(newIngredients).toHaveLength(1);
+    expect(newIngredients[0].foodId).toBe(foodId);
+    expect(newIngredients[0].amount).toBe(100);
   });
 
   it("uses the profile's activity multiplier and macro overrides for the generator's daily target, same as the UI (G1 regression)", async () => {

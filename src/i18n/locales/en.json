@@ -485,6 +485,34 @@
     "deleteJustThis": "Just this one",
     "deleteAllOccurrences": "Remove all ({{count}})"
   },
+  "mealActions": {
+    "copy": "Copy",
+    "paste": "Paste",
+    "clear": "Clear meal",
+    "adjustServings": "Adjust servings",
+    "saveAsRecipe": "Save as recipe"
+  },
+  "recipeImport": {
+    "title": "Import recipe from the web",
+    "urlLabel": "Recipe address (URL)",
+    "load": "Load recipe",
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "errorNotFound": "No recipe could be found on that page. Try a different address, or enter the recipe manually.",
+    "errorNetwork": "The page could not be loaded. Check the address and your internet connection.",
+    "guideTitle": "How to import a recipe",
+    "guideStep1": "Open the recipe in your browser (e.g. on your favorite recipe site).",
+    "guideStep2": "Copy the page address (URL).",
+    "guideStep3": "Paste it here and tap Load recipe.",
+    "servings": "{{count}} servings",
+    "partialNote": "The page didn't contain complete recipe data – only the name and photo were loaded.",
+    "ingredients": "Ingredients",
+    "pickFood": "Pick a food",
+    "skip": "Skip",
+    "include": "Include",
+    "unmatchedHeading": "Ingredients from the web (unmatched):",
+    "save": "Save recipe"
+  },
   "notifications": {
     "mealTitle": "Time to eat",
     "weighInTitle": "Monday weigh-in",

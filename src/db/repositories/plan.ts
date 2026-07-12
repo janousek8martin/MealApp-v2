@@ -39,6 +39,7 @@ import { applyWorkoutDayCycling } from '@/domain/workoutDays';
 import { targetsForProfile } from '@/hooks/dataMapping';
 
 import { newId } from '../id';
+import { upsertRecipe } from './library';
 import { getRecipeResolutions } from './ratings';
 import { deductPantryForConsumption, mealIngredientNeeds, restockPantryForConsumption } from './shopping';
 import {
@@ -944,6 +945,17 @@ export async function setPortionStatus(
   }
 }
 
+/** Manually overrides one portion's scaling multiplier ("adjust servings"). Refuses once the portion is eaten, same guard as every other slot mutator. */
+export async function updatePortionMultiplier(db: AppDb, portionId: string, multiplier: number): Promise<boolean> {
+  const [portion] = await db.select().from(plannedMealPortions).where(eq(plannedMealPortions.id, portionId));
+  if (!portion || portion.status === 'eaten') return false;
+  await db
+    .update(plannedMealPortions)
+    .set({ multiplier, updatedAt: nowIso() })
+    .where(eq(plannedMealPortions.id, portionId));
+  return true;
+}
+
 /** Regenerates a single slot/track, excluding its current recipe from the candidate pool. Locked (eaten) slots are left untouched. */
 export async function regenerateSlot(
   db: AppDb,
@@ -1440,4 +1452,88 @@ export async function removeOtherOccurrences(
     if (row.id === excludeMealId || row.date < today) continue;
     await removePlannedMeal(db, row.id);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Saving a planned meal as a reusable recipe
+// ---------------------------------------------------------------------------
+
+/**
+ * Clones one planned meal (scaled by `profileId`'s portion multiplier, plus
+ * any extras) into a new recipe. Amounts for a food-backed base and for
+ * every extra are approximations (this app has no per-extra amount, and a
+ * bare food is treated as "one portion" the same way the generator already
+ * does – see `loadGeneratorContext`'s snack-food candidate loop) – the
+ * caller should route straight to the recipe edit screen afterward so the
+ * user can correct them before the recipe is used for real.
+ */
+export async function saveMealAsRecipe(db: AppDb, plannedMealId: string, profileId: string): Promise<string> {
+  const [meal] = await db.select().from(plannedMeals).where(eq(plannedMeals.id, plannedMealId));
+  if (!meal) throw new Error(`saveMealAsRecipe: meal ${plannedMealId} not found`);
+
+  const [portion] = await db
+    .select()
+    .from(plannedMealPortions)
+    .where(
+      and(
+        eq(plannedMealPortions.plannedMealId, plannedMealId),
+        eq(plannedMealPortions.profileId, profileId),
+        isNull(plannedMealPortions.deletedAt),
+      ),
+    );
+  const multiplier = portion?.multiplier ?? 1;
+
+  const ingredients: { foodId: string; amount: number }[] = [];
+  let nameCs: string;
+  let nameEn: string;
+
+  if (meal.itemType === 'recipe') {
+    const [recipe] = await db.select().from(recipes).where(eq(recipes.id, meal.itemId));
+    if (!recipe) throw new Error(`saveMealAsRecipe: recipe ${meal.itemId} not found`);
+    const rows = await db
+      .select()
+      .from(recipeIngredients)
+      .where(and(eq(recipeIngredients.recipeId, meal.itemId), isNull(recipeIngredients.deletedAt)));
+    for (const row of rows) ingredients.push({ foodId: row.foodId, amount: row.amount * multiplier });
+    nameCs = `${recipe.nameCs} (kopie)`;
+    nameEn = `${recipe.nameEn} (copy)`;
+  } else {
+    const [food] = await db.select().from(foods).where(eq(foods.id, meal.itemId));
+    if (!food) throw new Error(`saveMealAsRecipe: food ${meal.itemId} not found`);
+    ingredients.push({ foodId: meal.itemId, amount: 100 * multiplier });
+    nameCs = `${food.nameCs} (kopie)`;
+    nameEn = `${food.nameEn} (copy)`;
+  }
+
+  const extraRows = await db
+    .select()
+    .from(plannedMealExtras)
+    .where(and(eq(plannedMealExtras.plannedMealId, plannedMealId), isNull(plannedMealExtras.deletedAt)));
+  for (const extra of extraRows) {
+    if (extra.itemType === 'food') {
+      ingredients.push({ foodId: extra.itemId, amount: 100 });
+    } else {
+      const [extraRecipe] = await db.select().from(recipes).where(eq(recipes.id, extra.itemId));
+      const extraIngredientRows = await db
+        .select()
+        .from(recipeIngredients)
+        .where(and(eq(recipeIngredients.recipeId, extra.itemId), isNull(recipeIngredients.deletedAt)));
+      const scale = extraRecipe && extraRecipe.servingsBase > 0 ? 1 / extraRecipe.servingsBase : 1;
+      for (const row of extraIngredientRows) ingredients.push({ foodId: row.foodId, amount: row.amount * scale });
+    }
+  }
+
+  const [slot] = await db.select().from(mealSlotSettings).where(eq(mealSlotSettings.slotKey, meal.slotKey));
+  const category: 'breakfast' | 'lunch_dinner' | 'snack' =
+    slot?.kind === 'snack' ? 'snack' : meal.slotKey === 'breakfast' ? 'breakfast' : 'lunch_dinner';
+
+  return upsertRecipe(db, {
+    nameCs,
+    nameEn,
+    category,
+    isSide: false,
+    budget: 'average',
+    servingsBase: 1,
+    ingredients,
+  });
 }

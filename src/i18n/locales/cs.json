@@ -485,6 +485,34 @@
     "deleteJustThis": "Jen tento výskyt",
     "deleteAllOccurrences": "Odebrat vše ({{count}})"
   },
+  "mealActions": {
+    "copy": "Kopírovat",
+    "paste": "Vložit",
+    "clear": "Smazat jídlo",
+    "adjustServings": "Upravit porci",
+    "saveAsRecipe": "Uložit jako recept"
+  },
+  "recipeImport": {
+    "title": "Import receptu z webu",
+    "urlLabel": "Adresa receptu (URL)",
+    "load": "Načíst recept",
+    "loading": "Načítám…",
+    "saving": "Ukládám…",
+    "errorNotFound": "Na stránce se nepodařilo najít recept. Zkuste jinou adresu, nebo recept zadejte ručně.",
+    "errorNetwork": "Stránku se nepodařilo načíst. Zkontrolujte adresu a připojení k internetu.",
+    "guideTitle": "Jak importovat recept",
+    "guideStep1": "Otevřete recept v prohlížeči (např. na oblíbeném receptáři).",
+    "guideStep2": "Zkopírujte adresu stránky (URL).",
+    "guideStep3": "Vložte ji sem a klepněte na Načíst recept.",
+    "servings": "{{count}} porce",
+    "partialNote": "Stránka neobsahovala kompletní data receptu – načetl se jen název a fotka.",
+    "ingredients": "Suroviny",
+    "pickFood": "Vybrat surovinu",
+    "skip": "Přeskočit",
+    "include": "Zahrnout",
+    "unmatchedHeading": "Suroviny z webu (nespárované):",
+    "save": "Uložit recept"
+  },
   "notifications": {
     "mealTitle": "Čas na jídlo",
     "weighInTitle": "Pondělní vážení",

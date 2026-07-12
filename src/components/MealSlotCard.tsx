@@ -35,6 +35,8 @@ type Props = {
   onRemoveExtra?: (extraId: string) => void;
   /** Compact variant only: jumps to the Plan screen for this slot. */
   onEdit?: () => void;
+  /** Full variant only: opens the copy/paste/clear/adjust-servings/save-as-recipe menu. */
+  onOpenMenu?: () => void;
   /** Disables regeneration (swap/add) for past dates; eaten/not-eaten can still be set retroactively. */
   disabled?: boolean;
 };
@@ -74,6 +76,7 @@ export function MealSlotCard({
   onAddExtra,
   onRemoveExtra,
   onEdit,
+  onOpenMenu,
   onSetStatus,
   disabled,
 }: Props) {
@@ -161,6 +164,15 @@ export function MealSlotCard({
             </Text>
           ) : null}
         </View>
+        {!isCompact && onOpenMenu ? (
+          <Pressable
+            accessibilityRole="button"
+            style={styles.menuButton}
+            hitSlop={8}
+            onPress={onOpenMenu}>
+            <Ionicons name="ellipsis-vertical" size={18} color={colors.textSecondary} />
+          </Pressable>
+        ) : null}
         <Ionicons
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={20}
@@ -286,6 +298,9 @@ function createStyles(colors: ColorTokens) {
     },
     headerText: {
       flex: 1,
+    },
+    menuButton: {
+      padding: spacing.xs,
     },
     slotLabel: {
       color: colors.textSecondary,

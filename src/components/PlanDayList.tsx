@@ -25,6 +25,7 @@ import {
   targetProfileIdForSlot,
   useMealsForDate,
   usePortionsForDate,
+  type MealRow,
   type SlotRow,
 } from '@/hooks/plan';
 import { confirmDeleteMeal } from '@/utils/mealActions';
@@ -43,6 +44,7 @@ type Props = {
   onToggleExpand: (slotId: string) => void;
   onPickMeal: (slot: SlotRow) => void;
   onAddExtra: (mealId: string) => void;
+  onOpenMenu: (meal: MealRow, slot: SlotRow) => void;
   /** Wired only on the active pane – preview panes scroll with the pager, not vertically. */
   scrollRef: RefObject<ScrollView | null>;
   onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -68,6 +70,7 @@ export function PlanDayList({
   onToggleExpand,
   onPickMeal,
   onAddExtra,
+  onOpenMenu,
   scrollRef,
   onScroll,
   onContentSizeChange,
@@ -152,6 +155,7 @@ export function PlanDayList({
             }}
             onAddExtra={() => meal && onAddExtra(meal.id)}
             onRemoveExtra={(extraId) => void removeMealExtra(db, extraId)}
+            onOpenMenu={!isPast ? () => meal && onOpenMenu(meal, slot) : undefined}
             onSetStatus={(portionId, status) => void setPortionStatus(db, portionId, status)}
           />
         );
