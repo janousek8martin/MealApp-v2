@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, gte, isNull, sql } from 'drizzle-orm';
 
 import { newId } from '../id';
 import { households, householdAvoidedItems, householdRestrictions, householdSettings, mealSlotSettings } from '../schema';
@@ -105,6 +105,57 @@ export async function updateHouseholdSettings(
       updatedAt: nowIso(),
     })
     .where(eq(householdSettings.householdId, householdId));
+}
+
+export async function insertMealSlot(
+  db: AppDb,
+  householdId: string,
+  input: { afterSlotId: string | null; label: string; time: string },
+): Promise<string> {
+  const now = nowIso();
+  const siblings = await db
+    .select()
+    .from(mealSlotSettings)
+    .where(and(eq(mealSlotSettings.householdId, householdId), isNull(mealSlotSettings.deletedAt)))
+    .orderBy(asc(mealSlotSettings.sortOrder));
+
+  const beforeFirstSortOrder = (siblings[0]?.sortOrder ?? 1) - 1;
+  const anchorSortOrder = input.afterSlotId
+    ? (siblings.find((s) => s.id === input.afterSlotId)?.sortOrder ?? beforeFirstSortOrder)
+    : beforeFirstSortOrder;
+  const insertAtSortOrder = anchorSortOrder + 1;
+
+  await db
+    .update(mealSlotSettings)
+    .set({ sortOrder: sql`${mealSlotSettings.sortOrder} + 1`, updatedAt: now })
+    .where(
+      and(
+        eq(mealSlotSettings.householdId, householdId),
+        isNull(mealSlotSettings.deletedAt),
+        gte(mealSlotSettings.sortOrder, insertAtSortOrder),
+      ),
+    );
+
+  const id = newId();
+  await db.insert(mealSlotSettings).values({
+    id,
+    createdAt: now,
+    updatedAt: now,
+    householdId,
+    slotKey: `custom_${id}`,
+    kind: 'snack',
+    sharing: 'individual',
+    time: input.time,
+    calorieShare: 0,
+    sortOrder: insertAtSortOrder,
+    enabled: true,
+    label: input.label,
+  });
+  return id;
+}
+
+export async function deleteMealSlot(db: AppDb, slotId: string): Promise<void> {
+  await db.update(mealSlotSettings).set({ deletedAt: nowIso(), updatedAt: nowIso() }).where(eq(mealSlotSettings.id, slotId));
 }
 
 export type MealSlotPatch = Partial<{ time: string; calorieShare: number; enabled: boolean }>;

@@ -1,8 +1,14 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 
-import { createHouseholdWithDefaults, renameHousehold, replaceHouseholdPreferences } from '../repositories/households';
+import {
+  createHouseholdWithDefaults,
+  deleteMealSlot,
+  insertMealSlot,
+  renameHousehold,
+  replaceHouseholdPreferences,
+} from '../repositories/households';
 import { upsertFood } from '../repositories/library';
-import { households, householdAvoidedItems, householdRestrictions, householdSettings } from '../schema';
+import { households, householdAvoidedItems, householdRestrictions, householdSettings, mealSlotSettings } from '../schema';
 import { createTestDb } from '../testing/testDb';
 
 async function makeFood(db: ReturnType<typeof createTestDb>, name: string) {
@@ -79,5 +85,84 @@ describe('replaceHouseholdPreferences', () => {
     await replaceHouseholdPreferences(db, householdId, { favoriteCuisines: ['italian', 'czech'] });
     const [row] = await db.select().from(householdSettings).where(eq(householdSettings.householdId, householdId));
     expect(JSON.parse(row.favoriteCuisinesJson ?? '[]')).toEqual(['italian', 'czech']);
+  });
+});
+
+describe('insertMealSlot', () => {
+  it('inserts a new slot immediately after the given anchor, shifting later slots', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    const before = await db
+      .select()
+      .from(mealSlotSettings)
+      .where(and(eq(mealSlotSettings.householdId, householdId), isNull(mealSlotSettings.deletedAt)))
+      .orderBy(asc(mealSlotSettings.sortOrder));
+    const breakfast = before.find((s) => s.slotKey === 'breakfast')!;
+    const originalLunchSortOrder = before.find((s) => s.slotKey === 'lunch')!.sortOrder;
+
+    const newSlotId = await insertMealSlot(db, householdId, {
+      afterSlotId: breakfast.id,
+      label: 'Pre-lunch snack',
+      time: '10:30',
+    });
+
+    const after = await db
+      .select()
+      .from(mealSlotSettings)
+      .where(and(eq(mealSlotSettings.householdId, householdId), isNull(mealSlotSettings.deletedAt)))
+      .orderBy(asc(mealSlotSettings.sortOrder));
+
+    const newSlot = after.find((s) => s.id === newSlotId)!;
+    expect(newSlot.sortOrder).toBe(breakfast.sortOrder + 1);
+    expect(newSlot.label).toBe('Pre-lunch snack');
+    expect(newSlot.time).toBe('10:30');
+    expect(newSlot.kind).toBe('snack');
+    expect(newSlot.sharing).toBe('individual');
+    expect(newSlot.enabled).toBe(true);
+
+    const lunch = after.find((s) => s.slotKey === 'lunch')!;
+    expect(lunch.sortOrder).toBe(originalLunchSortOrder + 1);
+  });
+
+  it('inserts as the first slot when afterSlotId is null', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test2');
+    const before = await db
+      .select()
+      .from(mealSlotSettings)
+      .where(and(eq(mealSlotSettings.householdId, householdId), isNull(mealSlotSettings.deletedAt)))
+      .orderBy(asc(mealSlotSettings.sortOrder));
+    const originalFirstSortOrder = before[0].sortOrder;
+
+    const newSlotId = await insertMealSlot(db, householdId, { afterSlotId: null, label: 'Early snack', time: '06:00' });
+
+    const after = await db
+      .select()
+      .from(mealSlotSettings)
+      .where(and(eq(mealSlotSettings.householdId, householdId), isNull(mealSlotSettings.deletedAt)))
+      .orderBy(asc(mealSlotSettings.sortOrder));
+
+    expect(after[0].id).toBe(newSlotId);
+    expect(after[0].sortOrder).toBe(originalFirstSortOrder);
+    expect(after[1].sortOrder).toBe(originalFirstSortOrder + 1);
+  });
+});
+
+describe('deleteMealSlot', () => {
+  it('soft-deletes the slot and excludes it from subsequent queries', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test3');
+    const slotId = await insertMealSlot(db, householdId, { afterSlotId: null, label: 'Removable', time: '08:00' });
+
+    await deleteMealSlot(db, slotId);
+
+    const remaining = await db
+      .select()
+      .from(mealSlotSettings)
+      .where(and(eq(mealSlotSettings.householdId, householdId), isNull(mealSlotSettings.deletedAt)));
+    expect(remaining.find((s) => s.id === slotId)).toBeUndefined();
+
+    const raw = await db.select().from(mealSlotSettings).where(eq(mealSlotSettings.id, slotId));
+    expect(raw[0].deletedAt).not.toBeNull();
   });
 });
