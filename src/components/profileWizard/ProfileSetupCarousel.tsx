@@ -121,9 +121,10 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
     return CARD_KEYS.filter((key) => {
       if (isChild && (key === 'goal' || key === 'tempo' || key === 'training')) return false;
       if (!isChild && key === 'tempo' && goal === 'maintain') return false;
+      if (key === 'diet' && sharesMainMeals) return false;
       return true;
     });
-  }, [isChild, goal]);
+  }, [isChild, goal, sharesMainMeals]);
 
   const index = Math.max(0, cardKeys.indexOf(currentKey));
 
