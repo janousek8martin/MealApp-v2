@@ -13,7 +13,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { TextField } from '@/components/ui/TextField';
-import { CUISINE_KEYS, RECIPE_TAG_KEYS } from '@/constants/options';
+import { COOKING_EXPERIENCE_LEVELS, CUISINE_KEYS, RECIPE_TAG_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { setPhoto, upsertRecipe } from '@/db/repositories/library';
 import { computeRecipeNutrition } from '@/domain/recipeNutrition';
@@ -56,6 +56,7 @@ export default function RecipeEditScreen() {
   const [cuisine, setCuisine] = useState<string | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [budget, setBudget] = useState<'cheap' | 'average' | 'expensive'>('average');
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [servingsBase, setServingsBase] = useState('1');
   const [prepTimeMinutes, setPrepTimeMinutes] = useState('');
   const [instructionsCs, setInstructionsCs] = useState('');
@@ -76,6 +77,7 @@ export default function RecipeEditScreen() {
     setCuisine(existing.cuisine);
     setTags(existing.tagsJson ? (JSON.parse(existing.tagsJson) as string[]) : []);
     setBudget(existing.budget);
+    setDifficulty(existing.difficulty);
     setServingsBase(String(existing.servingsBase));
     setPrepTimeMinutes(existing.prepTimeMinutes !== null ? String(existing.prepTimeMinutes) : '');
     setInstructionsCs(existing.instructionsCs ?? '');
@@ -136,6 +138,7 @@ export default function RecipeEditScreen() {
         cuisine,
         tags,
         budget,
+        difficulty,
         servingsBase: num(servingsBase)!,
         prepTimeMinutes: int(prepTimeMinutes),
         ingredients: ingredients.map((entry) => ({ foodId: entry.foodId, amount: num(entry.amount)! })),
@@ -209,6 +212,13 @@ export default function RecipeEditScreen() {
           ]}
           value={budget}
           onChange={(value) => setBudget(value as typeof budget)}
+        />
+
+        <ChipSelect
+          label={t('recipeEdit.difficulty')}
+          options={COOKING_EXPERIENCE_LEVELS.map((level) => ({ value: level, label: t(`cookingExperience.${level}`) }))}
+          value={difficulty}
+          onChange={(value) => setDifficulty(value as typeof difficulty)}
         />
 
         <TextField

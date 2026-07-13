@@ -127,6 +127,8 @@ export type RecipeInput = {
   ingredients: { foodId: string; amount: number }[];
   /** Can be served cold; defaults to false. */
   canServeCold?: boolean;
+  /** Sets which household cooking-experience ceiling this recipe is drawn under; defaults to 'medium'. */
+  difficulty?: 'easy' | 'medium' | 'hard';
 };
 
 export async function upsertRecipe(db: AppDb, input: RecipeInput, recipeId?: string): Promise<string> {
@@ -147,6 +149,7 @@ export async function upsertRecipe(db: AppDb, input: RecipeInput, recipeId?: str
     maxRepetitionsPerWeek: input.maxRepetitionsPerWeek ?? null,
     allowConsecutiveDays: input.allowConsecutiveDays ?? null,
     canServeCold: input.canServeCold ?? false,
+    difficulty: input.difficulty ?? 'medium',
     updatedAt: now,
   };
 

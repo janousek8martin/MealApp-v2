@@ -21,7 +21,7 @@ import { Snackbar } from '@/components/ui/Snackbar';
 import { SwitchRow } from '@/components/ui/SwitchRow';
 import { TextField } from '@/components/ui/TextField';
 import { CUISINE_ICONS, DIET_ICONS } from '@/constants/chipIcons';
-import { CUISINE_KEYS, DIET_KEYS } from '@/constants/options';
+import { BUDGET_LEVELS, COOKING_EXPERIENCE_LEVELS, COOKING_TIME_LIMIT_OPTIONS, CUISINE_KEYS, DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { renameHousehold, replaceHouseholdPreferences, updateHouseholdSettings, updateMealSlotSetting } from '@/db/repositories/households';
 import { restoreProfile, softDeleteProfile, updateProfile } from '@/db/repositories/profiles';
@@ -50,6 +50,7 @@ import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const ANY_TIME_KEY = 'any';
 
 const NAV_LABEL_KEYS: Record<NavKey, string> = {
   index: 'tabs.home',
@@ -197,7 +198,7 @@ function ProfileSections({
       fitnessExperience: value.fitnessExperience,
       workoutDays: value.workoutDays ?? [],
       sharesMainMeals: value.sharesMainMeals ?? true,
-      wantsNewFoods: value.wantsNewFoods ?? false,
+      wantsNewFoods: profile.wantsNewFoods,
       allergens: value.allergens ?? [],
       diets: value.diets ?? [],
     });
@@ -524,6 +525,64 @@ function HouseholdSection({
           </View>
         </View>
         <Text style={styles.cardHint}>{t('settings.coldDinnerFrequencyHint')}</Text>
+
+        <SwitchRow
+          label={t('settings.allowSameLunchDinner')}
+          hint={t('settings.allowSameLunchDinnerHint')}
+          value={settings.allowSameLunchDinner}
+          onChange={(v) => updateHouseholdSettings(db, householdId, { allowSameLunchDinner: v })}
+        />
+
+        <SwitchRow
+          label={t('settings.preferPantryItems')}
+          hint={t('settings.preferPantryItemsHint')}
+          value={settings.preferPantryItems}
+          onChange={(v) => updateHouseholdSettings(db, householdId, { preferPantryItems: v })}
+        />
+
+        <ChipSelect
+          label={t('settings.mealVariety')}
+          options={(['low', 'medium', 'high'] as const).map((level) => ({
+            value: level,
+            label: t(`mealVariety.${level}`),
+          }))}
+          value={settings.mealVarietyLevel}
+          onChange={(v) => void updateHouseholdSettings(db, householdId, { mealVarietyLevel: v as 'low' | 'medium' | 'high' })}
+        />
+        <Text style={styles.cardHint}>{t('settings.mealVarietyHint')}</Text>
+
+        <ChipSelect
+          label={t('settings.cookingExperienceLevel')}
+          options={COOKING_EXPERIENCE_LEVELS.map((level) => ({ value: level, label: t(`cookingExperience.${level}`) }))}
+          value={settings.cookingExperienceLevel}
+          onChange={(v) =>
+            void updateHouseholdSettings(db, householdId, { cookingExperienceLevel: v as 'easy' | 'medium' | 'hard' })
+          }
+        />
+        <Text style={styles.cardHint}>{t('householdCarousel.cardCookingExperienceHint')}</Text>
+
+        <ChipSelect
+          label={t('settings.cookingTimeLimit')}
+          options={COOKING_TIME_LIMIT_OPTIONS.map((minutes) => ({
+            value: minutes === null ? ANY_TIME_KEY : String(minutes),
+            label: minutes === null ? t('cookingTime.any') : t('cookingTime.upTo', { minutes }),
+          }))}
+          value={settings.cookingTimeLimitMinutes === null ? ANY_TIME_KEY : String(settings.cookingTimeLimitMinutes)}
+          onChange={(v) =>
+            void updateHouseholdSettings(db, householdId, {
+              cookingTimeLimitMinutes: v === ANY_TIME_KEY ? null : Number(v),
+            })
+          }
+        />
+        <Text style={styles.cardHint}>{t('householdCarousel.cardCookingTimeHint')}</Text>
+
+        <ChipSelect
+          label={t('settings.budgetLevel')}
+          options={BUDGET_LEVELS.map((level) => ({ value: level, label: t(`budgetLevel.${level}`) }))}
+          value={settings.budgetLevel}
+          onChange={(v) => void updateHouseholdSettings(db, householdId, { budgetLevel: v as 'low' | 'medium' | 'high' })}
+        />
+        <Text style={styles.cardHint}>{t('householdCarousel.cardBudgetHint')}</Text>
       </View>
     </>
   );

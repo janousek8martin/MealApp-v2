@@ -145,7 +145,6 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
   );
   const [fitnessExperience, setFitnessExperience] = useState<string | null>(initialValue?.fitnessExperience ?? null);
   const [sharesMainMeals, setSharesMainMeals] = useState(initialValue?.sharesMainMeals ?? true);
-  const [wantsNewFoods, setWantsNewFoods] = useState(initialValue?.wantsNewFoods ?? false);
   const [workoutDays, setWorkoutDays] = useState<string[]>(
     (initialValue?.workoutDays ?? []).map(String),
   );
@@ -210,7 +209,6 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
       goalBodyFatPct: isChild ? undefined : (goalBodyFatPct ?? undefined),
       fitnessExperience: (fitnessExperience ?? undefined) as ProfileFormValue['fitnessExperience'],
       sharesMainMeals,
-      wantsNewFoods,
       workoutDays: isChild ? [] : workoutDays.map(Number),
       allergens,
       diets,
@@ -484,19 +482,6 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
         <Switch
           value={sharesMainMeals}
           onValueChange={setSharesMainMeals}
-          trackColor={{ true: colors.primaryLight, false: colors.border }}
-          thumbColor={colors.surface}
-        />
-      </View>
-
-      <View style={styles.switchRow}>
-        <View style={styles.switchText}>
-          <Text style={styles.switchLabel}>{t('form.wantsNewFoods')}</Text>
-          <Text style={styles.switchHint}>{t('form.wantsNewFoodsHint')}</Text>
-        </View>
-        <Switch
-          value={wantsNewFoods}
-          onValueChange={setWantsNewFoods}
           trackColor={{ true: colors.primaryLight, false: colors.border }}
           thumbColor={colors.surface}
         />
