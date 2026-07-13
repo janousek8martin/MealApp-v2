@@ -26,15 +26,16 @@
 - Modify: `src/components/ui/ChipSelect.tsx`
 
 **Interfaces:**
-- Produces: `resolveChipSelectTap(current: string | null, tapped: string, allowDeselect: boolean): string | null` (exported, pure) — used by Task 7 (training experience) and by the component's own `toggle()`.
-- Produces: new prop shape `DeselectableSingleProps = { label: string; options: ChipOption[]; value: string | null; onChange: (value: string | null) => void; multi?: false; allowDeselect: true }`, added to the exported `Props` union alongside existing `SingleProps`/`MultiProps`.
+- Produces: `resolveChipSelectTap(current: string | null, tapped: string, allowDeselect: boolean): string | null` (exported, pure) — used by Task 7 (training experience).
+
+> **Amended during execution**: the pure function lives in a new RN-import-free module `src/components/ui/chipSelectLogic.ts`, re-exported from `ChipSelect.tsx` (`export { resolveChipSelectTap } from './chipSelectLogic';`) — importing anything from `ChipSelect.tsx` directly in a test pulls in the native-module graph (`useTheme` → `ThemeContext` → `appStore` → `AsyncStorage`), which isn't mocked in this Jest setup. `ChipSelect`'s `Props` union is **not** widened with a `DeselectableSingleProps` variant — that broke `onChange` type inference at every existing single-select call site (~15 files), a TS limitation with optional-discriminant unions. See Task 7 for how deselection is actually composed (by the caller, not inside `ChipSelect`).
 
 - [ ] **Step 1: Write the failing test**
 
 Create `src/components/ui/__tests__/ChipSelect.test.ts`:
 
 ```ts
-import { resolveChipSelectTap } from '../ChipSelect';
+import { resolveChipSelectTap } from '../chipSelectLogic';
 
 describe('resolveChipSelectTap', () => {
   it('selects a new option when nothing is selected', () => {
@@ -501,9 +502,11 @@ git commit -m "content: rename body-fat calculator button label (phase Z)"
 - Modify: `src/components/profileWizard/ProfileSetupCarousel.tsx`
 
 **Interfaces:**
-- Consumes: Task 1's `DeselectableSingleProps` variant of `ChipSelect`.
+- Consumes: Task 1's `resolveChipSelectTap` helper (re-exported from `ChipSelect.tsx`).
 
-- [ ] **Step 1: Switch the `fitnessExperience` `ChipSelect` to the deselectable variant**
+> **Amended during execution**: Task 1's original plan (a `DeselectableSingleProps` union variant on `ChipSelect` itself) broke `onChange` type inference at every existing single-select call site (~15 files) — a TS limitation with optional-discriminant unions. `ChipSelect`'s public `Props` type was left untouched; deselection is composed by the caller instead, wrapping the existing unchanged `onChange` prop with `resolveChipSelectTap`.
+
+- [ ] **Step 1: Wrap `fitnessExperience`'s `onChange` with the deselect helper**
 
 ```tsx
 <ChipSelect
@@ -514,12 +517,11 @@ git commit -m "content: rename body-fat calculator button label (phase Z)"
     { value: 'advanced', label: t('fitness.advanced') },
   ]}
   value={fitnessExperience}
-  onChange={setFitnessExperience}
-  allowDeselect
+  onChange={(v) => setFitnessExperience(resolveChipSelectTap(fitnessExperience, v, true))}
 />
 ```
 
-(`fitnessExperience` is already typed `useState<string | null>(null)` and `setFitnessExperience` already accepts a plain setter — since `ChipSelect`'s `DeselectableSingleProps.onChange` is `(value: string | null) => void`, `setFitnessExperience` (a raw `Dispatch<SetStateAction<string | null>>`) satisfies it directly with no wrapper needed.)
+Add the import: `import { resolveChipSelectTap } from '@/components/ui/ChipSelect';` (`fitnessExperience` is already `useState<string | null>(null)`; `ChipSelect`'s existing `SingleProps.onChange` still passes a plain `string`, and `resolveChipSelectTap` returns `string | null`, which `setFitnessExperience` already accepts — no type changes needed anywhere else.)
 
 - [ ] **Step 2: Typecheck**
 
