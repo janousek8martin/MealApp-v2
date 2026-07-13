@@ -24,6 +24,8 @@ type MultiProps = {
 
 type Props = SingleProps | MultiProps;
 
+export { resolveChipSelectTap } from './chipSelectLogic';
+
 /** Rounded chip group used across forms (single or multi select). */
 export function ChipSelect(props: Props) {
   const { colors } = useTheme();
