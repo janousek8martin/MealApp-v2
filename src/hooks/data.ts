@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { db } from '@/db/client';
 import {
   bodyMetrics,
+  householdAvoidedItems,
   householdCustomUnits,
   householdRestrictions,
   householdSettings,
@@ -124,6 +125,22 @@ export function useHouseholdRestrictions(householdId: string | undefined) {
   return {
     allergens: rows.filter((row) => row.kind === 'allergen').map((row) => row.value),
     diets: rows.filter((row) => row.kind === 'diet').map((row) => row.value),
+  };
+}
+
+/** Household-wide "nobody wants this" foods/recipes, split by item type – for the Domácnost settings editor. */
+export function useHouseholdAvoidedItems(householdId: string | undefined) {
+  const { data } = useLiveQuery(
+    db
+      .select()
+      .from(householdAvoidedItems)
+      .where(and(eq(householdAvoidedItems.householdId, householdId ?? ''), isNull(householdAvoidedItems.deletedAt))),
+    [householdId],
+  );
+  const rows = data ?? [];
+  return {
+    avoidedFoodIds: rows.filter((row) => row.itemType === 'food').map((row) => row.itemId),
+    avoidedRecipeIds: rows.filter((row) => row.itemType === 'recipe').map((row) => row.itemId),
   };
 }
 

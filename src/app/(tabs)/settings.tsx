@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
 import { KitchenUnitsModal } from '@/components/KitchenUnitsModal';
 import { ProfileDropdownMenu } from '@/components/ProfileDropdownMenu';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
@@ -17,14 +19,18 @@ import { ChipSelect } from '@/components/ui/ChipSelect';
 import { Snackbar } from '@/components/ui/Snackbar';
 import { SwitchRow } from '@/components/ui/SwitchRow';
 import { TextField } from '@/components/ui/TextField';
+import { CUISINE_ICONS, DIET_ICONS } from '@/constants/chipIcons';
+import { CUISINE_KEYS, DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
-import { updateHouseholdSettings, updateMealSlotSetting } from '@/db/repositories/households';
+import { renameHousehold, replaceHouseholdPreferences, updateHouseholdSettings, updateMealSlotSetting } from '@/db/repositories/households';
 import { restoreProfile, softDeleteProfile, updateProfile } from '@/db/repositories/profiles';
 import { ageYears } from '@/domain/age';
 import { micronutrientRda } from '@/domain/micronutrients';
 import { defaultNotificationSettings, type NotificationSettings } from '@/db/types';
 import {
   useHousehold,
+  useHouseholdAvoidedItems,
+  useHouseholdRestrictions,
   useHouseholdSettings,
   useLatestBodyMetric,
   useProfileRestrictions,
@@ -32,6 +38,7 @@ import {
   useProfileTargets,
 } from '@/hooks/data';
 import type { ProfileRow } from '@/hooks/dataMapping';
+import { useFoods } from '@/hooks/library';
 import { useAllMealSlots } from '@/hooks/plan';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
@@ -39,6 +46,7 @@ import { syncHouseholdNotifications } from '@/services/notifications';
 import { MAX_MAIN_NAV_ITEMS, useAppStore, type NavKey } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { localizedName } from '@/utils/localized';
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -351,6 +359,172 @@ function NavigationCard() {
   );
 }
 
+/** Household-wide identity, diet/cuisine/avoid preferences, members overview, and the (moved-in) repetition/cold-dinner controls. */
+function HouseholdSection({
+  householdId,
+  householdName,
+  settings,
+}: {
+  householdId: string;
+  householdName: string;
+  settings: NonNullable<ReturnType<typeof useHouseholdSettings>>;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const members = useProfiles(householdId);
+  const restrictions = useHouseholdRestrictions(householdId);
+  const { avoidedFoodIds } = useHouseholdAvoidedItems(householdId);
+  const foodRows = useFoods();
+  const foodById = useMemo(() => new Map(foodRows.map((f) => [f.id, f])), [foodRows]);
+  const favoriteCuisines: string[] = settings.favoriteCuisinesJson ? JSON.parse(settings.favoriteCuisinesJson) : [];
+
+  const [name, setName] = useState(householdName);
+  const [nameSeeded, setNameSeeded] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  useEffect(() => {
+    if (nameSeeded) return;
+    setName(householdName);
+    setNameSeeded(true);
+  }, [householdName, nameSeeded]);
+
+  const addAvoidedFood = (food: FoodRow) => {
+    setPickerVisible(false);
+    if (avoidedFoodIds.includes(food.id)) return;
+    void replaceHouseholdPreferences(db, householdId, { avoidedFoodIds: [...avoidedFoodIds, food.id] });
+  };
+  const removeAvoidedFood = (foodId: string) => {
+    void replaceHouseholdPreferences(db, householdId, { avoidedFoodIds: avoidedFoodIds.filter((id) => id !== foodId) });
+  };
+
+  return (
+    <>
+      <View style={styles.slotFieldTime}>
+        <TextField label={t('settings.householdName')} value={name} onChangeText={setName} />
+      </View>
+      <Button
+        label={t('common.save')}
+        variant="secondary"
+        disabled={name.trim().length === 0 || name === householdName}
+        onPress={() => void renameHousehold(db, householdId, name.trim())}
+      />
+
+      <ChipSelect
+        label={t('settings.householdDiets')}
+        multi
+        options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`), icon: DIET_ICONS[key] }))}
+        value={restrictions.diets}
+        onChange={(diets) => void replaceHouseholdPreferences(db, householdId, { diets })}
+      />
+
+      <ChipSelect
+        label={t('settings.householdCuisines')}
+        multi
+        options={CUISINE_KEYS.map((key) => ({ value: key, label: t(`cuisines.${key}`), icon: CUISINE_ICONS[key] }))}
+        value={favoriteCuisines}
+        onChange={(favoriteCuisines) => void replaceHouseholdPreferences(db, householdId, { favoriteCuisines })}
+      />
+
+      <Text style={styles.slotLabel}>{t('settings.householdAvoidedFoods')}</Text>
+      <View style={styles.avoidedChipsRow}>
+        {avoidedFoodIds.map((foodId) => {
+          const food = foodById.get(foodId);
+          if (!food) return null;
+          return (
+            <Pressable key={foodId} style={styles.avoidedChip} onPress={() => removeAvoidedFood(foodId)}>
+              <Text style={styles.avoidedChipLabel}>{localizedName(food)}</Text>
+              <Ionicons name="close" size={14} color={colors.textSecondary} />
+            </Pressable>
+          );
+        })}
+        <Pressable style={styles.avoidedChipAdd} onPress={() => setPickerVisible(true)}>
+          <Text style={styles.avoidedChipAddLabel}>{t('settings.householdAddAvoidedFood')}</Text>
+        </Pressable>
+      </View>
+      <FoodPickerModal visible={pickerVisible} onClose={() => setPickerVisible(false)} onPick={addAvoidedFood} />
+
+      <Text style={styles.slotLabel}>{t('settings.householdMembers')}</Text>
+      {members.map((member) => (
+        <Pressable
+          key={member.id}
+          style={styles.memberRow}
+          onPress={() => router.push({ pathname: '/profile/[id]', params: { id: member.id } })}>
+          <Text style={styles.slotLabel}>{member.name}</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+        </Pressable>
+      ))}
+      <Pressable style={styles.memberRow} onPress={() => router.push('/profile/new')}>
+        <Text style={styles.addMemberLabel}>{t('settings.addMember')}</Text>
+      </Pressable>
+
+      <View style={styles.mealTimesSection}>
+        <View style={styles.stepperRow}>
+          <Text style={styles.slotLabel}>{t('settings.maxRepetitionsPerWeek')}</Text>
+          <View style={styles.stepper}>
+            <Button
+              variant="secondary"
+              label="–"
+              style={styles.stepperButton}
+              onPress={() =>
+                updateHouseholdSettings(db, householdId, {
+                  defaultMaxRepetitionsPerWeek: Math.max(1, settings.defaultMaxRepetitionsPerWeek - 1),
+                })
+              }
+            />
+            <Text style={styles.stepperValue}>{settings.defaultMaxRepetitionsPerWeek}</Text>
+            <Button
+              variant="secondary"
+              label="+"
+              style={styles.stepperButton}
+              onPress={() =>
+                updateHouseholdSettings(db, householdId, {
+                  defaultMaxRepetitionsPerWeek: Math.min(7, settings.defaultMaxRepetitionsPerWeek + 1),
+                })
+              }
+            />
+          </View>
+        </View>
+        <Text style={styles.cardHint}>{t('settings.maxRepetitionsHint')}</Text>
+
+        <SwitchRow
+          label={t('settings.allowConsecutiveDays')}
+          hint={t('settings.allowConsecutiveDaysHint')}
+          value={settings.defaultAllowConsecutiveDays}
+          onChange={(v) => updateHouseholdSettings(db, householdId, { defaultAllowConsecutiveDays: v })}
+        />
+
+        <View style={styles.stepperRow}>
+          <Text style={styles.slotLabel}>{t('settings.coldDinnerFrequency')}</Text>
+          <View style={styles.stepper}>
+            <Button
+              variant="secondary"
+              label="–"
+              style={styles.stepperButton}
+              onPress={() =>
+                updateHouseholdSettings(db, householdId, {
+                  coldDinnerFrequencyPerWeek: Math.max(0, settings.coldDinnerFrequencyPerWeek - 1),
+                })
+              }
+            />
+            <Text style={styles.stepperValue}>{settings.coldDinnerFrequencyPerWeek}</Text>
+            <Button
+              variant="secondary"
+              label="+"
+              style={styles.stepperButton}
+              onPress={() =>
+                updateHouseholdSettings(db, householdId, {
+                  coldDinnerFrequencyPerWeek: Math.min(7, settings.coldDinnerFrequencyPerWeek + 1),
+                })
+              }
+            />
+          </View>
+        </View>
+        <Text style={styles.cardHint}>{t('settings.coldDinnerFrequencyHint')}</Text>
+      </View>
+    </>
+  );
+}
+
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
@@ -450,6 +624,10 @@ export default function SettingsScreen() {
           />
         ) : null}
 
+        <AccordionCard title={t('settings.household')}>
+          <HouseholdSection householdId={household.id} householdName={household.name} settings={settings} />
+        </AccordionCard>
+
         <AccordionCard title={t('settings.general')}>
           <ChipSelect
             label={t('settings.units')}
@@ -500,71 +678,6 @@ export default function SettingsScreen() {
             value={themeMode}
             onChange={(v) => setThemeMode(v as 'light' | 'dark')}
           />
-        </AccordionCard>
-
-        <AccordionCard title={t('settings.mealRepetition')}>
-          <View style={styles.stepperRow}>
-            <Text style={styles.slotLabel}>{t('settings.maxRepetitionsPerWeek')}</Text>
-            <View style={styles.stepper}>
-              <Button
-                variant="secondary"
-                label="–"
-                style={styles.stepperButton}
-                onPress={() =>
-                  updateHouseholdSettings(db, household.id, {
-                    defaultMaxRepetitionsPerWeek: Math.max(1, settings.defaultMaxRepetitionsPerWeek - 1),
-                  })
-                }
-              />
-              <Text style={styles.stepperValue}>{settings.defaultMaxRepetitionsPerWeek}</Text>
-              <Button
-                variant="secondary"
-                label="+"
-                style={styles.stepperButton}
-                onPress={() =>
-                  updateHouseholdSettings(db, household.id, {
-                    defaultMaxRepetitionsPerWeek: Math.min(7, settings.defaultMaxRepetitionsPerWeek + 1),
-                  })
-                }
-              />
-            </View>
-          </View>
-          <Text style={styles.cardHint}>{t('settings.maxRepetitionsHint')}</Text>
-
-          <SwitchRow
-            label={t('settings.allowConsecutiveDays')}
-            hint={t('settings.allowConsecutiveDaysHint')}
-            value={settings.defaultAllowConsecutiveDays}
-            onChange={(v) => updateHouseholdSettings(db, household.id, { defaultAllowConsecutiveDays: v })}
-          />
-
-          <View style={styles.stepperRow}>
-            <Text style={styles.slotLabel}>{t('settings.coldDinnerFrequency')}</Text>
-            <View style={styles.stepper}>
-              <Button
-                variant="secondary"
-                label="–"
-                style={styles.stepperButton}
-                onPress={() =>
-                  updateHouseholdSettings(db, household.id, {
-                    coldDinnerFrequencyPerWeek: Math.max(0, settings.coldDinnerFrequencyPerWeek - 1),
-                  })
-                }
-              />
-              <Text style={styles.stepperValue}>{settings.coldDinnerFrequencyPerWeek}</Text>
-              <Button
-                variant="secondary"
-                label="+"
-                style={styles.stepperButton}
-                onPress={() =>
-                  updateHouseholdSettings(db, household.id, {
-                    coldDinnerFrequencyPerWeek: Math.min(7, settings.coldDinnerFrequencyPerWeek + 1),
-                  })
-                }
-              />
-            </View>
-          </View>
-          <Text style={styles.cardHint}>{t('settings.coldDinnerFrequencyHint')}</Text>
         </AccordionCard>
 
         <AccordionCard title={t('settings.notifications')}>
@@ -851,6 +964,57 @@ function createStyles(colors: ColorTokens) {
     },
     navDragHandle: {
       padding: spacing.xs,
+    },
+    avoidedChipsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    avoidedChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    avoidedChipLabel: {
+      color: colors.text,
+      fontSize: typography.small,
+      fontWeight: '500',
+    },
+    avoidedChipAdd: {
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    avoidedChipAddLabel: {
+      color: colors.primary,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+    memberRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.background,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.xs,
+    },
+    addMemberLabel: {
+      color: colors.primary,
+      fontSize: typography.body,
+      fontWeight: '600',
     },
   });
 }

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { newId } from '../id';
 import { households, householdAvoidedItems, householdRestrictions, householdSettings, mealSlotSettings } from '../schema';
@@ -154,4 +154,88 @@ export async function saveHouseholdPreferences(
     .update(householdSettings)
     .set({ favoriteCuisinesJson: JSON.stringify(input.favoriteCuisines), updatedAt: now })
     .where(eq(householdSettings.householdId, householdId));
+}
+
+export async function renameHousehold(db: AppDb, householdId: string, name: string): Promise<void> {
+  await db.update(households).set({ name, updatedAt: nowIso() }).where(eq(households.id, householdId));
+}
+
+export type ReplaceHouseholdPreferencesPatch = Partial<{
+  diets: string[];
+  avoidedFoodIds: string[];
+  favoriteCuisines: string[];
+}>;
+
+/**
+ * Settings-screen editor for the same household-wide preferences the wizard
+ * writes once (see `saveHouseholdPreferences`) – each field is independently
+ * optional and replaces only that slice (soft-delete current rows, insert
+ * the new set), so editing diets doesn't touch avoided foods and vice versa.
+ * Allergens stay per-profile-only here, same as the wizard's own convention;
+ * only `diet`-kind restrictions are replaced. Avoided *recipe* items (if any)
+ * are left untouched – this editor only manages foods.
+ */
+export async function replaceHouseholdPreferences(
+  db: AppDb,
+  householdId: string,
+  patch: ReplaceHouseholdPreferencesPatch,
+): Promise<void> {
+  const now = nowIso();
+
+  if (patch.diets) {
+    await db
+      .update(householdRestrictions)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(householdRestrictions.householdId, householdId),
+          eq(householdRestrictions.kind, 'diet'),
+          isNull(householdRestrictions.deletedAt),
+        ),
+      );
+    if (patch.diets.length > 0) {
+      await db.insert(householdRestrictions).values(
+        patch.diets.map((value) => ({
+          id: newId(),
+          createdAt: now,
+          updatedAt: now,
+          householdId,
+          kind: 'diet' as const,
+          value,
+        })),
+      );
+    }
+  }
+
+  if (patch.avoidedFoodIds) {
+    await db
+      .update(householdAvoidedItems)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(householdAvoidedItems.householdId, householdId),
+          eq(householdAvoidedItems.itemType, 'food'),
+          isNull(householdAvoidedItems.deletedAt),
+        ),
+      );
+    if (patch.avoidedFoodIds.length > 0) {
+      await db.insert(householdAvoidedItems).values(
+        patch.avoidedFoodIds.map((itemId) => ({
+          id: newId(),
+          createdAt: now,
+          updatedAt: now,
+          householdId,
+          itemType: 'food' as const,
+          itemId,
+        })),
+      );
+    }
+  }
+
+  if (patch.favoriteCuisines) {
+    await db
+      .update(householdSettings)
+      .set({ favoriteCuisinesJson: JSON.stringify(patch.favoriteCuisines), updatedAt: now })
+      .where(eq(householdSettings.householdId, householdId));
+  }
 }
