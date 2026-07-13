@@ -40,6 +40,10 @@ const CARD_KEYS = [
 type CardKey = (typeof CARD_KEYS)[number];
 
 const BIRTH_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// Mirrors BODY_FAT_PCT_RANGE in db/repositories/profiles.ts - createProfile
+// rejects anything outside this range, so the carousel must gate on it too
+// instead of letting the user reach "Finish" with a value the save will throw on.
+const BODY_FAT_PCT_RANGE: [number, number] = [3, 70];
 
 function parseNumber(value: string): number | null {
   const parsed = Number(value.replace(',', '.'));
@@ -175,7 +179,12 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
           heightCm <= 230
         );
       case 'body':
-        return weightKg !== null && weightKg >= 10 && weightKg <= 300;
+        return (
+          weightKg !== null &&
+          weightKg >= 10 &&
+          weightKg <= 300 &&
+          (bodyFatPct === null || (bodyFatPct >= BODY_FAT_PCT_RANGE[0] && bodyFatPct <= BODY_FAT_PCT_RANGE[1]))
+        );
       case 'lifestyle':
         return activityLevel !== null;
       default:
@@ -333,6 +342,11 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
               onChangeText={setBodyFat}
               keyboardType="decimal-pad"
               suffix="%"
+              error={
+                submitted && bodyFatPct !== null && (bodyFatPct < BODY_FAT_PCT_RANGE[0] || bodyFatPct > BODY_FAT_PCT_RANGE[1])
+                  ? t('form.bodyFatRange')
+                  : undefined
+              }
               labelRight={
                 <Pressable accessibilityRole="button" onPress={() => setBodyFatChartVisible(true)} hitSlop={8}>
                   <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
