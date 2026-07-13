@@ -4,7 +4,7 @@ import { ageYears } from '../../domain/age';
 import { computeRecipeNutrition } from '../../domain/recipeNutrition';
 import { computeTargets } from '../../domain/targets';
 import { addDays, startOfWeek, weekDates } from '../../domain/week';
-import { createHouseholdWithDefaults, updateHouseholdSettings } from '../repositories/households';
+import { createHouseholdWithDefaults, insertMealSlot, updateHouseholdSettings } from '../repositories/households';
 import { setRating, upsertFood, upsertRecipe } from '../repositories/library';
 import {
   addMealExtra,
@@ -22,6 +22,29 @@ import { setRecipeResolution } from '../repositories/ratings';
 import { foods, mealSlotSettings, plannedMealExtras, plannedMealPortions, plannedMeals, profiles, recipeIngredients, recipes } from '../schema';
 import { seedIfEmpty } from '../seed';
 import { createTestDb } from '../testing/testDb';
+
+/** A single planned meal's kcal for one profile's portion, joining down to real recipe/food nutrition. */
+async function mealKcal(db: ReturnType<typeof createTestDb>, mealId: string, profileId: string): Promise<number> {
+  const [meal] = await db.select().from(plannedMeals).where(eq(plannedMeals.id, mealId));
+  const [portion] = await db
+    .select()
+    .from(plannedMealPortions)
+    .where(and(eq(plannedMealPortions.plannedMealId, mealId), eq(plannedMealPortions.profileId, profileId), isNull(plannedMealPortions.deletedAt)));
+  if (meal.itemType === 'food') {
+    const [food] = await db.select().from(foods).where(eq(foods.id, meal.itemId));
+    return food.kcalPer100 * portion.multiplier;
+  }
+  const [recipe] = await db.select().from(recipes).where(eq(recipes.id, meal.itemId));
+  const ingredientRows = await db.select().from(recipeIngredients).where(eq(recipeIngredients.recipeId, meal.itemId));
+  const withFoods = await Promise.all(
+    ingredientRows.map(async (ingredient) => {
+      const [food] = await db.select().from(foods).where(eq(foods.id, ingredient.foodId));
+      return { amount: ingredient.amount, food };
+    }),
+  );
+  const nutrition = computeRecipeNutrition(withFoods, recipe.servingsBase);
+  return nutrition.kcal * portion.multiplier;
+}
 
 /** Sums a profile's planned kcal for one date, joining down to real recipe/food nutrition – mirrors the generator's own math for the accuracy check below. */
 async function sumPlannedKcal(db: ReturnType<typeof createTestDb>, householdId: string, profileId: string, date: string): Promise<number> {
@@ -146,6 +169,40 @@ describe('plan generator (repository)', () => {
       expect(rows.find((r) => r.date === date && r.slotKey === 'snack_afternoon')).toBeUndefined();
       expect(rows.find((r) => r.date === date && r.slotKey === 'snack_morning')).toBeDefined();
     }
+  });
+
+  it('splits remaining calories across multiple snack slots instead of giving it all to the first one', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await seedIfEmpty(db);
+
+    const existingSlots = await db.select().from(mealSlotSettings).where(eq(mealSlotSettings.householdId, householdId));
+    const dinner = existingSlots.find((s) => s.slotKey === 'dinner')!;
+    const customSlotId = await insertMealSlot(db, householdId, { afterSlotId: dinner.id, label: 'Extra snack', time: '20:30' });
+    const customSlotKey = `custom_${customSlotId}`;
+
+    const profileId = await createAdult(db, householdId, {
+      enabledSlotKeys: ['breakfast', 'lunch', 'dinner', 'snack_morning', 'snack_afternoon', customSlotKey],
+    });
+
+    await generateWeek(db, householdId, FUTURE_MONDAY, 1234);
+
+    const rows = await db
+      .select()
+      .from(plannedMeals)
+      .where(and(eq(plannedMeals.householdId, householdId), eq(plannedMeals.date, FUTURE_MONDAY)));
+    const snackKeys = ['snack_morning', 'snack_afternoon', customSlotKey];
+    const snackMeals = snackKeys.map((key) => rows.find((r) => r.slotKey === key));
+    expect(snackMeals.every((m) => m !== undefined)).toBe(true);
+
+    const kcals = await Promise.all(snackMeals.map((meal) => mealKcal(db, meal!.id, profileId)));
+    const maxKcal = Math.max(...kcals);
+    const minKcal = Math.min(...kcals);
+    expect(minKcal).toBeGreaterThan(0);
+    // Before the fix, the first slot in sortOrder claimed nearly the entire
+    // remaining budget and the rest got next to nothing - a >3x spread would
+    // never happen with a proportional split across 3 roughly-equal-weight slots.
+    expect(maxKcal / minKcal).toBeLessThan(3);
   });
 
   it('skips a shared main slot entirely when no sharing profile has it enabled (phase H)', async () => {

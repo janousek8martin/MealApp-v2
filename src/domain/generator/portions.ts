@@ -113,3 +113,23 @@ export function resolveSnackTarget(
   const carbsG = Math.max(0, (kcal - proteinG * 4 - fatG * 9) / 4);
   return { kcal, proteinG, carbsG, fatG };
 }
+
+/**
+ * Normalizes weights (summing to 1) for a set of snack-kind slots being
+ * filled in the same generateDay pass, so the remaining post-mains budget
+ * is split up front rather than greedily consumed by whichever slot is
+ * processed first (the bug this fixes: with a fixed remaining-kcal target
+ * recomputed after each pick, the first slot in sortOrder claimed nearly
+ * the entire remaining budget, leaving near-zero for the rest). Falls back
+ * to an equal split when every slot's effective weight is 0 (e.g. a batch
+ * of newly-inserted slots that haven't been given a calorieShare).
+ */
+export function allocateSnackWeights(
+  slots: { id: string; calorieShare: number }[],
+  overrides: Map<string, SlotPortionOverride | undefined>,
+): number[] {
+  const rawWeights = slots.map((slot) => overrides.get(slot.id)?.calorieSharePercent ?? slot.calorieShare);
+  const sum = rawWeights.reduce((total, w) => total + w, 0);
+  if (sum <= 0) return slots.map(() => 1 / slots.length);
+  return rawWeights.map((w) => w / sum);
+}

@@ -9,6 +9,7 @@ import {
   type RestrictionConflict,
 } from '@/domain/generator/filters';
 import {
+  allocateSnackWeights,
   resolveMainSlotTarget,
   resolveSlotCalorieShare,
   resolveSnackTarget,
@@ -862,22 +863,44 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
     }
   }
 
-  for (const slot of ctx.slots.filter((s) => s.kind === 'snack')) {
-    for (const profile of ctx.profiles) {
-      if (!profile.dailyTarget || !isSlotEnabledForProfile(profile, slot.slotKey)) continue;
-      const key = slotTrackKey(slot.slotKey, profile.id);
-      if (lockedKeys.has(key)) {
-        await accumulateLockedMeal(db, householdId, date, slot.slotKey, profile.id, ctx, consumedSoFar);
-        continue;
-      }
-      const consumed = consumedSoFar.get(profile.id) ?? { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 };
-      const remaining = {
-        kcal: profile.dailyTarget.kcal - consumed.kcal,
-        proteinG: profile.dailyTarget.proteinG - consumed.proteinG,
-        carbsG: profile.dailyTarget.carbsG - consumed.carbsG,
-        fatG: profile.dailyTarget.fatG - consumed.fatG,
+  const snackSlots = ctx.slots.filter((s) => s.kind === 'snack');
+  for (const profile of ctx.profiles) {
+    if (!profile.dailyTarget) continue;
+    const profileSnackSlots = snackSlots.filter(
+      (slot) => isSlotEnabledForProfile(profile, slot.slotKey) && !lockedKeys.has(slotTrackKey(slot.slotKey, profile.id)),
+    );
+    const lockedSnackSlots = snackSlots.filter(
+      (slot) => isSlotEnabledForProfile(profile, slot.slotKey) && lockedKeys.has(slotTrackKey(slot.slotKey, profile.id)),
+    );
+    for (const slot of lockedSnackSlots) {
+      await accumulateLockedMeal(db, householdId, date, slot.slotKey, profile.id, ctx, consumedSoFar);
+    }
+    if (profileSnackSlots.length === 0) continue;
+
+    const consumed = consumedSoFar.get(profile.id) ?? { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 };
+    const remaining = {
+      kcal: profile.dailyTarget.kcal - consumed.kcal,
+      proteinG: profile.dailyTarget.proteinG - consumed.proteinG,
+      carbsG: profile.dailyTarget.carbsG - consumed.carbsG,
+      fatG: profile.dailyTarget.fatG - consumed.fatG,
+    };
+    // Weights split the remaining post-mains budget across every enabled
+    // snack slot up front, so the first slot in sortOrder doesn't greedily
+    // claim nearly the whole remainder before the rest are even considered.
+    const weights = allocateSnackWeights(
+      profileSnackSlots,
+      new Map(profileSnackSlots.map((s) => [s.id, profile.slotOverrides.get(s.id)])),
+    );
+
+    for (let i = 0; i < profileSnackSlots.length; i += 1) {
+      const slot = profileSnackSlots[i];
+      const slotRemaining = {
+        kcal: remaining.kcal * weights[i],
+        proteinG: remaining.proteinG * weights[i],
+        carbsG: remaining.carbsG * weights[i],
+        fatG: remaining.fatG * weights[i],
       };
-      const target = resolveSnackTarget(remaining, profile.dailyTarget.kcal, profile.slotOverrides.get(slot.id));
+      const target = resolveSnackTarget(slotRemaining, profile.dailyTarget.kcal, profile.slotOverrides.get(slot.id));
       const picked = pickSnackForSlot(ctx.snackItems, profile.restrictions, repetitionCtx, target, ctx.candidateFilters);
       if (!picked) continue;
       // Scaled (not fixed at 1x) so the day's planned-vs-target accuracy holds

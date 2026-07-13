@@ -136,6 +136,15 @@ export async function insertMealSlot(
       ),
     );
 
+  // A brand-new slot needs a nonzero calorieShare so allocateSnackWeights
+  // (src/domain/generator/portions.ts) gives it a fair weight alongside
+  // existing snack slots instead of normalizing it to zero - it only falls
+  // back to an equal split when EVERY slot's weight is 0, so a lone zero
+  // amid nonzero siblings would otherwise starve the new slot entirely.
+  const existingSnackShares = siblings.filter((s) => s.kind === 'snack').map((s) => s.calorieShare);
+  const defaultCalorieShare =
+    existingSnackShares.length > 0 ? existingSnackShares.reduce((sum, s) => sum + s, 0) / existingSnackShares.length : 0.1;
+
   const id = newId();
   await db.insert(mealSlotSettings).values({
     id,
@@ -146,7 +155,7 @@ export async function insertMealSlot(
     kind: 'snack',
     sharing: 'individual',
     time: input.time,
-    calorieShare: 0,
+    calorieShare: defaultCalorieShare,
     sortOrder: insertAtSortOrder,
     enabled: true,
     label: input.label,

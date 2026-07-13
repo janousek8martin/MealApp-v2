@@ -1,4 +1,5 @@
 import {
+  allocateSnackWeights,
   isScalingMultiplierClamped,
   pickClosestSnack,
   resolveMainSlotTarget,
@@ -165,5 +166,33 @@ describe('resolveMainSlotTarget', () => {
     const override = { calorieSharePercent: null, proteinTargetG: 100, fatTargetG: 50 };
     const result = resolveMainSlotTarget(dailyTarget, 0.1, override);
     expect(result.carbsG).toBe(0);
+  });
+});
+
+describe('allocateSnackWeights', () => {
+  it('splits evenly across slots with no calorieShare and no overrides (e.g. all newly inserted)', () => {
+    const slots = [{ id: 'a', calorieShare: 0 }, { id: 'b', calorieShare: 0 }, { id: 'c', calorieShare: 0 }];
+    const weights = allocateSnackWeights(slots, new Map());
+    expect(weights).toEqual([1 / 3, 1 / 3, 1 / 3]);
+  });
+
+  it('gives a single slot the full weight', () => {
+    const slots = [{ id: 'a', calorieShare: 0 }];
+    expect(allocateSnackWeights(slots, new Map())).toEqual([1]);
+  });
+
+  it('splits proportionally to calorieShare when set', () => {
+    const slots = [{ id: 'a', calorieShare: 0.1 }, { id: 'b', calorieShare: 0.3 }];
+    const weights = allocateSnackWeights(slots, new Map());
+    expect(weights[0]).toBeCloseTo(0.25);
+    expect(weights[1]).toBeCloseTo(0.75);
+  });
+
+  it('lets a per-profile override win over the slot default', () => {
+    const slots = [{ id: 'a', calorieShare: 0.1 }, { id: 'b', calorieShare: 0.1 }];
+    const overrides = new Map([['a', { calorieSharePercent: 0.4, proteinTargetG: null, fatTargetG: null }]]);
+    const weights = allocateSnackWeights(slots, overrides);
+    expect(weights[0]).toBeCloseTo(0.8);
+    expect(weights[1]).toBeCloseTo(0.2);
   });
 });
