@@ -12,7 +12,7 @@ import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
 import type { ProfileFormValue } from '@/components/ProfileForm';
 import { WeightProjectionChart } from '@/components/WeightProjectionChart';
 import { Button } from '@/components/ui/Button';
-import { ChipSelect } from '@/components/ui/ChipSelect';
+import { ChipSelect, resolveChipSelectTap } from '@/components/ui/ChipSelect';
 import { SwitchRow } from '@/components/ui/SwitchRow';
 import { TextField } from '@/components/ui/TextField';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
@@ -457,7 +457,7 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
                 { value: 'advanced', label: t('fitness.advanced') },
               ]}
               value={fitnessExperience}
-              onChange={setFitnessExperience}
+              onChange={(v) => setFitnessExperience(resolveChipSelectTap(fitnessExperience, v, true))}
             />
             <Text style={styles.weekdayLabel}>{t('form.workoutDays')}</Text>
             <View style={styles.weekdayGrid}>
