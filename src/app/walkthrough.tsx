@@ -49,6 +49,11 @@ const PAGES: { image: ReturnType<typeof require>; titleKey: string; bodyKey: str
     titleKey: 'walkthrough.page5Title',
     bodyKey: 'walkthrough.page5Body',
   },
+  {
+    image: require('../assets/images/walkthrough/import.png'),
+    titleKey: 'walkthrough.page6Title',
+    bodyKey: 'walkthrough.page6Body',
+  },
 ];
 
 /** Quick-start defaults for the "skip the wizard" path – editable later in Profile settings. */

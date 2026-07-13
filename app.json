@@ -41,6 +41,13 @@
         {
           "cameraPermission": "Aplikace potřebuje přístup ke kameře pro naskenování čárového kódu potraviny."
         }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "androidIntentFilters": ["text/*"],
+          "disableIOS": true
+        }
       ]
     ],
     "experiments": {
