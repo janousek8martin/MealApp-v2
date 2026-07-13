@@ -10,10 +10,11 @@ import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
 import { KitchenUnitsModal } from '@/components/KitchenUnitsModal';
 import { ProfileDropdownMenu } from '@/components/ProfileDropdownMenu';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
-import { ManualAdjustmentCard, MacroOverridesCard } from '@/components/ProfileNutritionCards';
+import { ManualAdjustmentCard, MacroDayOverridesEditor, MacroOverridesCard } from '@/components/ProfileNutritionCards';
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { ProfilePortionsCard } from '@/components/ProfilePortionsCard';
 import { WaterSettingsCard } from '@/components/WaterSettingsCard';
+import { AdvancedExpander } from '@/components/ui/AdvancedExpander';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { Snackbar } from '@/components/ui/Snackbar';
@@ -228,7 +229,10 @@ function ProfileSections({
           </>
         ) : null}
         {targets ? <ManualAdjustmentCard profileId={profile.id} kcal={profile.tdciManualAdjustmentKcal} /> : null}
-        <MacroOverridesCard profileId={profile.id} macroOverridesJson={profile.macroOverridesJson} />
+        <AdvancedExpander>
+          <MacroOverridesCard profileId={profile.id} macroOverridesJson={profile.macroOverridesJson} />
+          <MacroDayOverridesEditor profileId={profile.id} macroDayOverridesJson={profile.macroDayOverridesJson} />
+        </AdvancedExpander>
         {(() => {
           const rda = micronutrientRda(profile.sex, ageYears(profile.birthDate));
           return (

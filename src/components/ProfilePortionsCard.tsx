@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AdvancedExpander } from '@/components/ui/AdvancedExpander';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
@@ -183,25 +184,35 @@ export function ProfilePortionsCard({
 
   return (
     <View>
-      <Text style={styles.hint}>{t('settings.slotPortionsHint')}</Text>
-      {enabledSlots.map((slot) => {
-        const edit = edits[slot.id];
-        if (!edit) return null;
-        return (
-          <SlotRowEditor
-            key={slot.id}
-            slot={slot}
-            edit={edit}
-            dailyTargetKcal={dailyTargetKcal}
-            onChange={(patch) => updateEdit(slot.id, patch)}
-            onReset={() => resetSlot(slot.id)}
-          />
-        );
-      })}
-      <Text style={[styles.sumText, !canSave && styles.sumTextWarning]}>
-        {t('settings.slotsSumWarning', { sum: Math.round(sumPercent) })}
-      </Text>
-      <Button label={t('settings.savePortions')} onPress={save} disabled={!canSave} />
+      <View style={styles.summaryList}>
+        {enabledSlots.map((slot) => (
+          <View key={slot.id} style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>{t(`slots.${slot.slotKey}`)}</Text>
+            <Text style={styles.summaryValue}>{edits[slot.id]?.percent ?? Math.round(slot.calorieShare * 100)} %</Text>
+          </View>
+        ))}
+      </View>
+      <AdvancedExpander>
+        <Text style={styles.hint}>{t('settings.slotPortionsHint')}</Text>
+        {enabledSlots.map((slot) => {
+          const edit = edits[slot.id];
+          if (!edit) return null;
+          return (
+            <SlotRowEditor
+              key={slot.id}
+              slot={slot}
+              edit={edit}
+              dailyTargetKcal={dailyTargetKcal}
+              onChange={(patch) => updateEdit(slot.id, patch)}
+              onReset={() => resetSlot(slot.id)}
+            />
+          );
+        })}
+        <Text style={[styles.sumText, !canSave && styles.sumTextWarning]}>
+          {t('settings.slotsSumWarning', { sum: Math.round(sumPercent) })}
+        </Text>
+        <Button label={t('settings.savePortions')} onPress={save} disabled={!canSave} />
+      </AdvancedExpander>
     </View>
   );
 }
@@ -213,6 +224,24 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small,
       marginBottom: spacing.sm,
       lineHeight: 18,
+    },
+    summaryList: {
+      gap: spacing.xs,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.xs,
+    },
+    summaryLabel: {
+      color: colors.text,
+      fontSize: typography.body,
+    },
+    summaryValue: {
+      color: colors.textSecondary,
+      fontSize: typography.body,
+      fontWeight: '700',
     },
     slotCard: {
       backgroundColor: colors.background,

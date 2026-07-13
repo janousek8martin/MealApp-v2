@@ -214,7 +214,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
           // (useProfileTargets → targetsForProfile), so the generator's
           // target can never drift from what Home/Settings display –
           // activity multiplier and macro overrides included.
-          const targets = targetsForProfile(profile, latestMetric, settingsRow?.fiberMode ?? 'efsa_min')!;
+          const targets = targetsForProfile(profile, latestMetric, settingsRow?.fiberMode ?? 'efsa_min', date)!;
           const workoutDays: number[] = profile.workoutDaysJson ? JSON.parse(profile.workoutDaysJson) : [];
           return applyWorkoutDayCycling(
             {

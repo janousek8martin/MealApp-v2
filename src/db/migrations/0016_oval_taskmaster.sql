@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `macro_day_overrides_json` text;

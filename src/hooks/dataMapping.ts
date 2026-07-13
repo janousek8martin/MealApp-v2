@@ -1,7 +1,9 @@
 import type { bodyMetrics, profiles } from '@/db/schema';
-import { parseMacroOverrides } from '@/db/repositories/profiles';
+import { parseMacroDayOverrides, parseMacroOverrides } from '@/db/repositories/profiles';
 import { ageYears } from '@/domain/age';
+import { mergeMacroOverrides } from '@/domain/macroOverrides';
 import { computeTargets, type TargetsResult } from '@/domain/targets';
+import { isoWeekday } from '@/domain/week';
 
 export type ProfileRow = typeof profiles.$inferSelect;
 export type MetricRow = typeof bodyMetrics.$inferSelect;
@@ -15,9 +17,14 @@ export function targetsForProfile(
   profile: ProfileRow,
   latestMetric: MetricRow | null,
   fiberMode: 'efsa_min' | 'gender_specific' = 'efsa_min',
+  /** When given, layers that weekday's macroDayOverridesJson entry (if any) over the profile-wide overrides. */
+  dateIso?: string,
 ): TargetsResult | null {
   if (!latestMetric) return null;
-  const overrides = parseMacroOverrides(profile.macroOverridesJson);
+  const profileWideOverrides = parseMacroOverrides(profile.macroOverridesJson);
+  const overrides = dateIso
+    ? mergeMacroOverrides(profileWideOverrides, parseMacroDayOverrides(profile.macroDayOverridesJson)[String(isoWeekday(dateIso))])
+    : profileWideOverrides;
   return computeTargets({
     profileType: profile.profileType,
     sex: profile.sex,

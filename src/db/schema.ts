@@ -204,6 +204,8 @@ export const profiles = sqliteTable(
     tdciManualAdjustmentKcal: real('tdci_manual_adjustment_kcal').notNull().default(0),
     /** JSON: optional overrides (proteinPerKgLbm, surplusKcal, carbFatSplit...). */
     macroOverridesJson: text('macro_overrides_json'),
+    /** JSON: Record<'1'-'7' (ISO weekday), MacroOverrides> - per-weekday overrides layered over macroOverridesJson at target-computation time; null/absent = no per-day overrides. */
+    macroDayOverridesJson: text('macro_day_overrides_json'),
     /** JSON array of meal_slot_settings.slotKey this profile eats; null = every household slot (default). */
     enabledSlotKeysJson: text('enabled_slot_keys_json'),
     /** Whether the daily water-tracking widget/goal is shown for this profile. */

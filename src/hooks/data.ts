@@ -222,16 +222,21 @@ export function useProfileTargets(profile: ProfileRow | null) {
 /**
  * A profile's target for a specific date, applying workout-day carb cycling
  * on top of the weekly-average TDCI (training days get more, rest days less,
- * so the weekly average always matches `useProfileTargets`).
+ * so the weekly average always matches `useProfileTargets`) and any
+ * per-weekday macro override for `dateIso` (see `targetsForProfile`'s
+ * optional 4th param), applied before workout cycling runs on top.
  */
 export function useDailyProfileTargets(profile: ProfileRow | null, dateIso: string) {
-  const targets = useProfileTargets(profile);
+  const latestMetric = useLatestBodyMetric(profile?.id);
+  const settings = useHouseholdSettings(profile?.householdId);
   const workoutDaysJson = profile?.workoutDaysJson;
   const workoutDays = useMemo<number[]>(
     () => (workoutDaysJson ? (JSON.parse(workoutDaysJson) as number[]) : []),
     [workoutDaysJson],
   );
-  if (!targets || !profile) return null;
+  if (!profile) return null;
+  const targets = targetsForProfile(profile, latestMetric, settings?.fiberMode ?? 'efsa_min', dateIso);
+  if (!targets) return null;
   return applyWorkoutDayCycling(
     {
       kcal: targets.adjustedTdciKcal,

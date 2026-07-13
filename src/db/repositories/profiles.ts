@@ -286,6 +286,39 @@ export async function updateProfileMacroOverrides(
     .where(eq(profiles.id, profileId));
 }
 
+/** Parses profiles.macroDayOverridesJson into a map keyed by ISO weekday string ('1' = Monday .. '7' = Sunday). */
+export function parseMacroDayOverrides(json: string | null): Record<string, MacroOverrides> {
+  if (!json) return {};
+  try {
+    return JSON.parse(json) as Record<string, MacroOverrides>;
+  } catch {
+    return {};
+  }
+}
+
+/** Sets or clears one weekday's macro overrides. Pass `overrides: null` to clear just that weekday (other weekdays are untouched). */
+export async function updateProfileMacroDayOverrides(
+  db: AppDb,
+  profileId: string,
+  weekday: 1 | 2 | 3 | 4 | 5 | 6 | 7,
+  overrides: MacroOverrides | null,
+): Promise<void> {
+  const [profile] = await db.select().from(profiles).where(eq(profiles.id, profileId));
+  if (!profile) return;
+  const current = parseMacroDayOverrides(profile.macroDayOverridesJson);
+  const key = String(weekday);
+  if (overrides === null) delete current[key];
+  else current[key] = overrides;
+
+  await db
+    .update(profiles)
+    .set({
+      macroDayOverridesJson: Object.keys(current).length > 0 ? JSON.stringify(current) : null,
+      updatedAt: nowIso(),
+    })
+    .where(eq(profiles.id, profileId));
+}
+
 export type WaterSettingsPatch = {
   trackWater: boolean;
   /** Pass `null` to clear the override and fall back to the weight-based domain default. */

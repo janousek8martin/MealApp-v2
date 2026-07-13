@@ -2,7 +2,14 @@ import { eq } from 'drizzle-orm';
 
 import { targetsForProfile } from '../../hooks/dataMapping';
 import { createHouseholdWithDefaults } from '../repositories/households';
-import { addBodyMetric, createProfile, restoreProfile, softDeleteProfile } from '../repositories/profiles';
+import {
+  addBodyMetric,
+  createProfile,
+  parseMacroDayOverrides,
+  restoreProfile,
+  softDeleteProfile,
+  updateProfileMacroDayOverrides,
+} from '../repositories/profiles';
 import { bodyMetrics, profileRestrictions, profiles } from '../schema';
 import { createTestDb } from '../testing/testDb';
 
@@ -163,5 +170,27 @@ describe('profile repository', () => {
 
     // No metric yet → no targets (never a fabricated number).
     expect(targetsForProfile(profile, null)).toBeNull();
+  });
+});
+
+describe('updateProfileMacroDayOverrides', () => {
+  it('sets one weekday without touching another, then clears just that weekday', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    const profileId = await createProfile(db, validCreateInput(householdId));
+
+    await updateProfileMacroDayOverrides(db, profileId, 1, { proteinPerKgLbm: 3 });
+    await updateProfileMacroDayOverrides(db, profileId, 3, { surplusKcal: 300 });
+
+    const [afterSet] = await db.select().from(profiles).where(eq(profiles.id, profileId));
+    const parsed = parseMacroDayOverrides(afterSet.macroDayOverridesJson);
+    expect(parsed['1']).toEqual({ proteinPerKgLbm: 3 });
+    expect(parsed['3']).toEqual({ surplusKcal: 300 });
+
+    await updateProfileMacroDayOverrides(db, profileId, 1, null);
+    const [afterClear] = await db.select().from(profiles).where(eq(profiles.id, profileId));
+    const parsedAfterClear = parseMacroDayOverrides(afterClear.macroDayOverridesJson);
+    expect(parsedAfterClear['1']).toBeUndefined();
+    expect(parsedAfterClear['3']).toEqual({ surplusKcal: 300 });
   });
 });

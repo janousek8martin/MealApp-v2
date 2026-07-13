@@ -17,6 +17,7 @@ import m0012 from './0012_tiny_chronomancer.sql';
 import m0013 from './0013_nappy_young_avengers.sql';
 import m0014 from './0014_even_war_machine.sql';
 import m0015 from './0015_crazy_unicorn.sql';
+import m0016 from './0016_oval_taskmaster.sql';
 
   export default {
     journal,
@@ -36,7 +37,8 @@ m0011,
 m0012,
 m0013,
 m0014,
-m0015
+m0015,
+m0016
     }
   }
   
