@@ -748,6 +748,9 @@
     "title": "Kolik jídel denně chceš?",
     "hint": "Vyber si přesně ta jídla, která chceš — klidně vynech i hlavní jídlo. Štítek „sdíleno“ znamená, že v ten slot budeš jíst stejný recept jako zbytek domácnosti.",
     "shared": "sdíleno",
+    "addButton": "+ Přidat jídlo",
+    "deleteConfirmTitle": "Odebrat toto jídlo?",
+    "deleteConfirmMessage": "Tím se {{name}} odebere všem v domácnosti, kdo ho má zapnuté.",
     "slot": {
       "breakfast": "Snídaně",
       "lunch": "Oběd",
@@ -756,6 +759,20 @@
       "snack_morning": "Dopolední svačina",
       "snack_afternoon": "Odpolední svačina"
     }
+  },
+  "addMeal": {
+    "title": "Přidat jídlo",
+    "positionPrompt": "Kam ho chceš přidat?",
+    "beforeFirst": "Před {{slot}}",
+    "between": "Mezi {{before}} a {{after}}",
+    "afterLast": "Po {{slot}}",
+    "nameLabel": "Název (nepovinné)",
+    "namePlaceholder": "Jídlo navíc",
+    "timeLabel": "Čas",
+    "add": "Přidat",
+    "cancel": "Zrušit",
+    "countLow": "Příliš málo jídel může ztížit plnění cílů maker.",
+    "countHigh": "Víc než 6 jídel denně obvykle není potřeba, ale klidně pokračuj."
   },
   "water": {
     "title": "Sledovat pitný režim?",
