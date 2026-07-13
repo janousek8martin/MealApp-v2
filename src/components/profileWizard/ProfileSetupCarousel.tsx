@@ -450,35 +450,39 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
         {currentKey === 'training' ? (
           <View>
             <Text style={styles.cardTitle}>{t('carousel.cardTraining')}</Text>
-            <ChipSelect
-              label={t('form.fitnessExperience')}
-              options={[
-                { value: 'beginner', label: t('fitness.beginner') },
-                { value: 'intermediate', label: t('fitness.intermediate') },
-                { value: 'advanced', label: t('fitness.advanced') },
-              ]}
-              value={fitnessExperience}
-              onChange={(v) => setFitnessExperience(resolveChipSelectTap(fitnessExperience, v, true))}
-            />
-            <Text style={styles.weekdayLabel}>{t('form.workoutDays')}</Text>
-            <View style={styles.weekdayGrid}>
-              {weekdayOptions(i18n.language).map((day) => {
-                const selected = workoutDays.includes(day.value);
-                return (
-                  <Pressable
-                    key={day.value}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    onPress={() =>
-                      setWorkoutDays(selected ? workoutDays.filter((v) => v !== day.value) : [...workoutDays, day.value])
-                    }
-                    style={[styles.weekdayChip, selected && styles.weekdayChipSelected]}>
-                    <Text style={[styles.weekdayChipLabel, selected && styles.weekdayChipLabelSelected]}>{day.label}</Text>
-                  </Pressable>
-                );
-              })}
+            <View style={styles.controlGap}>
+              <ChipSelect
+                label={t('form.fitnessExperience')}
+                options={[
+                  { value: 'beginner', label: t('fitness.beginner') },
+                  { value: 'intermediate', label: t('fitness.intermediate') },
+                  { value: 'advanced', label: t('fitness.advanced') },
+                ]}
+                value={fitnessExperience}
+                onChange={(v) => setFitnessExperience(resolveChipSelectTap(fitnessExperience, v, true))}
+              />
             </View>
-            <Text style={styles.hintText}>{t('form.workoutDaysHint')}</Text>
+            <View style={styles.controlGap}>
+              <Text style={styles.weekdayLabel}>{t('form.workoutDays')}</Text>
+              <View style={styles.weekdayGrid}>
+                {weekdayOptions(i18n.language).map((day) => {
+                  const selected = workoutDays.includes(day.value);
+                  return (
+                    <Pressable
+                      key={day.value}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      onPress={() =>
+                        setWorkoutDays(selected ? workoutDays.filter((v) => v !== day.value) : [...workoutDays, day.value])
+                      }
+                      style={[styles.weekdayChip, selected && styles.weekdayChipSelected]}>
+                      <Text style={[styles.weekdayChipLabel, selected && styles.weekdayChipLabelSelected]}>{day.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={styles.hintText}>{t('form.workoutDaysHint')}</Text>
+            </View>
           </View>
         ) : null}
 
@@ -594,6 +598,9 @@ function createStyles(colors: ColorTokens) {
     progressFill: {
       height: 4,
       backgroundColor: colors.primary,
+    },
+    controlGap: {
+      marginBottom: spacing.lg,
     },
     cardTitle: {
       color: colors.text,

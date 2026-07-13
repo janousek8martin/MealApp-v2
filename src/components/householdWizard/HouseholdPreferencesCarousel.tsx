@@ -147,38 +147,46 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit }: Props) {
         {currentKey === 'repetition' ? (
           <View>
             <Text style={styles.cardTitle}>{t('householdCarousel.cardRepetition')}</Text>
-            <Stepper
-              label={t('settings.maxRepetitionsPerWeek')}
-              value={maxReps}
-              onChange={setMaxReps}
-              min={1}
-              max={7}
-            />
-            <Text style={styles.hintText}>{t('wizard.maxRepetitionsHint')}</Text>
-            <SwitchRow
-              label={t('settings.allowConsecutiveDays')}
-              hint={t('settings.allowConsecutiveDaysHint')}
-              value={allowConsecutive}
-              onChange={setAllowConsecutive}
-            />
-            <SwitchRow
-              label={t('settings.allowSameLunchDinner')}
-              hint={t('settings.allowSameLunchDinnerHint')}
-              value={allowSameLunchDinner}
-              onChange={setAllowSameLunchDinner}
-            />
+            <View style={styles.controlGap}>
+              <Stepper
+                label={t('settings.maxRepetitionsPerWeek')}
+                value={maxReps}
+                onChange={setMaxReps}
+                min={1}
+                max={7}
+              />
+              <Text style={styles.hintText}>{t('wizard.maxRepetitionsHint')}</Text>
+            </View>
+            <View style={styles.controlGap}>
+              <SwitchRow
+                label={t('settings.allowConsecutiveDays')}
+                hint={t('settings.allowConsecutiveDaysHint')}
+                value={allowConsecutive}
+                onChange={setAllowConsecutive}
+              />
+            </View>
+            <View style={styles.controlGap}>
+              <SwitchRow
+                label={t('settings.allowSameLunchDinner')}
+                hint={t('settings.allowSameLunchDinnerHint')}
+                value={allowSameLunchDinner}
+                onChange={setAllowSameLunchDinner}
+              />
+            </View>
           </View>
         ) : null}
 
         {currentKey === 'variety' ? (
           <View>
             <Text style={styles.cardTitle}>{t('householdCarousel.cardVariety')}</Text>
-            <SwitchRow
-              label={t('settings.preferPantryItems')}
-              hint={t('settings.preferPantryItemsHint')}
-              value={preferPantryItems}
-              onChange={setPreferPantryItems}
-            />
+            <View style={styles.controlGap}>
+              <SwitchRow
+                label={t('settings.preferPantryItems')}
+                hint={t('settings.preferPantryItemsHint')}
+                value={preferPantryItems}
+                onChange={setPreferPantryItems}
+              />
+            </View>
             <ChipSelect
               label={t('settings.mealVariety')}
               options={(['low', 'medium', 'high'] as const).map((level) => ({
@@ -364,6 +372,9 @@ function createStyles(colors: ColorTokens) {
     progressFill: {
       height: 4,
       backgroundColor: colors.primary,
+    },
+    controlGap: {
+      marginBottom: spacing.lg,
     },
     cardTitle: {
       color: colors.text,
