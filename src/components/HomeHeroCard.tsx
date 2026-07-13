@@ -22,6 +22,8 @@ type Props = {
   targetKcal: number;
   onEditProfile: () => void;
   nextMeal?: { slotLabel: string; meal: MealRow };
+  mealStreak: number;
+  waterStreak: number;
 };
 
 function NextMealRow({ slotLabel, meal, colors, styles }: { slotLabel: string; meal: MealRow; colors: ColorTokens; styles: ReturnType<typeof createStyles> }) {
@@ -60,7 +62,16 @@ function NextMealRow({ slotLabel, meal, colors, styles }: { slotLabel: string; m
  * and today's eaten-vs-target ring, instead of separate rows/cards floating
  * around it.
  */
-export function HomeHeroCard({ householdId, targets, eatenKcal, targetKcal, onEditProfile, nextMeal }: Props) {
+export function HomeHeroCard({
+  householdId,
+  targets,
+  eatenKcal,
+  targetKcal,
+  onEditProfile,
+  nextMeal,
+  mealStreak,
+  waterStreak,
+}: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -123,6 +134,19 @@ export function HomeHeroCard({ householdId, targets, eatenKcal, targetKcal, onEd
             <Text style={styles.macroLabel}>{t(`macros.${macro.key}`)}</Text>
           </View>
         ))}
+      </View>
+
+      <View style={styles.streaksRow}>
+        <View style={styles.streak}>
+          <Ionicons name="flame" size={16} color={colors.mint} />
+          <Text style={styles.streakValue}>{mealStreak}</Text>
+          <Text style={styles.streakLabel}>{t('today.mealStreak')}</Text>
+        </View>
+        <View style={styles.streak}>
+          <Ionicons name="water" size={16} color={colors.mint} />
+          <Text style={styles.streakValue}>{waterStreak}</Text>
+          <Text style={styles.streakLabel}>{t('today.waterStreak')}</Text>
+        </View>
       </View>
 
       {nextMeal ? (
@@ -225,6 +249,31 @@ function createStyles(colors: ColorTokens) {
       color: colors.mint,
       fontSize: typography.small,
       marginTop: 2,
+    },
+    streaksRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    streak: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: 'rgba(244, 241, 232, 0.12)',
+      borderRadius: radius.input,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm + 2,
+    },
+    streakValue: {
+      color: colors.onPrimary,
+      fontSize: typography.body,
+      fontWeight: '800',
+    },
+    streakLabel: {
+      color: colors.mint,
+      fontSize: typography.small,
+      flexShrink: 1,
     },
     nextMealRow: {
       flexDirection: 'row',

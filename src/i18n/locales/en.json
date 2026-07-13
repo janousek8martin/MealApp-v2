@@ -32,7 +32,9 @@
     "pantryExpiring": "expiring soon",
     "logWeight": "Log weight",
     "nextMealTitle": "Next meal today",
-    "nextMealNone": "Nothing else planned for today"
+    "nextMealNone": "Nothing else planned for today",
+    "mealStreak": "Meal streak",
+    "waterStreak": "Water streak"
   },
   "planScreen": {
     "generateWeek": "Generate week",

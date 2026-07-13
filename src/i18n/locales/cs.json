@@ -32,7 +32,9 @@
     "pantryExpiring": "brzy expiruje",
     "logWeight": "Zapsat váhu",
     "nextMealTitle": "Další jídlo dne",
-    "nextMealNone": "Pro dnešek už nic dalšího neplánujete"
+    "nextMealNone": "Pro dnešek už nic dalšího neplánujete",
+    "mealStreak": "Jídla v řadě",
+    "waterStreak": "Pitný režim v řadě"
   },
   "planScreen": {
     "generateWeek": "Vygenerovat týden",

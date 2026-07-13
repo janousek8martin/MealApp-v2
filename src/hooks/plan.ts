@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, isNull } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useMemo } from 'react';
 
@@ -191,6 +191,45 @@ export function useRecipeNutritionMap(): Map<string, RecipeNutrition> {
     }
     return map;
   }, [recipeRows, ingredientRows, foodRows]);
+}
+
+/**
+ * Dates (>= `sinceDateIso`) where every one of this profile's planned
+ * portions is `eaten` – a `planned` or `skipped` portion excludes that date.
+ * Used for the "meals" streak on the home hero card.
+ */
+export function useMealCompletionDates(
+  householdId: string | undefined,
+  profileId: string | undefined,
+  sinceDateIso: string,
+): Set<string> {
+  const { data: rows } = useLiveQuery(
+    db
+      .select({ date: plannedMeals.date, status: plannedMealPortions.status })
+      .from(plannedMealPortions)
+      .innerJoin(plannedMeals, eq(plannedMealPortions.plannedMealId, plannedMeals.id))
+      .where(
+        and(
+          eq(plannedMeals.householdId, householdId ?? ''),
+          eq(plannedMealPortions.profileId, profileId ?? ''),
+          isNull(plannedMealPortions.deletedAt),
+          gte(plannedMeals.date, sinceDateIso),
+          isNull(plannedMeals.deletedAt),
+        ),
+      ),
+    [householdId, profileId, sinceDateIso],
+  );
+
+  return useMemo(() => {
+    const allEatenByDate = new Map<string, boolean>();
+    for (const row of rows ?? []) {
+      const current = allEatenByDate.get(row.date) ?? true;
+      allEatenByDate.set(row.date, current && row.status === 'eaten');
+    }
+    const result = new Set<string>();
+    for (const [date, allEaten] of allEatenByDate) if (allEaten) result.add(date);
+    return result;
+  }, [rows]);
 }
 
 export type FoodRow = typeof foods.$inferSelect;

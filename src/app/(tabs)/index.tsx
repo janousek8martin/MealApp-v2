@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
 import { generateWeek, setPortionStatus } from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
-import { startOfWeek } from '@/domain/week';
+import { countConsecutiveDays } from '@/domain/streak';
+import { addDays, startOfWeek } from '@/domain/week';
 import {
   useActiveProfile,
   useDailyProfileTargets,
@@ -26,6 +27,7 @@ import { useFoods } from '@/hooks/library';
 import {
   findMealForProfileInSlot,
   nutritionForMeal,
+  useMealCompletionDates,
   useMealSlots,
   useMealsForDate,
   usePortionsForDate,
@@ -34,6 +36,7 @@ import {
 import { usePantryItems, useShoppingItems } from '@/hooks/shopping';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
+import { useWaterGoalDates } from '@/hooks/water';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
@@ -66,6 +69,18 @@ export default function TodayScreen() {
   const shoppingRemaining = shoppingItems.filter((item) => !item.checked).length;
   const pantryItems = usePantryItems(household?.id);
   const pantryExpiringSoon = pantryItems.filter((item) => item.expiresAt !== null && item.expiresAt <= today).length;
+
+  const streakSinceDate = useMemo(() => addDays(today, -180), [today]);
+  const mealCompletionDates = useMealCompletionDates(household?.id, activeProfile?.id, streakSinceDate);
+  const waterGoalDates = useWaterGoalDates(
+    activeProfile?.id,
+    latestMetric?.weightKg,
+    activeProfile?.sex,
+    activeProfile?.waterGoalMl,
+    streakSinceDate,
+  );
+  const mealStreak = countConsecutiveDays(mealCompletionDates, today);
+  const waterStreak = countConsecutiveDays(waterGoalDates, today);
 
   const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>({});
   const [generating, setGenerating] = useState(false);
@@ -140,6 +155,8 @@ export default function TodayScreen() {
                 ? { slotLabel: t(`slots.${nextMealEntry.slot.slotKey}`), meal: nextMealEntry.meal }
                 : undefined
             }
+            mealStreak={mealStreak}
+            waterStreak={waterStreak}
           />
         ) : null}
 
