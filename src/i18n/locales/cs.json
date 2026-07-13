@@ -673,6 +673,7 @@
     "cardBody": "Tělo",
     "cardGoal": "Cíl",
     "cardTempo": "Tempo",
+    "cardGoalReview": "Zhodnocení cíle",
     "cardLifestyle": "Životní styl",
     "cardTraining": "Trénink",
     "cardMeals": "Jídla",
@@ -770,6 +771,16 @@
     "benefitEnergyBody": "Ztráta už 1-2 % tělesné hmotnosti v tekutinách je spojena s únavou a horší koncentrací.",
     "benefitRecoveryTitle": "Chuť k jídlu a regenerace",
     "benefitRecoveryBody": "Dostatek tekutin podporuje trávení a klouby a pomáhá rozeznat žízeň od hladu."
+  },
+  "goalReview": {
+    "title": "Zhodnocení cíle",
+    "realisticTitle": "Realistický",
+    "realisticBody": "Dobře podložený, klinicky smysluplný cíl, který většina lidí dokáže dosáhnout a udržet.",
+    "ambitiousTitle": "Ambiciózní",
+    "ambitiousBody": "Dosažitelné, ale očekávejte několik měsíců vytrvalosti.",
+    "challengingTitle": "Náročný",
+    "challengingBody": "Výrazná proměna - úspěšnost a dlouhodobé udržení v této škále podle výzkumu citelně klesají. Zvažte delší časový horizont nebo odborné vedení.",
+    "changeLabel": "{{pct}} % současné váhy"
   },
   "summary": {
     "title": "Souhrn",

@@ -673,6 +673,7 @@
     "cardBody": "Body",
     "cardGoal": "Goal",
     "cardTempo": "Tempo",
+    "cardGoalReview": "Goal review",
     "cardLifestyle": "Lifestyle",
     "cardTraining": "Training",
     "cardMeals": "Meals",
@@ -770,6 +771,16 @@
     "benefitEnergyBody": "Losing as little as 1-2% of body weight in fluid is linked to fatigue and lower focus.",
     "benefitRecoveryTitle": "Appetite & recovery",
     "benefitRecoveryBody": "Good hydration supports digestion and joints, and helps you tell thirst apart from hunger."
+  },
+  "goalReview": {
+    "title": "Goal review",
+    "realisticTitle": "Realistic",
+    "realisticBody": "A well-supported, clinically meaningful target most people can reach and maintain.",
+    "ambitiousTitle": "Ambitious",
+    "ambitiousBody": "Achievable, but expect several months of sustained consistency.",
+    "challengingTitle": "Challenging",
+    "challengingBody": "A significant transformation - success and long-term maintenance rates drop noticeably at this scale in outcome research. Consider a longer timeline or medical guidance.",
+    "changeLabel": "{{pct}}% of current weight"
   },
   "summary": {
     "title": "Summary",

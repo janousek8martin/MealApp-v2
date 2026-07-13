@@ -6,6 +6,7 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BodyFatCarousel } from '@/components/BodyFatCarousel';
 import { BodyFatChartModal } from '@/components/BodyFatChartModal';
 import { DateOfBirthPicker } from '@/components/DateOfBirthPicker';
+import { GoalReviewCard } from '@/components/GoalReviewCard';
 import { LifestylePicker } from '@/components/LifestylePicker';
 import { MealSlotsPicker } from '@/components/MealSlotsPicker';
 import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
@@ -29,6 +30,7 @@ const CARD_KEYS = [
   'body',
   'goal',
   'tempo',
+  'goalReview',
   'lifestyle',
   'training',
   'meals',
@@ -117,22 +119,23 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
 
   const isChild = profileType === 'child';
 
-  const cardKeys = useMemo<CardKey[]>(() => {
-    return CARD_KEYS.filter((key) => {
-      if (isChild && (key === 'goal' || key === 'tempo' || key === 'training')) return false;
-      if (!isChild && key === 'tempo' && goal === 'maintain') return false;
-      if (key === 'diet' && sharesMainMeals) return false;
-      return true;
-    });
-  }, [isChild, goal, sharesMainMeals]);
-
-  const index = Math.max(0, cardKeys.indexOf(currentKey));
-
   const heightCm = parseNumber(height);
   const weightKg = parseNumber(weight);
   const bodyFatPct = parseNumber(bodyFat);
   const goalWeightKg = parseNumber(goalWeight);
   const goalBodyFatPct = parseNumber(goalBodyFat);
+
+  const cardKeys = useMemo<CardKey[]>(() => {
+    return CARD_KEYS.filter((key) => {
+      if (isChild && (key === 'goal' || key === 'tempo' || key === 'goalReview' || key === 'training')) return false;
+      if (!isChild && key === 'tempo' && goal === 'maintain') return false;
+      if (key === 'goalReview' && (goal === 'maintain' || goalWeightKg === null)) return false;
+      if (key === 'diet' && sharesMainMeals) return false;
+      return true;
+    });
+  }, [isChild, goal, goalWeightKg, sharesMainMeals]);
+
+  const index = Math.max(0, cardKeys.indexOf(currentKey));
 
   // A single rate (kg/week, magnitude) drives both the preset pills and the
   // fine-tune stepper - the preset just sets the starting value.
@@ -440,6 +443,15 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
                 <Ionicons name="add" size={18} color={colors.primary} />
               </Pressable>
             </View>
+          </View>
+        ) : null}
+
+        {currentKey === 'goalReview' ? (
+          <View>
+            <Text style={styles.cardTitle}>{t('carousel.cardGoalReview')}</Text>
+            {weightKg !== null && goalWeightKg !== null ? (
+              <GoalReviewCard currentWeightKg={weightKg} goalWeightKg={goalWeightKg} />
+            ) : null}
           </View>
         ) : null}
 
