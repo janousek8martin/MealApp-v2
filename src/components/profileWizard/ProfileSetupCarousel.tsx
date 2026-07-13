@@ -413,6 +413,16 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
                 setCustomRate(null);
               }}
             />
+            <View style={styles.proConBox}>
+              <Text style={styles.proConLine}>
+                <Text style={styles.proConLabel}>{t('common.pro')} </Text>
+                {t(`tempo.${tempoPreset}Pro${goal === 'lose' ? 'Lose' : 'Gain'}`)}
+              </Text>
+              <Text style={styles.proConLine}>
+                <Text style={styles.proConLabel}>{t('common.con')} </Text>
+                {t(`tempo.${tempoPreset}Con${goal === 'lose' ? 'Lose' : 'Gain'}`)}
+              </Text>
+            </View>
             <View style={styles.rateRow}>
               <Pressable
                 accessibilityRole="button"
@@ -601,6 +611,20 @@ function createStyles(colors: ColorTokens) {
     },
     controlGap: {
       marginBottom: spacing.lg,
+    },
+    proConBox: {
+      marginTop: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    proConLine: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      lineHeight: 18,
+      marginBottom: 2,
+    },
+    proConLabel: {
+      fontWeight: '700',
+      color: colors.text,
     },
     cardTitle: {
       color: colors.text,

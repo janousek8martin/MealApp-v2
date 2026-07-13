@@ -7,6 +7,8 @@
     "done": "Hotovo",
     "edit": "Upravit",
     "delete": "Smazat",
+    "pro": "Klad:",
+    "con": "Zápor:",
     "undo": "Zpět"
   },
   "tabs": {
@@ -727,7 +729,19 @@
     "fast": "Rychle",
     "rateLose": "Tempo hubnutí",
     "rateGain": "Tempo nabírání",
-    "perWeek": "kg/týden"
+    "perWeek": "kg/týden",
+    "slowProLose": "Nejlépe šetří svaly, nejudržitelnější tempo.",
+    "slowConLose": "Nejpomalejší viditelný pokrok.",
+    "recommendedProLose": "Střed bezpečného pásma podložený výzkumem.",
+    "recommendedConLose": "Pořád vyžaduje měsíce vytrvalosti.",
+    "fastProLose": "Nejrychlejší viditelné výsledky.",
+    "fastConLose": "Tempo nad ~1 %/týden je spojováno se ztrátou svalů spolu s tukem (Garthe et al., 2011).",
+    "slowProGain": "Minimální nabírání tuku, nejčistší cesta k svalům.",
+    "slowConGain": "Nejpomalejší viditelný nárůst svalů.",
+    "recommendedProGain": "Vyvážený poměr svalů a tuku pro většinu lidí.",
+    "recommendedConGain": "Je třeba počítat s určitým nabíráním tuku.",
+    "fastProGain": "Maximalizuje růstový signál, hlavně na začátku tréninku.",
+    "fastConGain": "Větší část přebytku skončí jako tuk - nabírání svalů limituje trénink, ne jen jídlo."
   },
   "mealSlots": {
     "title": "Kolik jídel denně chceš?",

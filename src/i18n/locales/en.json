@@ -6,6 +6,8 @@
     "save": "Save",
     "done": "Done",
     "edit": "Edit",
+    "pro": "Pro:",
+    "con": "Con:",
     "delete": "Delete",
     "undo": "Undo"
   },
@@ -727,7 +729,19 @@
     "fast": "Fast",
     "rateLose": "Weight-loss pace",
     "rateGain": "Weight-gain pace",
-    "perWeek": "kg/week"
+    "perWeek": "kg/week",
+    "slowProLose": "Best preserves muscle, most sustainable pace.",
+    "slowConLose": "Slowest visible progress.",
+    "recommendedProLose": "The evidence-backed middle of the safe range.",
+    "recommendedConLose": "Still requires months of consistency.",
+    "fastProLose": "Fastest visible results.",
+    "fastConLose": "Rates above ~1%/week are linked to losing muscle alongside fat (Garthe et al., 2011).",
+    "slowProGain": "Minimal fat gain, the leanest way to build muscle.",
+    "slowConGain": "Slowest visible muscle gain.",
+    "recommendedProGain": "A balanced muscle-to-fat gain ratio for most people.",
+    "recommendedConGain": "Some fat gain should be expected.",
+    "fastProGain": "Maximizes your growth signal, especially early in training.",
+    "fastConGain": "More of the surplus ends up as fat - muscle gain is capped by training response, not just food."
   },
   "mealSlots": {
     "title": "How many meals a day?",
