@@ -20,6 +20,7 @@ import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 const CARD_KEYS = [
   'repetition',
+  'variety',
   'diet',
   'cuisines',
   'avoid',
@@ -166,6 +167,12 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit }: Props) {
               value={allowSameLunchDinner}
               onChange={setAllowSameLunchDinner}
             />
+          </View>
+        ) : null}
+
+        {currentKey === 'variety' ? (
+          <View>
+            <Text style={styles.cardTitle}>{t('householdCarousel.cardVariety')}</Text>
             <SwitchRow
               label={t('settings.preferPantryItems')}
               hint={t('settings.preferPantryItemsHint')}

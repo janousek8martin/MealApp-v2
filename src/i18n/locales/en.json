@@ -681,7 +681,8 @@
     "skip": "None"
   },
   "householdCarousel": {
-    "cardRepetition": "Repetition & variety",
+    "cardRepetition": "Repetition",
+    "cardVariety": "Variety & pantry",
     "cardDiet": "Household diet",
     "cardCuisines": "Favorite cuisines",
     "cardAvoid": "Meals to avoid",

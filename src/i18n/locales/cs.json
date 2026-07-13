@@ -681,7 +681,8 @@
     "skip": "Žádné"
   },
   "householdCarousel": {
-    "cardRepetition": "Opakování a pestrost",
+    "cardRepetition": "Opakování",
+    "cardVariety": "Pestrost a spíž",
     "cardDiet": "Strava domácnosti",
     "cardCuisines": "Oblíbené kuchyně",
     "cardAvoid": "Jídla, kterým se vyhnout",
