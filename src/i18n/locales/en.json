@@ -45,7 +45,11 @@
     "conflictAvoided": "A profile has this item marked as avoided.",
     "addAnyway": "Add anyway",
     "fitWithinTolerance": "Within target tolerance",
-    "fitOutsideTolerance": "Outside target tolerance"
+    "fitOutsideTolerance": "Outside target tolerance",
+    "copyYesterday": "Copy from yesterday",
+    "copyYesterdayConfirmTitle": "Copy yesterday's meals?",
+    "copyYesterdayConfirmMessage": "This overwrites today's meals with yesterday's plan, except any already eaten.",
+    "copyYesterdayResult": "Copied {{copied}} meals, skipped {{skipped}} (already eaten)."
   },
   "library": {
     "placeholderTitle": "Recipes & foods",

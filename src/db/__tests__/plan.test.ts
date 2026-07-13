@@ -9,6 +9,7 @@ import { setRating, upsertFood, upsertRecipe } from '../repositories/library';
 import {
   addMealExtra,
   assignManualMeal,
+  copyDayMeals,
   generateWeek,
   regenerateDay,
   regenerateSlot,
@@ -963,5 +964,107 @@ describe('plan generator (repository)', () => {
 
     const [breakfastAfter] = await db.select().from(plannedMeals).where(eq(plannedMeals.id, breakfast.id));
     expect(breakfastAfter.itemId).toBe(breakfast.itemId);
+  });
+
+  it('copyDayMeals copies shared + individual-track meals and extras, skips an eaten-locked target slot, and leaves a slot untouched that was empty on fromDate', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await createAdult(db, householdId); // shared track
+    const veggieId = await createAdult(db, householdId, { name: 'Veggie', sharesMainMeals: false });
+
+    const foodId = await upsertFood(db, {
+      nameCs: 'Ovesné vločky',
+      nameEn: 'Oats',
+      category: 'grains',
+      baseUnit: 'g',
+      kcalPer100: 380,
+      proteinPer100: 13,
+      carbsPer100: 60,
+      fatPer100: 7,
+      budget: 'cheap',
+      snackSuitable: true,
+      dietFlags: [],
+      allergens: [],
+    });
+    const extraFoodId = await upsertFood(db, {
+      nameCs: 'Banán',
+      nameEn: 'Banana',
+      category: 'fruit',
+      baseUnit: 'g',
+      kcalPer100: 90,
+      proteinPer100: 1,
+      carbsPer100: 22,
+      fatPer100: 0,
+      budget: 'cheap',
+      snackSuitable: true,
+      dietFlags: [],
+      allergens: [],
+    });
+
+    async function makeRecipe(name: string, category: 'breakfast' | 'lunch_dinner') {
+      return upsertRecipe(db, {
+        nameCs: name,
+        nameEn: name,
+        category,
+        isSide: false,
+        budget: 'cheap',
+        servingsBase: 1,
+        ingredients: [{ foodId, amount: 100 }],
+      });
+    }
+
+    const breakfastFromRecipeId = await makeRecipe('Snídaně včera', 'breakfast');
+    const breakfastTodayLockedRecipeId = await makeRecipe('Snídaně dnes (snězeno)', 'breakfast');
+    const lunchSharedRecipeId = await makeRecipe('Oběd sdílený', 'lunch_dinner');
+    const lunchVeggieRecipeId = await makeRecipe('Oběd veggie', 'lunch_dinner');
+    const dinnerTodayRecipeId = await makeRecipe('Večeře dnes', 'lunch_dinner');
+
+    const fromDate = FUTURE_MONDAY;
+    const toDate = addDays(FUTURE_MONDAY, 1);
+
+    // fromDate: breakfast (shared), lunch (shared) with an extra, lunch (veggie's own track).
+    await assignManualMeal(db, householdId, fromDate, 'breakfast', null, 'recipe', breakfastFromRecipeId);
+    await assignManualMeal(db, householdId, fromDate, 'lunch', null, 'recipe', lunchSharedRecipeId);
+    await assignManualMeal(db, householdId, fromDate, 'lunch', veggieId, 'recipe', lunchVeggieRecipeId);
+    const [fromLunch] = await db
+      .select()
+      .from(plannedMeals)
+      .where(
+        and(eq(plannedMeals.householdId, householdId), eq(plannedMeals.date, fromDate), eq(plannedMeals.slotKey, 'lunch'), isNull(plannedMeals.profileId)),
+      );
+    await addMealExtra(db, fromLunch.id, 'food', extraFoodId);
+
+    // toDate: breakfast is already eaten (locked) with a different recipe; dinner is already planned (unlocked, not present on fromDate).
+    await assignManualMeal(db, householdId, toDate, 'breakfast', null, 'recipe', breakfastTodayLockedRecipeId);
+    const [toBreakfast] = await db
+      .select()
+      .from(plannedMeals)
+      .where(and(eq(plannedMeals.householdId, householdId), eq(plannedMeals.date, toDate), eq(plannedMeals.slotKey, 'breakfast')));
+    const [toBreakfastPortion] = await db.select().from(plannedMealPortions).where(eq(plannedMealPortions.plannedMealId, toBreakfast.id));
+    await setPortionStatus(db, toBreakfastPortion.id, 'eaten');
+
+    await assignManualMeal(db, householdId, toDate, 'dinner', null, 'recipe', dinnerTodayRecipeId);
+
+    const result = await copyDayMeals(db, householdId, fromDate, toDate);
+    expect(result).toEqual({ copied: 2, skipped: 1 }); // breakfast skipped (locked); lunch shared + lunch veggie copied
+
+    const toMealsAfter = await db
+      .select()
+      .from(plannedMeals)
+      .where(and(eq(plannedMeals.householdId, householdId), eq(plannedMeals.date, toDate)));
+
+    const breakfastAfter = toMealsAfter.find((m) => m.slotKey === 'breakfast');
+    expect(breakfastAfter!.itemId).toBe(breakfastTodayLockedRecipeId); // untouched – was locked
+
+    const dinnerAfter = toMealsAfter.find((m) => m.slotKey === 'dinner');
+    expect(dinnerAfter!.itemId).toBe(dinnerTodayRecipeId); // untouched – fromDate had no dinner
+
+    const lunchSharedAfter = toMealsAfter.find((m) => m.slotKey === 'lunch' && m.profileId === null);
+    expect(lunchSharedAfter!.itemId).toBe(lunchSharedRecipeId);
+    const lunchSharedExtras = await db.select().from(plannedMealExtras).where(eq(plannedMealExtras.plannedMealId, lunchSharedAfter!.id));
+    expect(lunchSharedExtras.map((e) => e.itemId)).toEqual([extraFoodId]);
+
+    const lunchVeggieAfter = toMealsAfter.find((m) => m.slotKey === 'lunch' && m.profileId === veggieId);
+    expect(lunchVeggieAfter!.itemId).toBe(lunchVeggieRecipeId);
   });
 });

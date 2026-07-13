@@ -28,6 +28,7 @@ import { db } from '@/db/client';
 import {
   addMealExtra,
   assignManualMeal,
+  copyDayMeals,
   generateWeek,
   regenerateDay,
   saveMealAsRecipe,
@@ -36,7 +37,7 @@ import {
 import { todayIsoDate } from '@/db/time';
 import type { RestrictionConflict } from '@/domain/generator/filters';
 import { jumpDirection, paneDates, weekJumpTarget, type PagerTransition } from '@/domain/planPager';
-import { addDays, startOfWeek, weekDates } from '@/domain/week';
+import { addDays, previousDay, startOfWeek, weekDates } from '@/domain/week';
 import { useActiveProfile, useHousehold, useHouseholdRestrictions, useProfiles, useProfilesAllergens } from '@/hooks/data';
 import {
   targetProfileIdForSlot,
@@ -103,6 +104,7 @@ export default function PlanScreen() {
   const [pickerSlot, setPickerSlot] = useState<SlotRow | null>(null);
   const [extraMealId, setExtraMealId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<'week' | 'day' | null>(null);
+  const [copyingYesterday, setCopyingYesterday] = useState(false);
   const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>({});
   const [clipboard, setClipboard] = useState<{ itemType: 'recipe' | 'food'; itemId: string } | null>(null);
   // Target outlives the menu's visibility: the adjust-servings modal opened
@@ -284,6 +286,30 @@ export default function PlanScreen() {
     }
   };
 
+  const copyYesterdayAction = () => {
+    if (!household) return;
+    Alert.alert(t('planScreen.copyYesterdayConfirmTitle'), t('planScreen.copyYesterdayConfirmMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('planScreen.copyYesterday'),
+        onPress: () => {
+          void (async () => {
+            setCopyingYesterday(true);
+            try {
+              const result = await copyDayMeals(db, household.id, previousDay(selectedDate), selectedDate);
+              Alert.alert(
+                t('planScreen.copyYesterday'),
+                t('planScreen.copyYesterdayResult', { copied: result.copied, skipped: result.skipped }),
+              );
+            } finally {
+              setCopyingYesterday(false);
+            }
+          })();
+        },
+      },
+    ]);
+  };
+
   const closeMenu = () => setMenuVisible(false);
 
   const handleCopy = () => {
@@ -453,24 +479,35 @@ export default function PlanScreen() {
       />
 
       <View style={styles.footer}>
-        {generating ? <ActivityIndicator style={styles.spinner} color={colors.primary} /> : null}
+        {generating || copyingYesterday ? <ActivityIndicator style={styles.spinner} color={colors.primary} /> : null}
         <View style={styles.actionsRow}>
           <Button
             label={generating === 'week' ? t('today.generating') : t('planScreen.generateWeek')}
             variant="secondary"
             onPress={generateWeekAction}
-            disabled={generating !== null}
+            disabled={generating !== null || copyingYesterday}
             style={styles.actionButton}
           />
           {!isPast ? (
             <Button
               label={generating === 'day' ? t('today.generating') : t('planScreen.generateDay')}
               onPress={generateDayAction}
-              disabled={generating !== null}
+              disabled={generating !== null || copyingYesterday}
               style={styles.actionButton}
             />
           ) : null}
         </View>
+        {!isPast ? (
+          <View style={[styles.actionsRow, styles.secondActionsRow]}>
+            <Button
+              label={t('planScreen.copyYesterday')}
+              variant="secondary"
+              onPress={copyYesterdayAction}
+              disabled={generating !== null || copyingYesterday}
+              style={styles.actionButton}
+            />
+          </View>
+        ) : null}
       </View>
 
       {pickerSlot && household && activeProfile ? (
@@ -665,6 +702,9 @@ function createStyles(colors: ColorTokens) {
     actionsRow: {
       flexDirection: 'row',
       gap: spacing.sm,
+    },
+    secondActionsRow: {
+      marginTop: spacing.sm,
     },
     actionButton: {
       flex: 1,

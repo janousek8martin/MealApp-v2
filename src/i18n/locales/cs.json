@@ -45,7 +45,11 @@
     "conflictAvoided": "Profil má tuto položku označenou jako nechtěnou.",
     "addAnyway": "Přesto přidat",
     "fitWithinTolerance": "V toleranci cíle",
-    "fitOutsideTolerance": "Mimo toleranci cíle"
+    "fitOutsideTolerance": "Mimo toleranci cíle",
+    "copyYesterday": "Zkopírovat ze včerejška",
+    "copyYesterdayConfirmTitle": "Zkopírovat včerejší jídla?",
+    "copyYesterdayConfirmMessage": "Přepíše dnešní jídla podle včerejšího plánu, kromě těch, co už byly snědené.",
+    "copyYesterdayResult": "Zkopírováno {{copied}} jídel, {{skipped}} přeskočeno (už snědeno)."
   },
   "library": {
     "placeholderTitle": "Recepty a potraviny",

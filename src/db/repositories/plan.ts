@@ -1537,3 +1537,55 @@ export async function saveMealAsRecipe(db: AppDb, plannedMealId: string, profile
     ingredients,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Copying a whole day's plan onto another day
+// ---------------------------------------------------------------------------
+
+/**
+ * Copies every planned meal (and its extras) from `fromDate` onto `toDate`,
+ * skipping any `toDate` slot/track that's already eaten-locked. Slots empty
+ * on `fromDate` are left untouched on `toDate`. Reuses `assignManualMeal`'s
+ * existing past-date/eaten-lock guards (`acknowledgeConflict: true` since the
+ * combination was already accepted once, on `fromDate`) rather than
+ * reimplementing them – this function is orchestration, not safety-checking.
+ */
+export async function copyDayMeals(
+  db: AppDb,
+  householdId: string,
+  fromDate: string,
+  toDate: string,
+): Promise<{ copied: number; skipped: number }> {
+  const [fromMeals, lockedToday] = await Promise.all([
+    loadMealsForDate(db, householdId, fromDate),
+    loadLockedTrackKeys(db, householdId, toDate),
+  ]);
+
+  let copied = 0;
+  let skipped = 0;
+
+  for (const meal of fromMeals) {
+    if (lockedToday.has(slotTrackKey(meal.slotKey, meal.profileId))) {
+      skipped++;
+      continue;
+    }
+
+    await assignManualMeal(db, householdId, toDate, meal.slotKey, meal.profileId, meal.itemType, meal.itemId, true);
+    copied++;
+
+    const extraRows = await db
+      .select()
+      .from(plannedMealExtras)
+      .where(and(eq(plannedMealExtras.plannedMealId, meal.id), isNull(plannedMealExtras.deletedAt)));
+    if (extraRows.length === 0) continue;
+
+    const todayMeals = await loadMealsForDate(db, householdId, toDate);
+    const newMeal = todayMeals.find((m) => m.slotKey === meal.slotKey && m.profileId === meal.profileId);
+    if (!newMeal) continue;
+    for (const extra of extraRows) {
+      await addMealExtra(db, newMeal.id, extra.itemType, extra.itemId, true);
+    }
+  }
+
+  return { copied, skipped };
+}
