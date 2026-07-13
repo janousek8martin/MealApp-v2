@@ -17,14 +17,6 @@ const LEVELS: { value: ActivityLevel; icon: keyof typeof Ionicons.glyphMap }[] =
   { value: 'very_active', icon: 'barbell-outline' },
 ];
 
-const DOT_KEYS = ['activityLow', 'activityMedium', 'activityHigh'] as const;
-
-function dotIndex(dots: readonly [number, number, number], multiplier: number | null): number {
-  if (multiplier === null) return 1;
-  const index = dots.findIndex((value) => Math.abs(value - multiplier) < 0.001);
-  return index === -1 ? 1 : index;
-}
-
 type Props = {
   value: ActivityLevel | null;
   onChange: (level: ActivityLevel) => void;
@@ -39,10 +31,11 @@ type Props = {
  * "How is your lifestyle?" - a vertical card list describing everyday
  * movement only (no exercise, see the hint text); training itself is
  * accounted for separately via workout days (WORKOUT_DAY_KCAL_BONUS_PCT).
- * Below the selected level, the existing Low/Medium/High fine-tune dots
- * still let a profile land on a specific point in that level's range.
- * A collapsible "I know my maintenance calories" field lets a profile skip
- * the estimate entirely (TargetsInput.customTdeeKcal).
+ * Selecting a level auto-sets the multiplier to that level's midpoint
+ * (ACTIVITY_MULTIPLIER_DOTS[level][1] === ACTIVITY_MULTIPLIERS[level]) -
+ * no separate fine-tune step. A collapsible "I know my maintenance
+ * calories" field lets a profile skip the estimate entirely
+ * (TargetsInput.customTdeeKcal).
  */
 export function LifestylePicker({
   value,
@@ -79,7 +72,10 @@ export function LifestylePicker({
               key={level.value}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              onPress={() => onChange(level.value)}
+              onPress={() => {
+                onChange(level.value);
+                onChangeMultiplier(ACTIVITY_MULTIPLIER_DOTS[level.value][1]);
+              }}
               style={[styles.card, selected && styles.cardSelected]}>
               <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
                 <Ionicons name={level.icon} size={20} color={selected ? colors.onPrimary : colors.primary} />
@@ -88,33 +84,15 @@ export function LifestylePicker({
                 <Text style={[styles.cardTitle, selected && styles.cardTitleSelected]}>
                   {t(`activity.${level.value}`)}
                 </Text>
-                <Text style={styles.cardSubtitle}>{t(`activityInfo.${level.value}`)}</Text>
+                <Text style={styles.cardSubtitle}>
+                  {t('activityQuestion.exampleLabel')} {t(`activityInfo.${level.value}`)}
+                </Text>
               </View>
             </Pressable>
           );
         })}
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      {value && !hasCustomTdee ? (
-        <View style={styles.dotsRow}>
-          {ACTIVITY_MULTIPLIER_DOTS[value].map((dotValue, index) => {
-            const selected = dotIndex(ACTIVITY_MULTIPLIER_DOTS[value], multiplier) === index;
-            return (
-              <Pressable
-                key={index}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                onPress={() => onChangeMultiplier(dotValue)}
-                style={styles.dotWrap}>
-                <Text style={styles.dotLabel}>{t(`form.${DOT_KEYS[index]}`)}</Text>
-                <View style={[styles.dot, selected && styles.dotSelected]} />
-                <Text style={styles.dotValue}>{dotValue}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      ) : null}
 
       <Pressable
         accessibilityRole="button"
@@ -212,38 +190,6 @@ function createStyles(colors: ColorTokens) {
       color: colors.danger,
       fontSize: typography.small,
       marginBottom: spacing.sm,
-    },
-    dotsRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xl,
-      marginBottom: spacing.md,
-    },
-    dotWrap: {
-      alignItems: 'center',
-      gap: 4,
-    },
-    dot: {
-      width: 16,
-      height: 16,
-      borderRadius: 8,
-      borderWidth: 1.5,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-    dotSelected: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-    },
-    dotValue: {
-      color: colors.text,
-      fontSize: typography.small,
-      fontWeight: '600',
-    },
-    dotLabel: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
     },
     customToggle: {
       flexDirection: 'row',

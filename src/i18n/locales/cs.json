@@ -251,7 +251,8 @@
   },
   "activityQuestion": {
     "title": "Jaký je tvůj životní styl?",
-    "hint": "Cvičení sem nepočítej – ptáme se jen na běžný pohyb mimo trénink."
+    "hint": "Cvičení sem nepočítej – ptáme se jen na běžný pohyb mimo trénink.",
+    "exampleLabel": "Příklad:"
   },
   "customTdee": {
     "toggle": "Znám své udržovací kalorie",

@@ -251,7 +251,8 @@
   },
   "activityQuestion": {
     "title": "How is your lifestyle?",
-    "hint": "Exercise doesn't count here - this is just about everyday movement outside of training."
+    "hint": "Exercise doesn't count here - this is just about everyday movement outside of training.",
+    "exampleLabel": "Example:"
   },
   "customTdee": {
     "toggle": "I know my maintenance calories",
