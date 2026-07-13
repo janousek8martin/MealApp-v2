@@ -25,6 +25,8 @@ function ctx(overrides: Partial<ScoringContext> = {}): ScoringContext {
     likedItemIds: new Set(),
     expiringFoodIds: new Set(),
     inStockFoodIds: new Set(),
+    mealVariety: { level: 'medium', recentRecipeIds: new Set() },
+    preferPantryItems: true,
     ...overrides,
   };
 }
@@ -105,20 +107,27 @@ describe('scoreCandidate', () => {
     expect(other).toBe(base);
   });
 
-  it('rewards a recipe not present in the recent-history union when novelty is active', () => {
-    const base = scoreCandidate(candidate(), ctx());
-    const novel = scoreCandidate(candidate(), ctx({ noveltyBonus: { recentRecipeIds: new Set() } }));
-    expect(novel).toBeGreaterThan(base);
+  it('rewards a novel recipe more at a higher meal-variety tier', () => {
+    const low = scoreCandidate(candidate(), ctx({ mealVariety: { level: 'low', recentRecipeIds: new Set() } }));
+    const medium = scoreCandidate(candidate(), ctx({ mealVariety: { level: 'medium', recentRecipeIds: new Set() } }));
+    const high = scoreCandidate(candidate(), ctx({ mealVariety: { level: 'high', recentRecipeIds: new Set() } }));
+    expect(medium).toBeGreaterThan(low);
+    expect(high).toBeGreaterThan(medium);
   });
 
-  it('does not reward a recently-served recipe even when novelty is active', () => {
-    const base = scoreCandidate(candidate(), ctx());
-    const recent = scoreCandidate(candidate(), ctx({ noveltyBonus: { recentRecipeIds: new Set(['r1']) } }));
-    expect(recent).toBe(base);
+  it('does not reward a recently-served recipe regardless of meal-variety tier', () => {
+    const low = scoreCandidate(candidate(), ctx({ mealVariety: { level: 'low', recentRecipeIds: new Set(['r1']) } }));
+    const high = scoreCandidate(candidate(), ctx({ mealVariety: { level: 'high', recentRecipeIds: new Set(['r1']) } }));
+    expect(low).toBe(high);
   });
 
-  it('does not change the score when no sharing profile opted into novelty (noveltyBonus absent)', () => {
-    expect(scoreCandidate(candidate(), ctx())).toBe(scoreCandidate(candidate(), ctx({ noveltyBonus: undefined })));
+  it('zeroes out pantry expiry/stock bonuses when preferPantryItems is off', () => {
+    const withIngredient = candidate({ ingredients: [{ foodId: 'spinach', allergens: [], dietFlags: [] }] });
+    const on = scoreCandidate(withIngredient, ctx({ expiringFoodIds: new Set(['spinach']), preferPantryItems: true }));
+    const off = scoreCandidate(withIngredient, ctx({ expiringFoodIds: new Set(['spinach']), preferPantryItems: false }));
+    const neither = scoreCandidate(withIngredient, ctx({ preferPantryItems: false }));
+    expect(on).toBeGreaterThan(off);
+    expect(off).toBe(neither);
   });
 
   it('does not change the score when there is no macro-fit target (default candidate() has no override)', () => {

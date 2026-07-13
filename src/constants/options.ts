@@ -22,18 +22,43 @@ export const ALLERGEN_KEYS = [
   'molluscs',
 ] as const;
 
-/** Diet keys a food/recipe can be manually tagged with when editing it. */
-export const MANUAL_DIET_KEYS = ['vegetarian', 'vegan', 'pescatarian'] as const;
+/**
+ * Diet keys a food/recipe can be manually tagged with when editing it. Most
+ * of these (balanced/keto/paleo/low_fat/halal/kosher/whole30/fodmap) can't be
+ * reliably derived from the current ingredient/nutrition schema (no
+ * processed/grain/kosher-status flags exist), so – like the original three –
+ * they rely on curation rather than automatic derivation.
+ */
+export const MANUAL_DIET_KEYS = [
+  'vegetarian',
+  'vegan',
+  'pescatarian',
+  'balanced',
+  'keto',
+  'paleo',
+  'low_fat',
+  'halal',
+  'kosher',
+  'whole30',
+  'fodmap',
+] as const;
 
 /**
  * Full diet key list offered wherever a profile/household *requires* a diet
- * (wizard, ProfileForm, library filter). gluten_free/dairy_free/low_carb
- * aren't curated per-recipe like the other three – they're derived at
- * generation/filter time from ingredient allergens or recipe nutrition (see
- * src/domain/generator/filters.ts), so they only ever appear here, never in
- * MANUAL_DIET_KEYS.
+ * (wizard, ProfileForm, library filter). gluten_free/dairy_free/low_carb/
+ * nut_free/soy_free aren't curated per-recipe like MANUAL_DIET_KEYS – they're
+ * derived at generation/filter time from ingredient allergens or recipe
+ * nutrition (see src/domain/generator/filters.ts), so they only ever appear
+ * here, never in MANUAL_DIET_KEYS.
  */
-export const DIET_KEYS = [...MANUAL_DIET_KEYS, 'gluten_free', 'dairy_free', 'low_carb'] as const;
+export const DIET_KEYS = [
+  ...MANUAL_DIET_KEYS,
+  'gluten_free',
+  'dairy_free',
+  'low_carb',
+  'nut_free',
+  'soy_free',
+] as const;
 
 /** Free-form recipe tags offered when editing a recipe (see i18n recipeTags.*). */
 export const RECIPE_TAG_KEYS = [
@@ -102,8 +127,18 @@ export const AVOID_FOOD_GROUPS: { key: string; foodKeys: string[] }[] = [
   { key: 'apple', foodKeys: ['apple'] },
   { key: 'pineapple', foodKeys: ['pineapple'] },
   { key: 'cilantro', foodKeys: ['cilantro'] },
-  { key: 'liver', foodKeys: ['beef_liver'] },
+  /** Broader than the old standalone "liver" group – covers organ meats generally, though beef_liver is the only one currently seeded. */
+  { key: 'organMeats', foodKeys: ['beef_liver'] },
   { key: 'blueCheese', foodKeys: ['blue_cheese'] },
   { key: 'shrimp', foodKeys: ['shrimp'] },
   { key: 'raisins', foodKeys: ['raisins'] },
 ];
+
+/** Ceiling tier for the household "cooking experience" setting – matches recipes.difficulty. */
+export const COOKING_EXPERIENCE_LEVELS = ['easy', 'medium', 'hard'] as const;
+
+/** Fixed options for the household "cooking time" filter; null = no limit. */
+export const COOKING_TIME_LIMIT_OPTIONS = [null, 15, 30, 45] as const;
+
+/** Ceiling tier for the household "budget" setting – matches recipes/foods budget. */
+export const BUDGET_LEVELS = ['low', 'medium', 'high'] as const;

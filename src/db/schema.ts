@@ -64,6 +64,20 @@ export const householdSettings = sqliteTable('household_settings', {
     .default('hybrid'),
   /** How many dinners per week the generator should try to make cold-eligible; 0 = off (default). */
   coldDinnerFrequencyPerWeek: integer('cold_dinner_frequency_per_week').notNull().default(0),
+  /** Whether the same recipe may be picked for both lunch and dinner on the same day/track. */
+  allowSameLunchDinner: integer('allow_same_lunch_dinner', { mode: 'boolean' }).notNull().default(false),
+  /** Whether pantry expiry/stock give recipes a scoring bonus (see scoring.ts pantryBonus/stockBonus). */
+  preferPantryItems: integer('prefer_pantry_items', { mode: 'boolean' }).notNull().default(true),
+  /** Replaces the old per-profile "wants new foods" toggle – household-wide novelty-bonus strength. */
+  mealVarietyLevel: text('meal_variety_level', { enum: ['low', 'medium', 'high'] }).notNull().default('medium'),
+  /** Ceiling on recipes.difficulty the generator will pick automatically; 'hard' = no restriction. */
+  cookingExperienceLevel: text('cooking_experience_level', { enum: ['easy', 'medium', 'hard'] })
+    .notNull()
+    .default('hard'),
+  /** Max recipes.prepTimeMinutes the generator will pick automatically; null = no limit ("Any time"). */
+  cookingTimeLimitMinutes: integer('cooking_time_limit_minutes'),
+  /** Ceiling on recipes/foods budget the generator will pick automatically; 'high' = no restriction. */
+  budgetLevel: text('budget_level', { enum: ['low', 'medium', 'high'] }).notNull().default('high'),
 });
 
 /**
@@ -396,6 +410,8 @@ export const recipes = sqliteTable('recipes', {
   /** Ingredient amounts describe this many reference portions (usually 1). */
   servingsBase: real('servings_base').notNull().default(1),
   prepTimeMinutes: integer('prep_time_minutes'),
+  /** Ceiling tier for the "cooking experience" household filter; existing recipes backfill to 'medium'. */
+  difficulty: text('difficulty', { enum: ['easy', 'medium', 'hard'] }).notNull().default('medium'),
   /** JSON array of free-form tags. */
   tagsJson: text('tags_json'),
   /** Per-recipe override of the weekly repetition limit; null = household default. */

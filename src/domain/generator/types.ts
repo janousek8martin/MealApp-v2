@@ -1,5 +1,7 @@
 export type RecipeCategory = 'breakfast' | 'lunch_dinner' | 'snack';
 export type Budget = 'cheap' | 'average' | 'expensive';
+export type Difficulty = 'easy' | 'medium' | 'hard';
+export type MealVarietyLevel = 'low' | 'medium' | 'high';
 
 export type RecipeNutritionPerPortion = {
   kcal: number;
@@ -34,6 +36,10 @@ export type RecipeCandidate = {
   allowConsecutiveDays: boolean | null;
   /** Can be eaten cold – eligible for the generator's cold-dinner day selection. */
   canServeCold: boolean;
+  /** Undefined for standalone foods – difficulty is a recipe-only concept, so the cooking-experience filter always passes foods through. */
+  difficulty?: Difficulty;
+  /** Undefined/null for standalone foods or recipes without a set prep time – the cooking-time filter always passes those through. */
+  prepTimeMinutes?: number | null;
 };
 
 /** Recipe tags derived from its ingredients – never stored, always computed. */
@@ -83,12 +89,14 @@ export type ScoringContext = RepetitionContext & {
   /** Recipe ids resolved as "rare" after a like/dislike conflict – heavily discounted, not excluded. */
   rareRecipeIds?: Set<string>;
   /**
-   * Present only when at least one sharing profile opted into "wants new
-   * foods" – recipes NOT in `recentRecipeIds` (this recent-history union)
-   * get a novelty bonus. Absent entirely when no sharing profile opted in,
-   * so households not using the toggle pay no scoring difference at all.
+   * Household-wide meal-variety setting (replaces the old per-profile "wants
+   * new foods" toggle) – recipes NOT in `recentRecipeIds` get a novelty bonus
+   * whose size depends on `level` (see MEAL_VARIETY_BONUS in scoring.ts).
+   * Always present since every household has a variety level (default 'medium').
    */
-  noveltyBonus?: { recentRecipeIds: Set<string> };
+  mealVariety: { level: MealVarietyLevel; recentRecipeIds: Set<string> };
+  /** Household toggle – when false, pantry expiry/stock scoring bonuses are zeroed out. */
+  preferPantryItems: boolean;
   /**
    * Per-kcal protein/fat density the slot is aiming for (see
    * `resolveMainSlotTarget`/`portions.ts`) – a soft scoring nudge toward
@@ -98,6 +106,20 @@ export type ScoringContext = RepetitionContext & {
    * (e.g. no profile has a body-metric-derived daily target yet).
    */
   macroFitTarget?: { kcal: number; proteinG: number; fatG: number };
+};
+
+/**
+ * The three new hard-filter-with-fallback household preferences (cooking
+ * experience, cooking time, budget) plus the same-lunch-dinner repeat rule –
+ * bundled into one object since every `pickMealForSlot` call site needs all
+ * four together, sourced straight from `household_settings`.
+ */
+export type HouseholdCandidateFilters = {
+  cookingExperienceLevel: Difficulty;
+  /** null = "Any time", no limit. */
+  cookingTimeLimitMinutes: number | null;
+  budgetLevel: 'low' | 'medium' | 'high';
+  allowSameLunchDinner: boolean;
 };
 
 export type ScoredCandidate = { candidate: RecipeCandidate; score: number };

@@ -26,7 +26,9 @@ import {
 import type {
   DietRestrictions,
   DerivedRecipeTags,
+  HouseholdCandidateFilters,
   IngredientFoodTags,
+  MealVarietyLevel,
   RecipeCandidate,
   RecipeResolution,
   RepetitionContext,
@@ -68,7 +70,7 @@ import type { AppDb } from '../types';
 
 /** Pantry items expiring within this many days score a bonus for the recipes that use them. */
 const PANTRY_EXPIRY_WINDOW_DAYS = 3;
-/** How far back "wants new foods" looks to decide whether a recipe counts as recently served. */
+/** How far back the meal-variety bonus looks to decide whether a recipe counts as recently served. */
 const NOVELTY_LOOKBACK_DAYS = 21;
 
 type SlotRow = typeof mealSlotSettings.$inferSelect;
@@ -83,7 +85,6 @@ type ProfileContext = {
   dailyTarget: MacroTotal | null;
   /** Per-slot portion overrides (P2-C), keyed by mealSlotSettings.id. */
   slotOverrides: Map<string, SlotPortionOverride>;
-  wantsNewFoods: boolean;
 };
 
 /** null enabledSlotKeys means every household slot is in play (the default). */
@@ -97,6 +98,10 @@ type GeneratorContext = {
     defaultAllowConsecutiveDays: boolean;
     coldDinnerFrequencyPerWeek: number;
   };
+  /** The three hard-filter-with-fallback ceilings + same-lunch-dinner rule, straight from household_settings. */
+  candidateFilters: HouseholdCandidateFilters;
+  /** Household toggle for the pantry expiry/stock scoring bonuses. */
+  preferPantryItems: boolean;
   slots: SlotRow[];
   profiles: ProfileContext[];
   mainItems: GeneratorItem[];
@@ -110,8 +115,8 @@ type GeneratorContext = {
   inStockFoodIds: Set<string>;
   /** How the household resolved each recipe's like/dislike conflict, if any (see householdRecipeOverrides). */
   recipeResolutions: Map<string, RecipeResolution>;
-  /** Recipe ids served to each "wants new foods" profile within the lookback window; empty for profiles who didn't opt in (never queried for them). */
-  recentRecipeIdsByProfile: Map<string, Set<string>>;
+  /** Household-wide meal-variety bonus context – recipes served to ANY profile within the lookback window, plus the household's chosen tier. */
+  mealVariety: { level: MealVarietyLevel; recentRecipeIds: Set<string> };
 };
 
 // ---------------------------------------------------------------------------
@@ -163,7 +168,6 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
 
   const profileContexts: ProfileContext[] = [];
   const likedItemIdsByProfile = new Map<string, Set<string>>();
-  const recentRecipeIdsByProfile = new Map<string, Set<string>>();
 
   for (const profile of profileRows) {
     const [restrictionRows, avoidRows, ratingRows, slotPortionRows, [latestMetric]] = await Promise.all([
@@ -194,10 +198,6 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     likedItemIdsByProfile.set(profile.id, new Set(ratingRows.filter((r) => r.rating === 'like').map((r) => r.itemId)));
     const dislikedRecipeIds = ratingRows.filter((r) => r.rating === 'dislike' && r.itemType === 'recipe').map((r) => r.itemId);
     const dislikedFoodIds = ratingRows.filter((r) => r.rating === 'dislike' && r.itemType === 'food').map((r) => r.itemId);
-
-    if (profile.wantsNewFoods) {
-      recentRecipeIdsByProfile.set(profile.id, await loadRecentRecipeIdsForProfile(db, householdId, profile.id, date));
-    }
 
     const slotOverrides = new Map<string, SlotPortionOverride>();
     for (const row of slotPortionRows) {
@@ -253,7 +253,6 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
       },
       dailyTarget,
       slotOverrides,
-      wantsNewFoods: profile.wantsNewFoods,
     });
   }
 
@@ -329,6 +328,8 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
       maxRepetitionsPerWeek: recipe.maxRepetitionsPerWeek,
       allowConsecutiveDays: recipe.allowConsecutiveDays,
       canServeCold: recipe.canServeCold,
+      difficulty: recipe.difficulty,
+      prepTimeMinutes: recipe.prepTimeMinutes,
     };
 
     const item: GeneratorItem = { itemType: 'recipe', candidate };
@@ -391,12 +392,23 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     settingsRow?.favoriteCuisinesJson ? (JSON.parse(settingsRow.favoriteCuisinesJson) as string[]) : [],
   );
 
+  const mealVarietyLevel = settingsRow?.mealVarietyLevel ?? 'medium';
+  const recentRecipeIds =
+    mealVarietyLevel === 'low' ? new Set<string>() : await loadRecentRecipeIdsForHousehold(db, householdId, date);
+
   return {
     settings: {
       defaultMaxRepetitionsPerWeek: settingsRow?.defaultMaxRepetitionsPerWeek ?? 2,
       defaultAllowConsecutiveDays: settingsRow?.defaultAllowConsecutiveDays ?? false,
       coldDinnerFrequencyPerWeek: settingsRow?.coldDinnerFrequencyPerWeek ?? 0,
     },
+    candidateFilters: {
+      cookingExperienceLevel: settingsRow?.cookingExperienceLevel ?? 'hard',
+      cookingTimeLimitMinutes: settingsRow?.cookingTimeLimitMinutes ?? null,
+      budgetLevel: settingsRow?.budgetLevel ?? 'high',
+      allowSameLunchDinner: settingsRow?.allowSameLunchDinner ?? false,
+    },
+    preferPantryItems: settingsRow?.preferPantryItems ?? true,
     slots,
     profiles: profileContexts,
     favoriteCuisines,
@@ -407,7 +419,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
     expiringFoodIds,
     inStockFoodIds,
     recipeResolutions,
-    recentRecipeIdsByProfile,
+    mealVariety: { level: mealVarietyLevel, recentRecipeIds },
   };
 }
 
@@ -425,21 +437,6 @@ function rareRecipeIds(ctx: GeneratorContext): Set<string> {
     if (resolution === 'rare') result.add(recipeId);
   }
   return result;
-}
-
-/**
- * Undefined unless at least one profile in `subset` opted into "wants new
- * foods" – when several such profiles share a slot, their recent-history
- * sets are unioned so a recipe recent for ANY of them isn't treated as novel.
- */
-function unionNoveltyBonus(subset: ProfileContext[], ctx: GeneratorContext): { recentRecipeIds: Set<string> } | undefined {
-  const opted = subset.filter((p) => p.wantsNewFoods);
-  if (opted.length === 0) return undefined;
-  const result = new Set<string>();
-  for (const profile of opted) {
-    for (const id of ctx.recentRecipeIdsByProfile.get(profile.id) ?? []) result.add(id);
-  }
-  return { recentRecipeIds: result };
 }
 
 /**
@@ -567,11 +564,10 @@ async function loadDayRecipeIds(db: AppDb, householdId: string, date: string): P
   return new Set(rows.map((r) => r.itemId));
 }
 
-/** Only called for profiles with `wantsNewFoods: true` – gated to keep the cost at zero for households not using the feature. */
-async function loadRecentRecipeIdsForProfile(
+/** Skipped entirely when mealVarietyLevel is 'low' (bonus is 0 either way) – keeps the cost at zero for households not using variety scoring. */
+async function loadRecentRecipeIdsForHousehold(
   db: AppDb,
   householdId: string,
-  profileId: string,
   beforeDate: string,
 ): Promise<Set<string>> {
   const startDate = addDays(beforeDate, -NOVELTY_LOOKBACK_DAYS);
@@ -587,25 +583,7 @@ async function loadRecentRecipeIdsForProfile(
         isNull(plannedMeals.deletedAt),
       ),
     );
-  if (meals.length === 0) return new Set();
-
-  const portions = await db
-    .select()
-    .from(plannedMealPortions)
-    .where(
-      and(
-        inArray(plannedMealPortions.plannedMealId, meals.map((m) => m.id)),
-        eq(plannedMealPortions.profileId, profileId),
-        isNull(plannedMealPortions.deletedAt),
-      ),
-    );
-  const mealById = new Map(meals.map((m) => [m.id, m]));
-  const recipeIds = new Set<string>();
-  for (const portion of portions) {
-    const meal = mealById.get(portion.plannedMealId);
-    if (meal) recipeIds.add(meal.itemId);
-  }
-  return recipeIds;
+  return new Set(meals.map((m) => m.itemId));
 }
 
 /** Adds an already-locked meal's nutrition contribution to the running daily totals (for snack remainder maths). */
@@ -694,6 +672,8 @@ async function generateIndividualMainMeal(
   rng: Rng,
   excludeIds: Set<string> = new Set(),
   requireColdEligible: boolean = false,
+  /** Mutated in place with this profile's lunch/dinner pick, and read for the sibling slot's pick – see `generateDay`'s lunchDinnerRecipeIdsByTrack. */
+  lunchDinnerIdsForProfile: Set<string> = new Set(),
 ): Promise<RepetitionContext> {
   if (!profile.dailyTarget) return repetitionCtx;
   const pool = excludeIds.size > 0 ? candidates.filter((item) => !excludeIds.has(item.candidate.id)) : candidates;
@@ -707,13 +687,17 @@ async function generateIndividualMainMeal(
       expiringFoodIds: ctx.expiringFoodIds,
       inStockFoodIds: ctx.inStockFoodIds,
       rareRecipeIds: rareRecipeIds(ctx),
-      noveltyBonus: unionNoveltyBonus([profile], ctx),
+      mealVariety: ctx.mealVariety,
+      preferPantryItems: ctx.preferPantryItems,
       macroFitTarget: averageMacroFitTarget([profile], slot),
     },
     rng,
     [profile.dailyTarget.kcal],
     DEFAULT_SHORTLIST_SIZE,
     requireColdEligible,
+    ctx.candidateFilters,
+    slot.slotKey,
+    lunchDinnerIdsForProfile,
   );
   if (!picked) return repetitionCtx;
   const multiplier = scalingMultiplier(
@@ -724,6 +708,7 @@ async function generateIndividualMainMeal(
     { profileId: profile.id, multiplier },
   ]);
   addConsumed(consumedSoFar, profile.id, picked.candidate.nutritionPerPortion, multiplier);
+  if (slot.slotKey === 'lunch' || slot.slotKey === 'dinner') lunchDinnerIdsForProfile.add(picked.candidate.id);
   return recordPick(repetitionCtx, picked.candidate.id);
 }
 
@@ -744,6 +729,23 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
   const consumedSoFar = new Map<string, MacroTotal>();
   const sharedProfiles = ctx.profiles.filter((p) => p.sharesMainMeals);
   const independentProfiles = ctx.profiles.filter((p) => !p.sharesMainMeals);
+  // Recipe ids already used today in a lunch/dinner slot, per track ('shared'
+  // or a profile id) – feeds the same-lunch-dinner rule. A track has exactly
+  // one lunch and one dinner per day, so by the time the second of the pair
+  // is generated this map holds only the first's pick, never the current slot's.
+  const lunchDinnerRecipeIdsByTrack = new Map<string, Set<string>>();
+  const getOrCreateTrackSet = (trackKey: string): Set<string> => {
+    let set = lunchDinnerRecipeIdsByTrack.get(trackKey);
+    if (!set) {
+      set = new Set<string>();
+      lunchDinnerRecipeIdsByTrack.set(trackKey, set);
+    }
+    return set;
+  };
+  const recordLunchDinnerPick = (trackKey: string, slotKey: string, recipeId: string) => {
+    if (slotKey !== 'lunch' && slotKey !== 'dinner') return;
+    getOrCreateTrackSet(trackKey).add(recipeId);
+  };
 
   for (const slot of ctx.slots.filter((s) => s.kind === 'main')) {
     const category = slot.slotKey === 'breakfast' ? 'breakfast' : 'lunch_dinner';
@@ -770,13 +772,17 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
             expiringFoodIds: ctx.expiringFoodIds,
             inStockFoodIds: ctx.inStockFoodIds,
             rareRecipeIds: rareRecipeIds(ctx),
-            noveltyBonus: unionNoveltyBonus(sharedProfilesForSlot, ctx),
+            mealVariety: ctx.mealVariety,
+            preferPantryItems: ctx.preferPantryItems,
             macroFitTarget: averageMacroFitTarget(sharedProfilesForSlot, slot),
           },
           rng,
           sharedProfilesForSlot.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),
           DEFAULT_SHORTLIST_SIZE,
           coldToday,
+          ctx.candidateFilters,
+          slot.slotKey,
+          lunchDinnerRecipeIdsByTrack.get('shared') ?? new Set(),
         );
         if (picked) {
           // A "serve_separately" resolution carves the profiles who dislike this
@@ -804,6 +810,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
           if (portions.length > 0) {
             await insertPlannedMeal(db, householdId, date, slot.slotKey, null, picked.itemType, picked.candidate.id, portions);
             repetitionCtx = recordPick(repetitionCtx, picked.candidate.id);
+            recordLunchDinnerPick('shared', slot.slotKey, picked.candidate.id);
             for (const portion of portions) {
               addConsumed(consumedSoFar, portion.profileId, picked.candidate.nutritionPerPortion, portion.multiplier);
             }
@@ -823,6 +830,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
               rng,
               new Set([picked.candidate.id]),
               coldToday,
+              getOrCreateTrackSet(profile.id),
             );
           }
         }
@@ -849,6 +857,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
         rng,
         new Set(),
         coldToday,
+        getOrCreateTrackSet(profile.id),
       );
     }
   }
@@ -869,7 +878,7 @@ async function generateDay(db: AppDb, householdId: string, date: string, rng: Rn
         fatG: profile.dailyTarget.fatG - consumed.fatG,
       };
       const target = resolveSnackTarget(remaining, profile.dailyTarget.kcal, profile.slotOverrides.get(slot.id));
-      const picked = pickSnackForSlot(ctx.snackItems, profile.restrictions, repetitionCtx, target);
+      const picked = pickSnackForSlot(ctx.snackItems, profile.restrictions, repetitionCtx, target, ctx.candidateFilters);
       if (!picked) continue;
       // Scaled (not fixed at 1x) so the day's planned-vs-target accuracy holds
       // to within the approved ±100 kcal even when the closest DB match isn't exact.
@@ -1008,12 +1017,21 @@ export async function regenerateSlot(
     };
     snackTarget = resolveSnackTarget(remaining, profile.dailyTarget.kcal, profile.slotOverrides.get(slot.id));
     const pool = ctx.snackItems.filter((item) => item.candidate.id !== meal.itemId);
-    picked = pickSnackForSlot(pool, profile.restrictions, repetitionCtx, snackTarget);
+    picked = pickSnackForSlot(pool, profile.restrictions, repetitionCtx, snackTarget, ctx.candidateFilters);
   } else {
     const category = slot.slotKey === 'breakfast' ? 'breakfast' : 'lunch_dinner';
     const pool = ctx.mainItems.filter(
       (item) => item.candidate.category === category && item.candidate.id !== meal.itemId,
     );
+    // The sibling lunch/dinner slot's already-planned recipe for this same
+    // track/date (if any) – feeds the same-lunch-dinner rule the same way
+    // generateDay's lunchDinnerRecipeIdsByTrack does, just read directly
+    // since regenerateSlot only ever touches one slot at a time.
+    const siblingSlotKey = slot.slotKey === 'lunch' ? 'dinner' : slot.slotKey === 'dinner' ? 'lunch' : null;
+    const siblingMeal = siblingSlotKey
+      ? meals.find((m) => m.slotKey === siblingSlotKey && m.profileId === profileId && m.itemType === 'recipe')
+      : undefined;
+    const usedLunchDinnerIdsToday = siblingMeal ? new Set([siblingMeal.itemId]) : new Set<string>();
     // Manual single-slot swap: unlike generateDay, this always keeps the
     // whole relevantProfiles group on one row, even for a "serve_separately"
     // pick – splitting a swap into two rows is out of scope for V1 (see the
@@ -1028,13 +1046,17 @@ export async function regenerateSlot(
         expiringFoodIds: ctx.expiringFoodIds,
         inStockFoodIds: ctx.inStockFoodIds,
         rareRecipeIds: rareRecipeIds(ctx),
-        noveltyBonus: unionNoveltyBonus(relevantProfiles, ctx),
+        mealVariety: ctx.mealVariety,
+        preferPantryItems: ctx.preferPantryItems,
         macroFitTarget: averageMacroFitTarget(relevantProfiles, slot),
       },
       createSeededRng(rngSeed ?? Date.now()),
       relevantProfiles.filter((p) => p.dailyTarget !== null).map((p) => p.dailyTarget!.kcal),
       DEFAULT_SHORTLIST_SIZE,
       slot.slotKey === 'dinner' && isColdDinnerDay(date, householdId, ctx.settings.coldDinnerFrequencyPerWeek),
+      ctx.candidateFilters,
+      slot.slotKey,
+      usedLunchDinnerIdsToday,
     );
   }
   if (!picked) return;

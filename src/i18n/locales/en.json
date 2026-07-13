@@ -193,7 +193,7 @@
     "apple": "Apple",
     "pineapple": "Pineapple",
     "cilantro": "Cilantro",
-    "liver": "Liver",
+    "organMeats": "Organ meats",
     "blueCheese": "Blue cheese",
     "shrimp": "Shrimp",
     "raisins": "Raisins"
@@ -305,7 +305,17 @@
     "pescatarian": "Pescatarian",
     "gluten_free": "Gluten-free",
     "dairy_free": "Dairy-free",
-    "low_carb": "Low-carb"
+    "low_carb": "Low-carb",
+    "nut_free": "Nut-free",
+    "soy_free": "Soy-free",
+    "balanced": "Balanced",
+    "keto": "Keto",
+    "paleo": "Paleo",
+    "low_fat": "Low-fat",
+    "halal": "Halal",
+    "kosher": "Kosher",
+    "whole30": "Whole30",
+    "fodmap": "Low FODMAP"
   },
   "recipeTags": {
     "sweet": "Sweet",

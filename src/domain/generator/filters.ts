@@ -1,5 +1,7 @@
 import type {
+  Budget,
   DerivedRecipeTags,
+  Difficulty,
   DietRestrictions,
   IngredientFoodTags,
   RecipeCandidate,
@@ -10,14 +12,18 @@ import type {
 
 const GLUTEN_FREE = 'gluten_free';
 const DAIRY_FREE = 'dairy_free';
+const NUT_FREE = 'nut_free';
+const SOY_FREE = 'soy_free';
 /** Diet key handled separately below since it's derived from the recipe's aggregate nutrition, not an ingredient flag intersection. */
 const LOW_CARB = 'low_carb';
 
-/** gluten_free/dairy_free aren't curated per-food like vegetarian/vegan – they're always derivable from the allergens a food already carries. */
+/** gluten_free/dairy_free/nut_free/soy_free aren't curated per-food like vegetarian/vegan – they're always derivable from the allergens a food already carries. */
 function effectiveIngredientDietFlags(ingredient: IngredientFoodTags): string[] {
   const flags = new Set(ingredient.dietFlags);
   if (!ingredient.allergens.includes('gluten')) flags.add(GLUTEN_FREE);
   if (!ingredient.allergens.includes('lactose')) flags.add(DAIRY_FREE);
+  if (!ingredient.allergens.includes('nuts') && !ingredient.allergens.includes('peanuts')) flags.add(NUT_FREE);
+  if (!ingredient.allergens.includes('soy')) flags.add(SOY_FREE);
   return [...flags];
 }
 
@@ -203,3 +209,55 @@ export function passesRepetitionRules(candidate: RecipeCandidate, ctx: Repetitio
 }
 
 export { effectiveAllowConsecutiveDays, effectiveMaxRepetitions };
+
+/**
+ * Restricts to the items passing `predicate`; if that would leave nothing,
+ * falls back to the full unfiltered list instead – the same "prefer it, but
+ * never let it empty a slot" pattern already used for cold-dinner eligibility
+ * (see `select.ts`'s `requireColdEligible` handling), generalized so the new
+ * cooking-experience/cooking-time/budget/same-day-repeat filters can reuse it.
+ */
+export function applyHardFilterWithFallback<T>(items: T[], predicate: (item: T) => boolean): T[] {
+  const filtered = items.filter(predicate);
+  return filtered.length > 0 ? filtered : items;
+}
+
+const DIFFICULTY_ORDER: Record<Difficulty, number> = { easy: 0, medium: 1, hard: 2 };
+const BUDGET_ORDER: Record<Budget, number> = { cheap: 0, average: 1, expensive: 2 };
+/** Same 0/1/2 scale as BUDGET_ORDER: 'low' allows only cheap, 'medium' allows cheap+average, 'high' allows everything. */
+const BUDGET_LEVEL_ORDER: Record<'low' | 'medium' | 'high', number> = { low: 0, medium: 1, high: 2 };
+
+/** Recipe-only – difficulty is undefined for standalone foods, which always pass. */
+export function passesCookingExperienceFilter(candidate: RecipeCandidate, level: Difficulty): boolean {
+  if (candidate.difficulty === undefined) return true;
+  return DIFFICULTY_ORDER[candidate.difficulty] <= DIFFICULTY_ORDER[level];
+}
+
+/** Applies to both recipes and standalone foods – both carry a budget tag. */
+export function passesBudgetFilter(candidate: RecipeCandidate, level: 'low' | 'medium' | 'high'): boolean {
+  return BUDGET_ORDER[candidate.budget] <= BUDGET_LEVEL_ORDER[level];
+}
+
+/** Recipe-only in effect – prepTimeMinutes is null/undefined for foods and untimed recipes, which always pass (missing data is never treated as a violation, matching the app's micronutrient convention). */
+export function passesCookingTimeFilter(candidate: RecipeCandidate, limitMinutes: number | null): boolean {
+  if (limitMinutes === null) return true;
+  if (candidate.prepTimeMinutes === undefined || candidate.prepTimeMinutes === null) return true;
+  return candidate.prepTimeMinutes <= limitMinutes;
+}
+
+/**
+ * When same-day lunch/dinner repeats aren't allowed, excludes a candidate
+ * already used in the other of that pair for this track today. `usedTodayIds`
+ * should only ever contain the sibling slot's pick (a track has exactly one
+ * lunch and one dinner per day), never the slot currently being generated.
+ */
+export function passesSameDayRepeatRule(
+  candidate: RecipeCandidate,
+  slotKey: string,
+  usedTodayIds: ReadonlySet<string>,
+  allowSameLunchDinner: boolean,
+): boolean {
+  if (allowSameLunchDinner) return true;
+  if (slotKey !== 'lunch' && slotKey !== 'dinner') return true;
+  return !usedTodayIds.has(candidate.id);
+}

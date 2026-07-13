@@ -1,6 +1,6 @@
 import type { Rng } from './rng';
 import { effectiveMaxRepetitions } from './filters';
-import type { RecipeCandidate, ScoredCandidate, ScoringContext } from './types';
+import type { MealVarietyLevel, RecipeCandidate, ScoredCandidate, ScoringContext } from './types';
 
 const BASE_SCORE = 100;
 const REPETITION_PENALTY_WEIGHT = 40;
@@ -24,8 +24,17 @@ const MACRO_FIT_BONUS_MAX = 15;
 const MACRO_FIT_DISTANCE_SCALE = 300;
 /** Large enough that a "rare" conflict resolution almost always loses the weighted-random shortlist, but not impossible. */
 const RARE_RECIPE_PENALTY = 60;
-/** Soft nudge toward recipes a "wants new foods" profile hasn't had recently. */
-const NOVELTY_BONUS = 10;
+/**
+ * Soft nudge toward recipes the household hasn't had recently, sized by the
+ * household's `mealVarietyLevel` – 'low' favors repeating known-good recipes
+ * (no nudge at all), 'medium' matches the old flat novelty bonus, 'high'
+ * pushes harder for something new.
+ */
+const MEAL_VARIETY_BONUS: Record<MealVarietyLevel, number> = {
+  low: 0,
+  medium: 10,
+  high: 20,
+};
 
 /**
  * Soft bonus for a recipe whose protein/fat density already matches the
@@ -62,14 +71,15 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
     FIBER_SCORE_CAP,
   );
   const expiringCount = candidate.ingredients.filter((i) => ctx.expiringFoodIds.has(i.foodId)).length;
-  const pantryBonus = expiringCount * PANTRY_EXPIRY_BONUS_PER_INGREDIENT;
   const stockCount = candidate.ingredients.filter((i) => ctx.inStockFoodIds.has(i.foodId)).length;
-  const stockBonus = stockCount * PANTRY_STOCK_BONUS_PER_INGREDIENT;
+  const pantryBonus = ctx.preferPantryItems ? expiringCount * PANTRY_EXPIRY_BONUS_PER_INGREDIENT : 0;
+  const stockBonus = ctx.preferPantryItems ? stockCount * PANTRY_STOCK_BONUS_PER_INGREDIENT : 0;
   const macroBonus = macroFitScore(candidate, ctx.macroFitTarget);
   const cuisineBonus = candidate.cuisine && ctx.favoriteCuisines?.has(candidate.cuisine) ? FAVORITE_CUISINE_BONUS : 0;
   const rarePenalty = ctx.rareRecipeIds?.has(candidate.id) ? RARE_RECIPE_PENALTY : 0;
-  const noveltyBonus =
-    ctx.noveltyBonus && !ctx.noveltyBonus.recentRecipeIds.has(candidate.id) ? NOVELTY_BONUS : 0;
+  const varietyBonus = ctx.mealVariety.recentRecipeIds.has(candidate.id)
+    ? 0
+    : MEAL_VARIETY_BONUS[ctx.mealVariety.level];
 
   return (
     BASE_SCORE -
@@ -82,7 +92,7 @@ export function scoreCandidate(candidate: RecipeCandidate, ctx: ScoringContext):
     macroBonus +
     cuisineBonus -
     rarePenalty +
-    noveltyBonus
+    varietyBonus
   );
 }
 

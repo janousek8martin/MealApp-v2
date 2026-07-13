@@ -75,7 +75,7 @@ export const AVOID_FOOD_ICONS: Record<string, ImageSourcePropType> = {
   apple: require('../assets/icons/avoidFoods/apple.png'),
   pineapple: require('../assets/icons/avoidFoods/pineapple.png'),
   cilantro: require('../assets/icons/avoidFoods/cilantro.png'),
-  liver: require('../assets/icons/avoidFoods/liver.png'),
+  organMeats: require('../assets/icons/avoidFoods/liver.png'),
   blueCheese: require('../assets/icons/avoidFoods/blueCheese.png'),
   shrimp: require('../assets/icons/avoidFoods/shrimp.png'),
   raisins: require('../assets/icons/avoidFoods/raisins.png'),

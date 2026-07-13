@@ -1,8 +1,23 @@
-import { exceedsCandidateCalorieCap, isRecipeAllowedForProfiles, passesRepetitionRules } from './filters';
+import {
+  applyHardFilterWithFallback,
+  exceedsCandidateCalorieCap,
+  isRecipeAllowedForProfiles,
+  passesBudgetFilter,
+  passesCookingExperienceFilter,
+  passesCookingTimeFilter,
+  passesRepetitionRules,
+  passesSameDayRepeatRule,
+} from './filters';
 import { type MacroTarget, pickClosestSnack } from './portions';
 import type { Rng } from './rng';
 import { pickWeightedRandom, scoreCandidates } from './scoring';
-import type { DietRestrictions, RecipeCandidate, RepetitionContext, ScoringContext } from './types';
+import type {
+  DietRestrictions,
+  HouseholdCandidateFilters,
+  RecipeCandidate,
+  RepetitionContext,
+  ScoringContext,
+} from './types';
 
 /** Wraps a recipe or a standalone snack-suitable food behind one uniform shape for the generator. */
 export type GeneratorItem = {
@@ -35,13 +50,20 @@ export function pickMealForSlot(
     | 'macroFitTarget'
     | 'favoriteCuisines'
     | 'rareRecipeIds'
-    | 'noveltyBonus'
+    | 'mealVariety'
+    | 'preferPantryItems'
   >,
   rng: Rng,
   dailyTargetsKcal: number[] = [],
   shortlistSize: number = DEFAULT_SHORTLIST_SIZE,
   /** On a cold-dinner day, restrict to cold-eligible candidates when at least one exists – never allowed to empty the slot on its own. */
   requireColdEligible: boolean = false,
+  /** Cooking-experience/time/budget ceilings + same-lunch-dinner rule – each applied as a hard-filter-with-fallback, same tolerance as requireColdEligible. */
+  householdFilters?: HouseholdCandidateFilters,
+  /** slotKey of the slot being filled – needed only for the same-lunch-dinner check. */
+  slotKey?: string,
+  /** The sibling lunch/dinner slot's already-picked recipe id for this track today, if any. */
+  usedLunchDinnerIdsToday: ReadonlySet<string> = new Set(),
 ): GeneratorItem | null {
   const passesSafetyFilters = (item: GeneratorItem) =>
     isRecipeAllowedForProfiles(item.candidate, restrictions) && passesRepetitionRules(item.candidate, repetitionCtx);
@@ -52,6 +74,22 @@ export function pickMealForSlot(
   if (requireColdEligible) {
     const coldOnly = allowed.filter((item) => item.candidate.canServeCold);
     if (coldOnly.length > 0) allowed = coldOnly;
+  }
+  if (householdFilters) {
+    allowed = applyHardFilterWithFallback(allowed, (item) =>
+      passesCookingExperienceFilter(item.candidate, householdFilters.cookingExperienceLevel),
+    );
+    allowed = applyHardFilterWithFallback(allowed, (item) =>
+      passesCookingTimeFilter(item.candidate, householdFilters.cookingTimeLimitMinutes),
+    );
+    allowed = applyHardFilterWithFallback(allowed, (item) =>
+      passesBudgetFilter(item.candidate, householdFilters.budgetLevel),
+    );
+    if (slotKey) {
+      allowed = applyHardFilterWithFallback(allowed, (item) =>
+        passesSameDayRepeatRule(item.candidate, slotKey, usedLunchDinnerIdsToday, householdFilters.allowSameLunchDinner),
+      );
+    }
   }
   if (allowed.length === 0) allowed = candidates.filter(passesSafetyFilters);
   if (allowed.length === 0) return null;
@@ -74,12 +112,25 @@ export function pickSnackForSlot(
   restrictions: DietRestrictions,
   repetitionCtx: RepetitionContext,
   remainingTarget: MacroTarget,
+  /** Cooking-experience/time/budget ceilings – same-lunch-dinner doesn't apply to snacks. */
+  householdFilters?: HouseholdCandidateFilters,
 ): GeneratorItem | null {
-  const allowed = candidates.filter(
+  let allowed = candidates.filter(
     (item) =>
       isRecipeAllowedForProfiles(item.candidate, [restrictions]) &&
       passesRepetitionRules(item.candidate, repetitionCtx),
   );
+  if (householdFilters) {
+    allowed = applyHardFilterWithFallback(allowed, (item) =>
+      passesCookingExperienceFilter(item.candidate, householdFilters.cookingExperienceLevel),
+    );
+    allowed = applyHardFilterWithFallback(allowed, (item) =>
+      passesCookingTimeFilter(item.candidate, householdFilters.cookingTimeLimitMinutes),
+    );
+    allowed = applyHardFilterWithFallback(allowed, (item) =>
+      passesBudgetFilter(item.candidate, householdFilters.budgetLevel),
+    );
+  }
   if (allowed.length === 0) return null;
 
   const closest = pickClosestSnack(

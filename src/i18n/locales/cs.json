@@ -193,7 +193,7 @@
     "apple": "Jablko",
     "pineapple": "Ananas",
     "cilantro": "Koriandr",
-    "liver": "Játra",
+    "organMeats": "Vnitřnosti",
     "blueCheese": "Modrý sýr",
     "shrimp": "Krevety",
     "raisins": "Rozinky"
@@ -305,7 +305,17 @@
     "pescatarian": "Pescetarián",
     "gluten_free": "Bezlepkové",
     "dairy_free": "Bez mléčných výrobků",
-    "low_carb": "Nízkosacharidové"
+    "low_carb": "Nízkosacharidové",
+    "nut_free": "Bez ořechů",
+    "soy_free": "Bez sóji",
+    "balanced": "Vyvážená strava",
+    "keto": "Keto",
+    "paleo": "Paleo",
+    "low_fat": "Nízkotučné",
+    "halal": "Halal",
+    "kosher": "Košer",
+    "whole30": "Whole30",
+    "fodmap": "Nízký FODMAP"
   },
   "recipeTags": {
     "sweet": "Sladké",

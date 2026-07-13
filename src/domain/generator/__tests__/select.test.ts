@@ -34,6 +34,14 @@ function repetitionCtx(overrides: Partial<RepetitionContext> = {}): RepetitionCo
   };
 }
 
+const baseScoringExtras = {
+  likedItemIds: new Set<string>(),
+  expiringFoodIds: new Set<string>(),
+  inStockFoodIds: new Set<string>(),
+  mealVariety: { level: 'medium' as const, recentRecipeIds: new Set<string>() },
+  preferPantryItems: true,
+};
+
 describe('pickMealForSlot', () => {
   it('returns null when every candidate is filtered out', () => {
     const glutenItem = item('bread', {
@@ -43,7 +51,7 @@ describe('pickMealForSlot', () => {
       [glutenItem],
       [{ ...noRestrictions, allergens: ['gluten'] }],
       repetitionCtx(),
-      { likedItemIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
+      baseScoringExtras,
       createSeededRng(1),
     );
     expect(result).toBeNull();
@@ -61,7 +69,7 @@ describe('pickMealForSlot', () => {
         candidates,
         [{ ...noRestrictions, allergens: ['gluten'] }],
         repetitionCtx(),
-        { likedItemIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
+        baseScoringExtras,
         rng,
       );
       expect(result?.candidate.id).not.toBe('a');
@@ -75,7 +83,7 @@ describe('pickMealForSlot', () => {
         candidates,
         [noRestrictions],
         repetitionCtx(),
-        { likedItemIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
+        baseScoringExtras,
         createSeededRng(77),
       )?.candidate.id;
     expect(pick()).toBe(pick());
@@ -92,7 +100,7 @@ describe('pickMealForSlot', () => {
         candidates,
         [noRestrictions],
         repetitionCtx(),
-        { likedItemIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
+        baseScoringExtras,
         rng,
         [2000],
       );
@@ -106,7 +114,7 @@ describe('pickMealForSlot', () => {
       candidates,
       [noRestrictions],
       repetitionCtx(),
-      { likedItemIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
+      baseScoringExtras,
       createSeededRng(1),
       [2000],
     );
@@ -121,7 +129,7 @@ describe('pickMealForSlot', () => {
         candidates,
         [noRestrictions],
         repetitionCtx(),
-        { likedItemIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
+        baseScoringExtras,
         rng,
         [],
         undefined,
@@ -137,7 +145,7 @@ describe('pickMealForSlot', () => {
       candidates,
       [noRestrictions],
       repetitionCtx(),
-      { likedItemIds: new Set(), expiringFoodIds: new Set(), inStockFoodIds: new Set() },
+      baseScoringExtras,
       createSeededRng(1),
       [],
       undefined,

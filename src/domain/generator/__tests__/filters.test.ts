@@ -1,9 +1,14 @@
 import {
+  applyHardFilterWithFallback,
   deriveRecipeTags,
   exceedsCandidateCalorieCap,
   findRestrictionConflicts,
   isRecipeAllowedForProfiles,
+  passesBudgetFilter,
+  passesCookingExperienceFilter,
+  passesCookingTimeFilter,
   passesRepetitionRules,
+  passesSameDayRepeatRule,
   relaxAvoidedRecipesForResolutions,
 } from '../filters';
 import type { DietRestrictions, RecipeCandidate, RepetitionContext } from '../types';
@@ -344,5 +349,82 @@ describe('passesRepetitionRules', () => {
         }),
       ),
     ).toBe(true);
+  });
+});
+
+describe('applyHardFilterWithFallback', () => {
+  it('restricts to items passing the predicate', () => {
+    expect(applyHardFilterWithFallback([1, 2, 3, 4], (n) => n % 2 === 0)).toEqual([2, 4]);
+  });
+
+  it('falls back to the full list when the predicate would leave nothing', () => {
+    expect(applyHardFilterWithFallback([1, 3, 5], (n) => n % 2 === 0)).toEqual([1, 3, 5]);
+  });
+});
+
+describe('passesCookingExperienceFilter', () => {
+  it('allows a recipe at or below the household ceiling', () => {
+    expect(passesCookingExperienceFilter(candidate({ difficulty: 'easy' }), 'medium')).toBe(true);
+    expect(passesCookingExperienceFilter(candidate({ difficulty: 'medium' }), 'medium')).toBe(true);
+  });
+
+  it('excludes a recipe above the household ceiling', () => {
+    expect(passesCookingExperienceFilter(candidate({ difficulty: 'hard' }), 'easy')).toBe(false);
+  });
+
+  it('always passes a standalone food (undefined difficulty)', () => {
+    expect(passesCookingExperienceFilter(candidate({ difficulty: undefined }), 'easy')).toBe(true);
+  });
+});
+
+describe('passesBudgetFilter', () => {
+  it('allows a recipe at or below the household budget ceiling', () => {
+    expect(passesBudgetFilter(candidate({ budget: 'cheap' }), 'low')).toBe(true);
+    expect(passesBudgetFilter(candidate({ budget: 'average' }), 'medium')).toBe(true);
+  });
+
+  it('excludes a recipe above the household budget ceiling', () => {
+    expect(passesBudgetFilter(candidate({ budget: 'expensive' }), 'medium')).toBe(false);
+  });
+
+  it('"high" allows every budget tier', () => {
+    expect(passesBudgetFilter(candidate({ budget: 'expensive' }), 'high')).toBe(true);
+  });
+});
+
+describe('passesCookingTimeFilter', () => {
+  it('allows a recipe at or under the limit', () => {
+    expect(passesCookingTimeFilter(candidate({ prepTimeMinutes: 30 }), 30)).toBe(true);
+  });
+
+  it('excludes a recipe over the limit', () => {
+    expect(passesCookingTimeFilter(candidate({ prepTimeMinutes: 45 }), 30)).toBe(false);
+  });
+
+  it('never excludes anything when the limit is "Any time" (null)', () => {
+    expect(passesCookingTimeFilter(candidate({ prepTimeMinutes: 999 }), null)).toBe(true);
+  });
+
+  it('never excludes a recipe with no prep time set (missing data isn\'t a violation)', () => {
+    expect(passesCookingTimeFilter(candidate({ prepTimeMinutes: null }), 15)).toBe(true);
+    expect(passesCookingTimeFilter(candidate({ prepTimeMinutes: undefined }), 15)).toBe(true);
+  });
+});
+
+describe('passesSameDayRepeatRule', () => {
+  it('excludes a recipe already used in the other lunch/dinner slot today', () => {
+    expect(passesSameDayRepeatRule(candidate({ id: 'r1' }), 'dinner', new Set(['r1']), false)).toBe(false);
+  });
+
+  it('allows it when allowSameLunchDinner is true', () => {
+    expect(passesSameDayRepeatRule(candidate({ id: 'r1' }), 'dinner', new Set(['r1']), true)).toBe(true);
+  });
+
+  it('does not apply to slots other than lunch/dinner', () => {
+    expect(passesSameDayRepeatRule(candidate({ id: 'r1' }), 'breakfast', new Set(['r1']), false)).toBe(true);
+  });
+
+  it('allows a recipe not used in the sibling slot', () => {
+    expect(passesSameDayRepeatRule(candidate({ id: 'r2' }), 'dinner', new Set(['r1']), false)).toBe(true);
   });
 });
