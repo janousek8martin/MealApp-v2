@@ -76,9 +76,9 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit }: Props) {
   const [favoriteCuisines, setFavoriteCuisines] = useState<string[]>([]);
   const [avoidFoodGroupKeys, setAvoidFoodGroupKeys] = useState<string[]>([]);
 
-  const [cookingExperienceLevel, setCookingExperienceLevel] = useState<'easy' | 'medium' | 'hard'>('hard');
-  const [cookingTimeKey, setCookingTimeKey] = useState<string>(ANY_TIME_KEY);
-  const [budgetLevel, setBudgetLevel] = useState<'low' | 'medium' | 'high'>('high');
+  const [cookingExperienceLevel, setCookingExperienceLevel] = useState<'easy' | 'medium' | 'hard' | null>(null);
+  const [cookingTimeKey, setCookingTimeKey] = useState<string | null>(null);
+  const [budgetLevel, setBudgetLevel] = useState<'low' | 'medium' | 'high' | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const [currentKey, setCurrentKey] = useState<CardKey>('repetition');
@@ -129,9 +129,9 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit }: Props) {
       diets,
       favoriteCuisines,
       avoidFoodGroupKeys,
-      cookingExperienceLevel,
-      cookingTimeLimitMinutes: cookingTimeKey === ANY_TIME_KEY ? null : Number(cookingTimeKey),
-      budgetLevel,
+      cookingExperienceLevel: cookingExperienceLevel ?? 'hard',
+      cookingTimeLimitMinutes: cookingTimeKey === null || cookingTimeKey === ANY_TIME_KEY ? null : Number(cookingTimeKey),
+      budgetLevel: budgetLevel ?? 'high',
       notificationsEnabled,
     });
   };
