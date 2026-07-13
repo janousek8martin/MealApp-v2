@@ -152,6 +152,8 @@ export const mealSlotSettings = sqliteTable(
     /** Fraction of the daily calorie target assigned to this slot (0..1). */
     calorieShare: real('calorie_share').notNull(),
     sortOrder: integer('sort_order').notNull(),
+    /** User-given display name for a slot inserted via "+ Add meal" - null for the 5 built-in slots, which keep using the `slots.${slotKey}` translation. */
+    label: text('label'),
     enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
   },
   (table) => [index('meal_slot_household_idx').on(table.householdId)],

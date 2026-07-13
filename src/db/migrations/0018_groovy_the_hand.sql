@@ -1,0 +1,1 @@
+ALTER TABLE `meal_slot_settings` ADD `label` text;
