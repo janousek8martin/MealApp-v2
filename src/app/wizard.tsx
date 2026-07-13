@@ -6,60 +6,23 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HintedScrollView } from '@/components/HintedScrollView';
+import { HouseholdPreferencesCarousel, type HouseholdPreferencesValue } from '@/components/householdWizard/HouseholdPreferencesCarousel';
 import type { ProfileFormValue } from '@/components/ProfileForm';
 import { ProfileSetupCarousel } from '@/components/profileWizard/ProfileSetupCarousel';
 import { Button } from '@/components/ui/Button';
-import { ChipSelect } from '@/components/ui/ChipSelect';
-import { SwitchRow } from '@/components/ui/SwitchRow';
-import { AVOID_FOOD_ICONS, CUISINE_ICONS, DIET_ICONS } from '@/constants/chipIcons';
-import { AVOID_FOOD_GROUPS, CUISINE_KEYS, DIET_KEYS } from '@/constants/options';
+import { Stepper } from '@/components/ui/Stepper';
+import { AVOID_FOOD_GROUPS } from '@/constants/options';
 import { db } from '@/db/client';
 import { createHouseholdWithDefaults, saveHouseholdPreferences, updateHouseholdSettings } from '@/db/repositories/households';
 import { createProfile } from '@/db/repositories/profiles';
 import { checkCompositionMatch } from '@/domain/wizardComposition';
 import { useFoods } from '@/hooks/library';
+import { syncHouseholdNotifications } from '@/services/notifications';
 import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
-import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Step = 'composition' | 'preferences' | 'profile' | 'done';
-
-function Stepper({
-  label,
-  value,
-  onChange,
-  min = 0,
-  max = 10,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-  min?: number;
-  max?: number;
-}) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  return (
-    <View style={styles.stepperRow}>
-      <Text style={styles.stepperLabel}>{label}</Text>
-      <View style={styles.stepper}>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.stepperButton}
-          onPress={() => onChange(Math.max(min, value - 1))}>
-          <Ionicons name="remove" size={18} color={colors.primary} />
-        </Pressable>
-        <Text style={styles.stepperValue}>{value}</Text>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.stepperButton}
-          onPress={() => onChange(Math.min(max, value + 1))}>
-          <Ionicons name="add" size={18} color={colors.primary} />
-        </Pressable>
-      </View>
-    </View>
-  );
-}
 
 export default function WizardScreen() {
   const { t } = useTranslation();
@@ -80,12 +43,6 @@ export default function WizardScreen() {
   const [children, setChildren] = useState(0);
   const [householdId, setHouseholdId] = useState<string | null>(null);
 
-  const [maxReps, setMaxReps] = useState(2);
-  const [allowConsecutive, setAllowConsecutive] = useState(false);
-  const [diets, setDiets] = useState<string[]>([]);
-  const [favoriteCuisines, setFavoriteCuisines] = useState<string[]>([]);
-  const [avoidFoodGroupKeys, setAvoidFoodGroupKeys] = useState<string[]>([]);
-
   const [profileIndex, setProfileIndex] = useState(0);
   const [createdProfileTypes, setCreatedProfileTypes] = useState<Array<'adult' | 'child'>>([]);
   const totalMembers = adults + children;
@@ -104,13 +61,20 @@ export default function WizardScreen() {
     setStep('preferences');
   };
 
-  const goPreferences = async () => {
+  const handlePreferencesSubmit = async (value: HouseholdPreferencesValue) => {
     if (!householdId) return;
     await updateHouseholdSettings(db, householdId, {
-      defaultMaxRepetitionsPerWeek: maxReps,
-      defaultAllowConsecutiveDays: allowConsecutive,
+      defaultMaxRepetitionsPerWeek: value.maxReps,
+      defaultAllowConsecutiveDays: value.allowConsecutive,
+      allowSameLunchDinner: value.allowSameLunchDinner,
+      preferPantryItems: value.preferPantryItems,
+      mealVarietyLevel: value.mealVarietyLevel,
+      coldDinnerFrequencyPerWeek: value.coldDinnerFrequencyPerWeek,
+      cookingExperienceLevel: value.cookingExperienceLevel,
+      cookingTimeLimitMinutes: value.cookingTimeLimitMinutes,
+      budgetLevel: value.budgetLevel,
     });
-    const avoidedFoodIds = AVOID_FOOD_GROUPS.filter((group) => avoidFoodGroupKeys.includes(group.key))
+    const avoidedFoodIds = AVOID_FOOD_GROUPS.filter((group) => value.avoidFoodGroupKeys.includes(group.key))
       .flatMap((group) => group.foodKeys)
       .map((foodKey) => foodIdBySeedKey.get(foodKey))
       .filter((id): id is string => !!id);
@@ -118,11 +82,14 @@ export default function WizardScreen() {
       // Allergies are now set per-profile only (see ProfileForm) - household-
       // wide allergens are no longer collected in the wizard.
       allergens: [],
-      diets,
+      diets: value.diets,
       avoidedRecipeIds: [],
       avoidedFoodIds,
-      favoriteCuisines,
+      favoriteCuisines: value.favoriteCuisines,
     });
+    if (value.notificationsEnabled) {
+      await syncHouseholdNotifications(householdId);
+    }
     setStep('profile');
   };
 
@@ -209,53 +176,10 @@ export default function WizardScreen() {
             <View>
               <Text style={styles.title}>{t('wizard.preferencesTitle')}</Text>
               <Text style={styles.subtitle}>{t('wizard.preferencesSubtitle')}</Text>
-
-              <View style={styles.section}>
-                <Stepper label={t('settings.maxRepetitionsPerWeek')} value={maxReps} onChange={setMaxReps} min={1} max={7} />
-                <Text style={styles.sectionHint}>{t('wizard.maxRepetitionsHint')}</Text>
-                <SwitchRow
-                  label={t('settings.allowConsecutiveDays')}
-                  hint={t('settings.allowConsecutiveDaysHint')}
-                  value={allowConsecutive}
-                  onChange={setAllowConsecutive}
-                />
-              </View>
-
-              <View style={styles.section}>
-                <ChipSelect
-                  label={t('wizard.householdDiets')}
-                  multi
-                  options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`), icon: DIET_ICONS[key] }))}
-                  value={diets}
-                  onChange={setDiets}
-                />
-              </View>
-
-              <View style={styles.section}>
-                <ChipSelect
-                  label={t('wizard.favoriteCuisines')}
-                  multi
-                  options={CUISINE_KEYS.map((key) => ({ value: key, label: t(`cuisines.${key}`), icon: CUISINE_ICONS[key] }))}
-                  value={favoriteCuisines}
-                  onChange={setFavoriteCuisines}
-                />
-              </View>
-
-              <View style={[styles.section, styles.sectionLast]}>
-                <ChipSelect
-                  label={t('wizard.avoidMeals')}
-                  multi
-                  options={AVOID_FOOD_GROUPS.map((group) => ({
-                    value: group.key,
-                    label: t(`avoidFoods.${group.key}`),
-                    icon: AVOID_FOOD_ICONS[group.key],
-                  }))}
-                  value={avoidFoodGroupKeys}
-                  onChange={setAvoidFoodGroupKeys}
-                />
-              </View>
-
-              <Button label={t('common.continue')} onPress={goPreferences} style={styles.cta} />
+              <HouseholdPreferencesCarousel
+                submitLabel={t('common.continue')}
+                onSubmit={handlePreferencesSubmit}
+              />
             </View>
           ) : null}
 
@@ -340,56 +264,6 @@ function createStyles(colors: ColorTokens) {
     },
     cta: {
       marginTop: spacing.md,
-    },
-    section: {
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      paddingBottom: spacing.md,
-      marginBottom: spacing.md,
-    },
-    sectionLast: {
-      borderBottomWidth: 0,
-      paddingBottom: 0,
-      marginBottom: 0,
-    },
-    sectionHint: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
-      lineHeight: 18,
-      marginTop: -spacing.sm,
-    },
-    stepperRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: spacing.md,
-    },
-    stepperLabel: {
-      color: colors.text,
-      fontSize: typography.body,
-      fontWeight: '600',
-      flex: 1,
-    },
-    stepper: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    stepperButton: {
-      width: 32,
-      height: 32,
-      borderRadius: radius.chip,
-      borderWidth: 1,
-      borderColor: colors.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    stepperValue: {
-      color: colors.text,
-      fontSize: typography.body,
-      fontWeight: '700',
-      minWidth: 24,
-      textAlign: 'center',
     },
   });
 }

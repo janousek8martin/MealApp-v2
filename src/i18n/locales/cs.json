@@ -562,6 +562,12 @@
     "allowConsecutiveDaysHint": "Užitečné pro dávkové vaření – stejné jídlo se smí objevit i hned následující den.",
     "coldDinnerFrequency": "Studené večeře za týden",
     "coldDinnerFrequencyHint": "Kolikrát týdně appka zkusí naplánovat studenou večeři (recepty/jídla označená „lze podávat studené“). 0 = vypnuto.",
+    "allowSameLunchDinner": "Povolit stejný recept na oběd i večeři",
+    "allowSameLunchDinnerHint": "Užitečné, když navaříte větší dávku najednou a sníte ji dvakrát za den.",
+    "preferPantryItems": "Preferovat suroviny ze spíže",
+    "preferPantryItemsHint": "Appka bude víc nabízet recepty z toho, co už doma máte – zejména co brzy expiruje.",
+    "mealVariety": "Pestrost jídelníčku",
+    "mealVarietyHint": "Jak moc appka tlačí na nové recepty místo opakování osvědčených oblíbenců.",
     "slotTime": "Čas",
     "slotsSumWarning": "Zapnuté sloty aktuálně dávají dohromady {{sum}} %",
     "macroOverrides": "Poměr makroživin",
@@ -670,6 +676,43 @@
     "cardDiet": "Strava",
     "cardSummary": "Souhrn",
     "skip": "Žádné"
+  },
+  "householdCarousel": {
+    "cardRepetition": "Opakování a pestrost",
+    "cardDiet": "Strava domácnosti",
+    "cardCuisines": "Oblíbené kuchyně",
+    "cardAvoid": "Jídla, kterým se vyhnout",
+    "cardCookingExperience": "Zkušenost s vařením",
+    "cardCookingExperienceHint": "Určuje, jak náročné recepty appka automaticky nabízí. Jiné druhy pořád můžete přidat ručně nebo přes oblíbené.",
+    "cardCookingTime": "Čas na vaření",
+    "cardCookingTimeHint": "Appka bude automaticky vybírat jen recepty do tohoto času přípravy.",
+    "cardBudget": "Rozpočet",
+    "cardBudgetHint": "Jídelníček bude respektovat váš rozpočet na nákupy.",
+    "cardNotifications": "Notifikace",
+    "cardNotificationsHint": "Připomenutí jídel, týdenního vážení a nákupního seznamu.",
+    "allowNotifications": "Povolit notifikace"
+  },
+  "mealVariety": {
+    "low": "Nízká",
+    "medium": "Střední",
+    "high": "Vysoká"
+  },
+  "cookingExperience": {
+    "easy": "Rychlé a jednoduché",
+    "easyHint": "Jednoduché recepty s minimem přípravy.",
+    "medium": "Běžné vaření",
+    "mediumHint": "Vyvážená domácí jídla s jednoduchými technikami.",
+    "hard": "Zkušený kuchař",
+    "hardHint": "I náročnější recepty a techniky."
+  },
+  "cookingTime": {
+    "any": "Kdykoliv",
+    "upTo": "Do {{minutes}} min"
+  },
+  "budgetLevel": {
+    "low": "Nízký",
+    "medium": "Střední",
+    "high": "Vysoký"
   },
   "tempo": {
     "title": "Jak rychle?",

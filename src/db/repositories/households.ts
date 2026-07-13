@@ -83,6 +83,12 @@ export type HouseholdSettingsPatch = Partial<{
   notifications: NotificationSettings;
   kitchenUnitDisplayMode: 'grams' | 'hybrid' | 'kitchen';
   coldDinnerFrequencyPerWeek: number;
+  allowSameLunchDinner: boolean;
+  preferPantryItems: boolean;
+  mealVarietyLevel: 'low' | 'medium' | 'high';
+  cookingExperienceLevel: 'easy' | 'medium' | 'hard';
+  cookingTimeLimitMinutes: number | null;
+  budgetLevel: 'low' | 'medium' | 'high';
 }>;
 
 export async function updateHouseholdSettings(

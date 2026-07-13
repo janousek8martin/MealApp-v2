@@ -562,6 +562,12 @@
     "allowConsecutiveDaysHint": "Useful for batch cooking – the same meal may repeat the very next day.",
     "coldDinnerFrequency": "Cold dinners per week",
     "coldDinnerFrequencyHint": "How many dinners per week the app tries to make cold (recipes/foods marked \"can be served cold\"). 0 = off.",
+    "allowSameLunchDinner": "Allow the same recipe for lunch and dinner",
+    "allowSameLunchDinnerHint": "Useful when you cook a big batch once and eat it twice the same day.",
+    "preferPantryItems": "Prefer what's already in the pantry",
+    "preferPantryItemsHint": "Nudges the meal plan toward recipes using ingredients you already have, especially ones close to expiring.",
+    "mealVariety": "Meal variety",
+    "mealVarietyHint": "How strongly the plan pushes toward recipes you haven't had recently, versus repeating known favorites.",
     "slotTime": "Time",
     "slotsSumWarning": "Enabled slots currently add up to {{sum}} %",
     "macroOverrides": "Macro ratios",
@@ -670,6 +676,43 @@
     "cardDiet": "Diet",
     "cardSummary": "Summary",
     "skip": "None"
+  },
+  "householdCarousel": {
+    "cardRepetition": "Repetition & variety",
+    "cardDiet": "Household diet",
+    "cardCuisines": "Favorite cuisines",
+    "cardAvoid": "Meals to avoid",
+    "cardCookingExperience": "Cooking experience",
+    "cardCookingExperienceHint": "Sets which recipe difficulty the plan draws from automatically. You can still add other recipes yourself or mark them as favorites.",
+    "cardCookingTime": "Cooking time",
+    "cardCookingTimeHint": "The plan will only pick recipes at or under this prep time.",
+    "cardBudget": "Budget",
+    "cardBudgetHint": "Meal plans will respect your grocery budget.",
+    "cardNotifications": "Notifications",
+    "cardNotificationsHint": "Get reminded about meals, your weekly weigh-in, and the shopping list.",
+    "allowNotifications": "Allow notifications"
+  },
+  "mealVariety": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "cookingExperience": {
+    "easy": "Quick & Easy",
+    "easyHint": "Simple recipes with minimal prep.",
+    "medium": "Everyday Cooking",
+    "mediumHint": "Balanced home meals with simple techniques.",
+    "hard": "Confident Cook",
+    "hardHint": "More complex recipes and techniques too."
+  },
+  "cookingTime": {
+    "any": "Any time",
+    "upTo": "Up to {{minutes}} min"
+  },
+  "budgetLevel": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
   },
   "tempo": {
     "title": "How fast?",
