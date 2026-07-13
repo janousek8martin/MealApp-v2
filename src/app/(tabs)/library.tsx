@@ -322,14 +322,25 @@ export default function LibraryScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.heading}>{t('tabs.library')}</Text>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.addButton}
-          onPress={() =>
-            router.push(segment === 'recipes' ? '/recipe/edit' : '/food/edit')
-          }>
-          <Ionicons name="add" size={22} color={colors.onPrimary} />
-        </Pressable>
+        <View style={styles.headerButtons}>
+          {segment === 'recipes' ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('recipeImport.title')}
+              style={styles.importButton}
+              onPress={() => router.push('/recipe/import')}>
+              <Ionicons name="download-outline" size={20} color={colors.primary} />
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            style={styles.addButton}
+            onPress={() =>
+              router.push(segment === 'recipes' ? '/recipe/edit' : '/food/edit')
+            }>
+            <Ionicons name="add" size={22} color={colors.onPrimary} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.segmentRow}>
@@ -518,6 +529,20 @@ function createStyles(colors: ColorTokens) {
       color: colors.text,
       fontSize: typography.title,
       fontWeight: '800',
+    },
+    headerButtons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    importButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     addButton: {
       backgroundColor: colors.primary,

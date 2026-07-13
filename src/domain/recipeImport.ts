@@ -329,7 +329,11 @@ const UNIT_ALIASES: Record<string, UnitTag> = {
  * mixed numbers ("1 1/2") and simple ranges ("1-2" → 1).
  */
 export function parseIngredientLine(line: string): ParsedIngredientLine {
-  const cleaned = line.replace(/\(.*?\)/g, ' ').replace(/\s+/g, ' ').trim();
+  const withoutNotes = line.replace(/\(.*?\)/g, ' ').replace(/\s+/g, ' ').trim();
+  // Recipe sites frequently concatenate quantity and unit with no space
+  // ("300ml milk", "100g flour") – split only the leading run so this never
+  // touches a unit-less name that happens to start with digits.
+  const cleaned = withoutNotes.replace(/^(\d+(?:[.,]\d+)?)([a-zA-Zà-žÀ-Ž]+)\b/, '$1 $2');
   const tokens = cleaned.split(' ').filter((token) => token.length > 0);
   if (tokens.length === 0) return { quantity: null, unitToken: null, name: '' };
 

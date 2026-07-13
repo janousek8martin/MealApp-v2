@@ -185,6 +185,15 @@ describe('parseIngredientLine', () => {
   it('drops parenthesized notes', () => {
     expect(parseIngredientLine('100 g másla (změklého)').name).toBe('másla');
   });
+
+  it('splits a quantity concatenated with its unit (no space)', () => {
+    expect(parseIngredientLine('300ml milk')).toEqual({ quantity: 300, unitToken: 'ml', name: 'milk' });
+    expect(parseIngredientLine('100g plain flour')).toEqual({ quantity: 100, unitToken: 'g', name: 'plain flour' });
+  });
+
+  it('does not split a bare number with no unit', () => {
+    expect(parseIngredientLine('2eggs').name).toBe('eggs');
+  });
 });
 
 const G_FOOD: MatchableFood = { id: 'f1', nameCs: 'Mouka', nameEn: 'Flour', baseUnit: 'g', gramsPerPiece: null, gramsPerCup: 120 };
