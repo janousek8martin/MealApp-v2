@@ -39,6 +39,7 @@ import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useWaterGoalDates } from '@/hooks/water';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { slotDisplayLabel } from '@/utils/mealSlots';
 
 function currentHHMM(): string {
   const d = new Date();
@@ -152,7 +153,7 @@ export default function TodayScreen() {
             onEditProfile={() => router.push({ pathname: '/profile/[id]', params: { id: activeProfile.id } })}
             nextMeal={
               nextMealEntry?.meal
-                ? { slotLabel: t(`slots.${nextMealEntry.slot.slotKey}`), meal: nextMealEntry.meal }
+                ? { slotLabel: slotDisplayLabel(t, nextMealEntry.slot), meal: nextMealEntry.meal }
                 : undefined
             }
             mealStreak={mealStreak}
@@ -230,7 +231,7 @@ export default function TodayScreen() {
                 <MealSlotCard
                   key={slot.id}
                   variant="compact"
-                  slotLabel={t(`slots.${slot.slotKey}`)}
+                  slotLabel={slotDisplayLabel(t, slot)}
                   meal={meal}
                   activeProfileId={activeProfile.id}
                   recipeNutritionMap={recipeNutritionMap}

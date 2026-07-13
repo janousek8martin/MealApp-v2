@@ -12,6 +12,7 @@ import { useProfileSlotPortions } from '@/hooks/data';
 import { useAllMealSlots, type SlotRow } from '@/hooks/plan';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { slotDisplayLabel } from '@/utils/mealSlots';
 
 const SNACK_PRESETS = [5, 10, 15, 20, 25];
 
@@ -54,7 +55,7 @@ function SlotRowEditor({
   return (
     <View style={styles.slotCard}>
       <Pressable accessibilityRole="button" style={styles.slotHeader} onPress={() => setExpanded((prev) => !prev)}>
-        <Text style={styles.slotTitle}>{t(`slots.${slot.slotKey}`)}</Text>
+        <Text style={styles.slotTitle}>{slotDisplayLabel(t, slot)}</Text>
         <Text style={styles.slotSummary}>{edit.percent} %</Text>
       </Pressable>
       {expanded ? (
@@ -187,7 +188,7 @@ export function ProfilePortionsCard({
       <View style={styles.summaryList}>
         {enabledSlots.map((slot) => (
           <View key={slot.id} style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>{t(`slots.${slot.slotKey}`)}</Text>
+            <Text style={styles.summaryLabel}>{slotDisplayLabel(t, slot)}</Text>
             <Text style={styles.summaryValue}>{edits[slot.id]?.percent ?? Math.round(slot.calorieShare * 100)} %</Text>
           </View>
         ))}

@@ -56,7 +56,7 @@ export function MealSlotsPicker({ householdId, sharesMainMeals, value, onChange 
                 {selected ? <Ionicons name="checkmark" size={14} color={colors.onPrimary} /> : null}
               </View>
               <Text style={[styles.rowLabel, selected && styles.rowLabelSelected]}>
-                {t(`mealSlots.slot.${slot.slotKey}`, { defaultValue: slot.time })}
+                {slot.label ? slot.label : t(`mealSlots.slot.${slot.slotKey}`, { defaultValue: slot.time })}
               </Text>
               {showSharedTag ? <Text style={styles.sharedTag}>{t('mealSlots.shared')}</Text> : null}
             </Pressable>

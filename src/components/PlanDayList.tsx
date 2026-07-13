@@ -29,6 +29,7 @@ import {
   type SlotRow,
 } from '@/hooks/plan';
 import { confirmDeleteMeal } from '@/utils/mealActions';
+import { slotDisplayLabel } from '@/utils/mealSlots';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
@@ -140,7 +141,7 @@ export function PlanDayList({
         return (
           <MealSlotCard
             key={slot.id}
-            slotLabel={t(`slots.${slot.slotKey}`)}
+            slotLabel={slotDisplayLabel(t, slot)}
             meal={meal}
             activeProfileId={activeProfile.id}
             recipeNutritionMap={recipeNutritionMap}

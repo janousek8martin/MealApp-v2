@@ -48,6 +48,7 @@ import { MAX_MAIN_NAV_ITEMS, useAppStore, type NavKey } from '@/stores/appStore'
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
+import { slotDisplayLabel } from '@/utils/mealSlots';
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const ANY_TIME_KEY = 'any';
@@ -316,7 +317,7 @@ function MealTimesSection({ householdId }: { householdId: string }) {
       {slots.map((slot) => (
         <TextField
           key={slot.id}
-          label={t(`slots.${slot.slotKey}`)}
+          label={slotDisplayLabel(t, slot)}
           value={times[slot.id] ?? ''}
           onChangeText={(v) => setTimes((prev) => ({ ...prev, [slot.id]: v }))}
           placeholder="HH:MM"
