@@ -786,6 +786,9 @@
     "title": "Summary",
     "dailyTarget": "Daily target",
     "projectionTitle": "Projected weight over time",
-    "recompositionNote": "Recomposition - calories at maintenance, not a deficit."
+    "recompositionNote": "Recomposition - calories at maintenance, not a deficit.",
+    "legendActive": "Active phase",
+    "legendMaintenance": "Maintenance week",
+    "timelineSummary": "~{{weeks}} weeks · around {{date}}"
   }
 }

@@ -243,7 +243,11 @@ export default function ProgressScreen() {
         {projection ? (
           <View style={styles.chartSection}>
             <Text style={styles.cardTitle}>{t('summary.projectionTitle')}</Text>
-            <WeightProjectionChart projection={projection} actualPoints={actualPoints} />
+            <WeightProjectionChart
+              projection={projection}
+              actualPoints={actualPoints}
+              startDateIso={history[0]?.date ?? todayIsoDate()}
+            />
           </View>
         ) : null}
       </ScrollView>

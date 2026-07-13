@@ -786,6 +786,9 @@
     "title": "Souhrn",
     "dailyTarget": "Denní cíl",
     "projectionTitle": "Předpokládaný vývoj váhy",
-    "recompositionNote": "Rekompozice — kalorie na úrovni udržení, ne deficit."
+    "recompositionNote": "Rekompozice — kalorie na úrovni udržení, ne deficit.",
+    "legendActive": "Aktivní fáze",
+    "legendMaintenance": "Udržovací týden",
+    "timelineSummary": "~{{weeks}} týdnů · kolem {{date}}"
   }
 }

@@ -12,6 +12,7 @@ import { MealSlotsPicker } from '@/components/MealSlotsPicker';
 import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
 import type { ProfileFormValue } from '@/components/ProfileForm';
 import { WeightProjectionChart } from '@/components/WeightProjectionChart';
+import { todayIsoDate } from '@/db/time';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect, resolveChipSelectTap } from '@/components/ui/ChipSelect';
 import { SwitchRow } from '@/components/ui/SwitchRow';
@@ -588,7 +589,7 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
                 {projection ? (
                   <>
                     <Text style={styles.weekdayLabel}>{t('summary.projectionTitle')}</Text>
-                    <WeightProjectionChart projection={projection} />
+                    <WeightProjectionChart projection={projection} startDateIso={todayIsoDate()} />
                   </>
                 ) : null}
               </>
