@@ -763,7 +763,13 @@
     "cardTitle": "Pitný režim",
     "addGlass": "+ sklenice",
     "removeGlass": "− sklenice",
-    "settingsLink": "Nastavení vody"
+    "settingsLink": "Nastavení vody",
+    "benefitMetabolismTitle": "Metabolismus",
+    "benefitMetabolismBody": "I mírná dehydratace dokáže měřitelně zpomalit metabolismus.",
+    "benefitEnergyTitle": "Energie",
+    "benefitEnergyBody": "Ztráta už 1-2 % tělesné hmotnosti v tekutinách je spojena s únavou a horší koncentrací.",
+    "benefitRecoveryTitle": "Chuť k jídlu a regenerace",
+    "benefitRecoveryBody": "Dostatek tekutin podporuje trávení a klouby a pomáhá rozeznat žízeň od hladu."
   },
   "summary": {
     "title": "Souhrn",

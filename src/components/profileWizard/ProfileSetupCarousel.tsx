@@ -509,6 +509,23 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
           <View>
             <Text style={styles.cardTitle}>{t('water.title')}</Text>
             <Text style={styles.hintText}>{t('water.hint')}</Text>
+            {(
+              [
+                { icon: 'flash-outline' as const, titleKey: 'water.benefitMetabolismTitle', bodyKey: 'water.benefitMetabolismBody' },
+                { icon: 'battery-charging-outline' as const, titleKey: 'water.benefitEnergyTitle', bodyKey: 'water.benefitEnergyBody' },
+                { icon: 'restaurant-outline' as const, titleKey: 'water.benefitRecoveryTitle', bodyKey: 'water.benefitRecoveryBody' },
+              ]
+            ).map((row) => (
+              <View key={row.titleKey} style={styles.benefitRow}>
+                <View style={styles.benefitIconWrap}>
+                  <Ionicons name={row.icon} size={18} color={colors.primary} />
+                </View>
+                <View style={styles.benefitText}>
+                  <Text style={styles.benefitTitle}>{t(row.titleKey)}</Text>
+                  <Text style={styles.benefitBody}>{t(row.bodyKey)}</Text>
+                </View>
+              </View>
+            ))}
             <SwitchRow label={t('water.toggle')} value={trackWater} onChange={setTrackWater} />
           </View>
         ) : null}
@@ -625,6 +642,38 @@ function createStyles(colors: ColorTokens) {
     proConLabel: {
       fontWeight: '700',
       color: colors.text,
+    },
+    benefitRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radius.card - 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    benefitIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    benefitText: {
+      flex: 1,
+    },
+    benefitTitle: {
+      color: colors.text,
+      fontSize: typography.body,
+      fontWeight: '700',
+    },
+    benefitBody: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: 1,
     },
     cardTitle: {
       color: colors.text,

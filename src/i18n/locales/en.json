@@ -763,7 +763,13 @@
     "cardTitle": "Hydration",
     "addGlass": "+ glass",
     "removeGlass": "- glass",
-    "settingsLink": "Water settings"
+    "settingsLink": "Water settings",
+    "benefitMetabolismTitle": "Metabolism",
+    "benefitMetabolismBody": "Even mild dehydration can measurably slow your metabolic rate.",
+    "benefitEnergyTitle": "Energy",
+    "benefitEnergyBody": "Losing as little as 1-2% of body weight in fluid is linked to fatigue and lower focus.",
+    "benefitRecoveryTitle": "Appetite & recovery",
+    "benefitRecoveryBody": "Good hydration supports digestion and joints, and helps you tell thirst apart from hunger."
   },
   "summary": {
     "title": "Summary",
