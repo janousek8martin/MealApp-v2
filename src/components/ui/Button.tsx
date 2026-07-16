@@ -8,11 +8,13 @@ type Props = {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'ghost';
+  /** 'compact' shrinks padding and font size for dense rows (e.g. Plan screen's footer). Defaults to 'default'. */
+  size?: 'default' | 'compact';
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
-export function Button({ label, onPress, variant = 'primary', disabled, style }: Props) {
+export function Button({ label, onPress, variant = 'primary', size = 'default', disabled, style }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -23,6 +25,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, style }:
       disabled={disabled}
       style={({ pressed }) => [
         styles.base,
+        size === 'compact' && styles.compact,
         variant === 'primary' && styles.primary,
         variant === 'secondary' && styles.secondary,
         variant === 'ghost' && styles.ghost,
@@ -33,6 +36,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, style }:
       <Text
         style={[
           styles.label,
+          size === 'compact' && styles.labelCompact,
           variant === 'primary' ? styles.labelOnPrimary : styles.labelOnLight,
         ]}>
         {label}
@@ -49,6 +53,10 @@ function createStyles(colors: ColorTokens) {
       paddingHorizontal: spacing.lg,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    compact: {
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
     },
     primary: {
       backgroundColor: colors.primary,
@@ -70,6 +78,9 @@ function createStyles(colors: ColorTokens) {
     label: {
       fontSize: typography.body,
       fontWeight: '600',
+    },
+    labelCompact: {
+      fontSize: typography.small,
     },
     labelOnPrimary: {
       color: colors.onPrimary,

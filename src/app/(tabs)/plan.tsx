@@ -484,6 +484,7 @@ export default function PlanScreen() {
           <Button
             label={generating === 'week' ? t('today.generating') : t('planScreen.generateWeek')}
             variant="secondary"
+            size="compact"
             onPress={generateWeekAction}
             disabled={generating !== null || copyingYesterday}
             style={styles.actionButton}
@@ -491,6 +492,7 @@ export default function PlanScreen() {
           {!isPast ? (
             <Button
               label={generating === 'day' ? t('today.generating') : t('planScreen.generateDay')}
+              size="compact"
               onPress={generateDayAction}
               disabled={generating !== null || copyingYesterday}
               style={styles.actionButton}
@@ -502,6 +504,7 @@ export default function PlanScreen() {
             <Button
               label={t('planScreen.copyYesterday')}
               variant="secondary"
+              size="compact"
               onPress={copyYesterdayAction}
               disabled={generating !== null || copyingYesterday}
               style={styles.actionButton}
