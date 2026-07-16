@@ -5,6 +5,7 @@
     "cancel": "Cancel",
     "save": "Save",
     "done": "Done",
+    "close": "Close",
     "edit": "Edit",
     "pro": "Pro:",
     "con": "Con:",
@@ -38,6 +39,14 @@
     "mealStreak": "Meal streak",
     "waterStreak": "Water streak",
     "viewMealPlan": "View meal plan"
+  },
+  "streakDetail": {
+    "mealTitle": "Meal streak",
+    "waterTitle": "Water streak",
+    "current": "Current",
+    "best": "Best",
+    "mealsLoggedToday": "{{count}} of {{total}} meals logged today",
+    "addMeal": "Add meal"
   },
   "planScreen": {
     "generateWeek": "Generate week",
