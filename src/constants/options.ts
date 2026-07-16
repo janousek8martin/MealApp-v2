@@ -33,6 +33,7 @@ export const MANUAL_DIET_KEYS = [
   'vegetarian',
   'vegan',
   'pescatarian',
+  'mediterranean',
   'balanced',
   'keto',
   'paleo',

@@ -307,6 +307,7 @@
     "vegetarian": "Vegetarian",
     "vegan": "Vegan",
     "pescatarian": "Pescatarian",
+    "mediterranean": "Mediterranean",
     "gluten_free": "Gluten-free",
     "dairy_free": "Dairy-free",
     "low_carb": "Low-carb",
@@ -319,7 +320,28 @@
     "halal": "Halal",
     "kosher": "Kosher",
     "whole30": "Whole30",
-    "fodmap": "Low FODMAP"
+    "fodmap": "Low FODMAP",
+    "recommended": "Recommended",
+    "details": "Details"
+  },
+  "dietDescriptions": {
+    "vegetarian": "No meat or fish; dairy and eggs are fine.",
+    "vegan": "No animal products at all.",
+    "pescatarian": "Vegetarian, plus fish and seafood.",
+    "mediterranean": "Olive oil, vegetables, whole grains, fish, and legumes; less red meat.",
+    "balanced": "A general mix of all food groups with no specific restriction.",
+    "keto": "Very low carb, high fat - carbs typically under 10% of calories.",
+    "paleo": "Whole foods only - no grains, legumes, dairy, or refined sugar.",
+    "low_fat": "Keeps fat intake noticeably below a typical diet.",
+    "halal": "Follows Islamic dietary law.",
+    "kosher": "Follows Jewish dietary law.",
+    "whole30": "A strict 30-day reset excluding sugar, alcohol, grains, legumes, and dairy.",
+    "fodmap": "Limits fermentable carbs that commonly trigger digestive discomfort.",
+    "gluten_free": "No wheat, barley, or rye.",
+    "dairy_free": "No milk or milk-based products.",
+    "low_carb": "Reduced carbohydrates, less strict than keto.",
+    "nut_free": "No tree nuts or peanuts.",
+    "soy_free": "No soy-based ingredients."
   },
   "recipeTags": {
     "sweet": "Sweet",

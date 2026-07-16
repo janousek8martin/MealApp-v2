@@ -307,6 +307,7 @@
     "vegetarian": "Vegetarián",
     "vegan": "Vegan",
     "pescatarian": "Pescetarián",
+    "mediterranean": "Středomořská",
     "gluten_free": "Bezlepkové",
     "dairy_free": "Bez mléčných výrobků",
     "low_carb": "Nízkosacharidové",
@@ -319,7 +320,28 @@
     "halal": "Halal",
     "kosher": "Košer",
     "whole30": "Whole30",
-    "fodmap": "Nízký FODMAP"
+    "fodmap": "Nízký FODMAP",
+    "recommended": "Doporučeno",
+    "details": "Detaily"
+  },
+  "dietDescriptions": {
+    "vegetarian": "Bez masa a ryb, mléčné výrobky a vejce v pořádku.",
+    "vegan": "Zcela bez živočišných produktů.",
+    "pescatarian": "Vegetariánská strava plus ryby a mořské plody.",
+    "mediterranean": "Olivový olej, zelenina, celozrnné produkty, ryby a luštěniny; méně červeného masa.",
+    "balanced": "Obecná vyvážená strava bez konkrétního omezení.",
+    "keto": "Velmi nízký příjem sacharidů, vysoký podíl tuků - obvykle pod 10 % kalorií ze sacharidů.",
+    "paleo": "Jen celistvé potraviny - žádné obiloviny, luštěniny, mléčné výrobky ani rafinovaný cukr.",
+    "low_fat": "Výrazně nižší příjem tuků než běžná strava.",
+    "halal": "Řídí se islámskými stravovacími pravidly.",
+    "kosher": "Řídí se židovskými stravovacími pravidly.",
+    "whole30": "Přísný 30denní reset bez cukru, alkoholu, obilovin, luštěnin a mléčných výrobků.",
+    "fodmap": "Omezuje fermentovatelné sacharidy, které často zhoršují trávicí potíže.",
+    "gluten_free": "Bez pšenice, ječmene a žita.",
+    "dairy_free": "Bez mléka a mléčných výrobků.",
+    "low_carb": "Omezené sacharidy, méně přísné než keto.",
+    "nut_free": "Bez ořechů a arašídů.",
+    "soy_free": "Bez surovin ze sóji."
   },
   "recipeTags": {
     "sweet": "Sladké",
