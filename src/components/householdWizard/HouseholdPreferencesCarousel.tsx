@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { Stepper } from '@/components/ui/Stepper';
 import { SwitchRow } from '@/components/ui/SwitchRow';
+import { TextField } from '@/components/ui/TextField';
 import { AVOID_FOOD_ICONS, CUISINE_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import {
   AVOID_FOOD_GROUPS,
@@ -15,8 +16,11 @@ import {
   CUISINE_KEYS,
   DIET_KEYS,
 } from '@/constants/options';
+import { defaultNotificationSettings } from '@/db/types';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const CARD_KEYS = [
   'repetition',
@@ -45,6 +49,8 @@ export type HouseholdPreferencesValue = {
   cookingTimeLimitMinutes: number | null;
   budgetLevel: 'low' | 'medium' | 'high';
   notificationsEnabled: boolean;
+  weighInTime: string;
+  planningTime: string;
 };
 
 const ANY_TIME_KEY = 'any';
@@ -81,6 +87,8 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit }: Props) {
   const [cookingTimeKey, setCookingTimeKey] = useState<string | null>(null);
   const [budgetLevel, setBudgetLevel] = useState<'low' | 'medium' | 'high' | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [weighInTime, setWeighInTime] = useState(defaultNotificationSettings.weighInTime);
+  const [planningTime, setPlanningTime] = useState(defaultNotificationSettings.planningTime);
 
   const [currentKey, setCurrentKey] = useState<CardKey>('repetition');
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -134,6 +142,8 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit }: Props) {
       cookingTimeLimitMinutes: cookingTimeKey === null || cookingTimeKey === ANY_TIME_KEY ? null : Number(cookingTimeKey),
       budgetLevel: budgetLevel ?? 'high',
       notificationsEnabled,
+      weighInTime: TIME_RE.test(weighInTime) ? weighInTime : defaultNotificationSettings.weighInTime,
+      planningTime: TIME_RE.test(planningTime) ? planningTime : defaultNotificationSettings.planningTime,
     });
   };
 
@@ -309,6 +319,22 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit }: Props) {
               value={notificationsEnabled}
               onChange={setNotificationsEnabled}
             />
+            {notificationsEnabled ? (
+              <View style={styles.controlGap}>
+                <TextField
+                  label={t('settings.weighInTime')}
+                  value={weighInTime}
+                  onChangeText={setWeighInTime}
+                  placeholder="HH:MM"
+                />
+                <TextField
+                  label={t('settings.planningTime')}
+                  value={planningTime}
+                  onChangeText={setPlanningTime}
+                  placeholder="HH:MM"
+                />
+              </View>
+            ) : null}
           </View>
         ) : null}
       </Animated.View>
