@@ -36,7 +36,8 @@
     "nextMealTitle": "Next meal today",
     "nextMealNone": "Nothing else planned for today",
     "mealStreak": "Meal streak",
-    "waterStreak": "Water streak"
+    "waterStreak": "Water streak",
+    "viewMealPlan": "View meal plan"
   },
   "planScreen": {
     "generateWeek": "Generate week",

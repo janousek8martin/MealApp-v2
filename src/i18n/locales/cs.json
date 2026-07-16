@@ -36,7 +36,8 @@
     "nextMealTitle": "Další jídlo dne",
     "nextMealNone": "Pro dnešek už nic dalšího neplánujete",
     "mealStreak": "Jídla v řadě",
-    "waterStreak": "Pitný režim v řadě"
+    "waterStreak": "Pitný režim v řadě",
+    "viewMealPlan": "Zobrazit jídelníček"
   },
   "planScreen": {
     "generateWeek": "Vygenerovat týden",

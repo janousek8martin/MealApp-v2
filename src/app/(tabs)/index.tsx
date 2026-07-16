@@ -1,21 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Image } from 'expo-image';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HomeHeroCard } from '@/components/HomeHeroCard';
-import { MealSlotCard } from '@/components/MealSlotCard';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { WaterCard } from '@/components/WaterCard';
 import { Button } from '@/components/ui/Button';
-import { db } from '@/db/client';
-import { generateWeek, setPortionStatus } from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
 import { countConsecutiveDays } from '@/domain/streak';
-import { addDays, startOfWeek } from '@/domain/week';
+import { addDays } from '@/domain/week';
 import {
   useActiveProfile,
   useDailyProfileTargets,
@@ -85,11 +81,6 @@ export default function TodayScreen() {
   const mealStreak = countConsecutiveDays(mealCompletionDates, today);
   const waterStreak = countConsecutiveDays(waterGoalDates, today);
 
-  const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>({});
-  const [generating, setGenerating] = useState(false);
-
-  const hasAnyMeal = meals.length > 0;
-
   const sumNutrition = (rows: typeof portionsForDate) =>
     rows.reduce(
       (acc, row) => {
@@ -121,16 +112,6 @@ export default function TodayScreen() {
         .map((slot) => ({ slot, meal: findMealForProfileInSlot(meals, slot, activeProfile) }))
         .find((entry) => entry.meal !== undefined)
     : undefined;
-
-  const generateThisWeek = async () => {
-    if (!household) return;
-    setGenerating(true);
-    try {
-      await generateWeek(db, household.id, startOfWeek(today));
-    } finally {
-      setGenerating(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -207,50 +188,12 @@ export default function TodayScreen() {
           />
         ) : null}
 
-        {!hasAnyMeal ? (
-          <View style={styles.emptyState}>
-            <Image
-              source={require('../../assets/images/empty-states/mealplan-empty.png')}
-              style={styles.emptyImage}
-              contentFit="contain"
-            />
-            <Text style={styles.emptyTitle}>{t('today.mealsComingTitle')}</Text>
-            <Text style={styles.emptyText}>{t('today.mealsComingText')}</Text>
-            <Button
-              label={generating ? t('today.generating') : t('today.generateWeek')}
-              onPress={generateThisWeek}
-              disabled={generating || !household}
-              style={styles.generateButton}
-            />
-            {generating ? <ActivityIndicator style={styles.spinner} color={colors.primary} /> : null}
-          </View>
-        ) : null}
-
-        {activeProfile ? (
-          <View style={styles.mealList}>
-            {slots.map((slot) => {
-              const meal = findMealForProfileInSlot(meals, slot, activeProfile);
-              return (
-                <MealSlotCard
-                  key={slot.id}
-                  variant="compact"
-                  slotLabel={slotDisplayLabel(t, slot)}
-                  meal={meal}
-                  activeProfileId={activeProfile.id}
-                  recipeNutritionMap={recipeNutritionMap}
-                  expanded={!!expandedSlots[slot.id]}
-                  onToggleExpand={() =>
-                    setExpandedSlots((prev) => ({ ...prev, [slot.id]: !prev[slot.id] }))
-                  }
-                  onEdit={() =>
-                    router.push({ pathname: '/plan', params: { date: today, expandSlot: slot.slotKey } })
-                  }
-                  onSetStatus={(portionId, status) => void setPortionStatus(db, portionId, status)}
-                />
-              );
-            })}
-          </View>
-        ) : null}
+        <Button
+          label={t('today.viewMealPlan')}
+          variant="secondary"
+          onPress={() => router.push('/plan')}
+          style={styles.viewPlanButton}
+        />
       </ScrollView>
 
       <ScrollDownHintButton
@@ -277,9 +220,6 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.title,
       fontWeight: '800',
       marginBottom: spacing.sm,
-    },
-    mealList: {
-      marginTop: spacing.md,
     },
     quickRow: {
       flexDirection: 'row',
@@ -315,38 +255,7 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small,
       textAlign: 'center',
     },
-    emptyState: {
-      backgroundColor: colors.surface,
-      borderRadius: radius.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing.lg,
-      marginTop: spacing.md,
-      marginBottom: spacing.md,
-      alignItems: 'center',
-    },
-    emptyImage: {
-      width: '100%',
-      height: 140,
-      marginBottom: spacing.sm,
-    },
-    emptyTitle: {
-      color: colors.text,
-      fontSize: typography.subtitle,
-      fontWeight: '700',
-      marginTop: spacing.sm,
-      marginBottom: spacing.xs,
-      textAlign: 'center',
-    },
-    emptyText: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
-      lineHeight: 20,
-      marginBottom: spacing.md,
-      textAlign: 'center',
-    },
-    generateButton: {},
-    spinner: {
+    viewPlanButton: {
       marginTop: spacing.sm,
     },
   });
