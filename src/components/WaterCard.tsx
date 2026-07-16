@@ -8,6 +8,7 @@ import { WaterSettingsCard } from '@/components/WaterSettingsCard';
 import { db } from '@/db/client';
 import { logWater } from '@/db/repositories/water';
 import { todayIsoDate } from '@/db/time';
+import { mlToFlOz } from '@/domain/units';
 import { DEFAULT_GLASS_ML, defaultWaterGoalMl } from '@/domain/water';
 import { useWaterTotal } from '@/hooks/water';
 import { useTheme } from '@/theme/ThemeContext';
@@ -86,11 +87,15 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <Ionicons name="water" size={16} color={colors.primary} />
+        <Ionicons name="water" size={16} color={colors.water} />
         <Text style={styles.title}>{t('water.cardTitle')}</Text>
-        <Text style={[styles.amountText, reached && styles.amountReached]}>
-          {Math.round(totalMl)} / {Math.round(goalMl)} ml
-        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('water.settingsLink')}
+          onPress={() => setSettingsVisible(true)}
+          hitSlop={8}>
+          <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
+        </Pressable>
       </View>
 
       <View style={styles.contentRow}>
@@ -98,7 +103,7 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
           <Animated.View style={[styles.water, { height: waterHeight }]}>
             <Animated.View style={[styles.waveStrip, { transform: [{ translateX: waveTranslate }] }]}>
               <Svg width={WAVE_PERIOD * 2} height={WAVE_STRIP_HEIGHT}>
-                <Path d={wavePath} fill={colors.primary} />
+                <Path d={wavePath} fill={colors.water} />
               </Svg>
             </Animated.View>
             <View style={styles.waterBody} />
@@ -113,11 +118,13 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
               accessibilityLabel={t('water.removeGlass')}
               style={styles.glassButton}
               onPress={() => void logWater(db, profileId, -Math.min(glassMl, totalMl), today)}>
-              <Ionicons name="remove" size={20} color={colors.primary} />
+              <Ionicons name="remove" size={20} color={colors.water} />
             </Pressable>
             <View style={styles.glassIconWrap}>
-              <MaterialCommunityIcons name="cup-water" size={26} color={colors.primary} />
-              <Text style={styles.glassIconLabel}>{Math.round(glassMl)} ml</Text>
+              <MaterialCommunityIcons name="cup-water" size={26} color={colors.water} />
+              <Text style={styles.glassIconLabel}>
+                {unitSystem === 'us' ? `${Math.round(mlToFlOz(glassMl) * 10) / 10} fl oz` : `${Math.round(glassMl)} ml`}
+              </Text>
             </View>
             <Pressable
               accessibilityRole="button"
@@ -127,10 +134,6 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
               <Ionicons name="add" size={20} color={colors.onPrimary} />
             </Pressable>
           </View>
-          <Pressable accessibilityRole="button" style={styles.settingsLink} onPress={() => setSettingsVisible(true)}>
-            <Ionicons name="settings-outline" size={14} color={colors.primary} />
-            <Text style={styles.settingsLinkLabel}>{t('water.settingsLink')}</Text>
-          </Pressable>
         </View>
       </View>
 
@@ -180,11 +183,6 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small,
       fontWeight: '700',
     },
-    amountText: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
-      fontWeight: '600',
-    },
     amountReached: {
       color: colors.success,
       fontWeight: '700',
@@ -217,7 +215,7 @@ function createStyles(colors: ColorTokens) {
     waterBody: {
       flex: 1,
       marginTop: WAVE_STRIP_HEIGHT - 1,
-      backgroundColor: colors.primary,
+      backgroundColor: colors.water,
     },
     controlsCol: {
       flex: 1,
@@ -244,8 +242,8 @@ function createStyles(colors: ColorTokens) {
       justifyContent: 'center',
     },
     glassButtonPrimary: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
+      backgroundColor: colors.water,
+      borderColor: colors.water,
     },
     glassIconWrap: {
       alignItems: 'center',
@@ -255,17 +253,6 @@ function createStyles(colors: ColorTokens) {
       color: colors.textSecondary,
       fontSize: typography.small - 1,
       fontWeight: '600',
-    },
-    settingsLink: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-      paddingVertical: 2,
-    },
-    settingsLinkLabel: {
-      color: colors.primary,
-      fontSize: typography.small,
-      fontWeight: '700',
     },
     backdrop: {
       flex: 1,
