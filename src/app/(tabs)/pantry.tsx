@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
@@ -11,7 +11,7 @@ import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
-import { addPantryItem, removePantryItem } from '@/db/repositories/shopping';
+import { addPantryItem, prefillPantryStaples, removePantryItem } from '@/db/repositories/shopping';
 import { todayIsoDate } from '@/db/time';
 import { useHousehold } from '@/hooks/data';
 import { useFood } from '@/hooks/library';
@@ -77,6 +77,12 @@ export default function PantryScreen() {
     closeAddFlow();
   };
 
+  const prefillStaples = async () => {
+    if (!household) return;
+    const result = await prefillPantryStaples(db, household.id);
+    Alert.alert('', t('shopping.prefillStapleResult', { added: result.added, alreadyPresent: result.alreadyPresent }));
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
@@ -85,6 +91,7 @@ export default function PantryScreen() {
 
       <View style={styles.actionsRow}>
         <Button label={t('shopping.addItem')} onPress={() => setPickerVisible(true)} style={styles.actionButton} />
+        <Button label={t('shopping.prefillStaples')} variant="secondary" onPress={prefillStaples} style={styles.actionButton} />
       </View>
 
       <Pressable

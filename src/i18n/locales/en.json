@@ -92,7 +92,9 @@
     "emptyPantry": "The pantry is empty for now.",
     "quantity": "Quantity ({{unit}})",
     "expiresOn": "use by {{date}}",
-    "goToShoppingList": "Shopping list"
+    "goToShoppingList": "Shopping list",
+    "prefillStaples": "Prefill pantry",
+    "prefillStapleResult": "Added {{added}} staples ({{alreadyPresent}} already in your pantry)"
   },
   "progress": {
     "logWeight": "Log weight",

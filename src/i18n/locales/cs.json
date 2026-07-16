@@ -92,7 +92,9 @@
     "emptyPantry": "Spíž je zatím prázdná.",
     "quantity": "Množství ({{unit}})",
     "expiresOn": "spotřebovat do {{date}}",
-    "goToShoppingList": "Nákupní seznam"
+    "goToShoppingList": "Nákupní seznam",
+    "prefillStaples": "Doplnit základy",
+    "prefillStapleResult": "Přidáno {{added}} základních položek ({{alreadyPresent}} už bylo ve spíži)"
   },
   "progress": {
     "logWeight": "Zapsat váhu",
