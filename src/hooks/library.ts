@@ -1,5 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+import { useMemo } from 'react';
 
 import { db } from '@/db/client';
 import {
@@ -93,7 +94,13 @@ export function useFoodAllergens(foodId: string | undefined) {
   return (data ?? []).map((row) => row.allergen);
 }
 
-/** Every recipe's derived allergens/diet compatibility, keyed by recipe id – for library filtering. */
+/**
+ * Every recipe's derived allergens/diet compatibility, keyed by recipe id –
+ * for library filtering. Memoized on the 3 live-query result arrays: this
+ * join+derive walks every ingredient/food/restriction row in the database,
+ * so without memoization it silently re-ran on every render of the caller
+ * (e.g. every keystroke while typing in the Library search box).
+ */
 export function useRecipeTagsMap(): Map<string, DerivedRecipeTags> {
   const { data: ingredientRows } = useLiveQuery(
     db.select().from(recipeIngredients).where(isNull(recipeIngredients.deletedAt)),
@@ -103,46 +110,50 @@ export function useRecipeTagsMap(): Map<string, DerivedRecipeTags> {
     db.select().from(foodRestrictions).where(isNull(foodRestrictions.deletedAt)),
   );
 
-  const map = new Map<string, DerivedRecipeTags>();
-  if (!ingredientRows || !foodRows || !restrictionRows) return map;
+  return useMemo(() => {
+    const map = new Map<string, DerivedRecipeTags>();
+    if (!ingredientRows || !foodRows || !restrictionRows) return map;
 
-  const foodById = new Map(foodRows.map((food) => [food.id, food]));
-  const allergensByFood = new Map<string, string[]>();
-  for (const row of restrictionRows) {
-    const list = allergensByFood.get(row.foodId) ?? [];
-    list.push(row.allergen);
-    allergensByFood.set(row.foodId, list);
-  }
+    const foodById = new Map(foodRows.map((food) => [food.id, food]));
+    const allergensByFood = new Map<string, string[]>();
+    for (const row of restrictionRows) {
+      const list = allergensByFood.get(row.foodId) ?? [];
+      list.push(row.allergen);
+      allergensByFood.set(row.foodId, list);
+    }
 
-  const ingredientsByRecipe = new Map<string, IngredientFoodTags[]>();
-  for (const ingredient of ingredientRows) {
-    const food = foodById.get(ingredient.foodId);
-    if (!food) continue;
-    const list = ingredientsByRecipe.get(ingredient.recipeId) ?? [];
-    list.push({
-      foodId: food.id,
-      allergens: allergensByFood.get(food.id) ?? [],
-      dietFlags: food.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : [],
-    });
-    ingredientsByRecipe.set(ingredient.recipeId, list);
-  }
+    const ingredientsByRecipe = new Map<string, IngredientFoodTags[]>();
+    for (const ingredient of ingredientRows) {
+      const food = foodById.get(ingredient.foodId);
+      if (!food) continue;
+      const list = ingredientsByRecipe.get(ingredient.recipeId) ?? [];
+      list.push({
+        foodId: food.id,
+        allergens: allergensByFood.get(food.id) ?? [],
+        dietFlags: food.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : [],
+      });
+      ingredientsByRecipe.set(ingredient.recipeId, list);
+    }
 
-  for (const [recipeId, ingredients] of ingredientsByRecipe) {
-    map.set(recipeId, deriveRecipeTags(ingredients));
-  }
-  return map;
+    for (const [recipeId, ingredients] of ingredientsByRecipe) {
+      map.set(recipeId, deriveRecipeTags(ingredients));
+    }
+    return map;
+  }, [ingredientRows, foodRows, restrictionRows]);
 }
 
 /** Every food's allergen list, keyed by food id – for library filtering. */
 export function useFoodAllergensMap(): Map<string, string[]> {
   const { data } = useLiveQuery(db.select().from(foodRestrictions).where(isNull(foodRestrictions.deletedAt)));
-  const map = new Map<string, string[]>();
-  for (const row of data ?? []) {
-    const list = map.get(row.foodId) ?? [];
-    list.push(row.allergen);
-    map.set(row.foodId, list);
-  }
-  return map;
+  return useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const row of data ?? []) {
+      const list = map.get(row.foodId) ?? [];
+      list.push(row.allergen);
+      map.set(row.foodId, list);
+    }
+    return map;
+  }, [data]);
 }
 
 export function usePhoto(ownerType: 'recipe' | 'food', ownerId: string | undefined) {
@@ -165,11 +176,13 @@ export function usePhoto(ownerType: 'recipe' | 'food', ownerId: string | undefin
 /** Map of `${ownerType}:${ownerId}` → photo uri for list rendering. */
 export function usePhotoMap() {
   const { data } = useLiveQuery(db.select().from(photos).where(isNull(photos.deletedAt)));
-  const map = new Map<string, string>();
-  for (const row of data ?? []) {
-    map.set(`${row.ownerType}:${row.ownerId}`, row.uri);
-  }
-  return map;
+  return useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of data ?? []) {
+      map.set(`${row.ownerType}:${row.ownerId}`, row.uri);
+    }
+    return map;
+  }, [data]);
 }
 
 /** Map of itemId -> this profile's rating, for one item type (recipe or food). */
@@ -190,7 +203,7 @@ export function useRatingsMap(
       ),
     [profileId, itemType],
   );
-  return new Map((data ?? []).map((row) => [row.itemId, row.rating]));
+  return useMemo(() => new Map((data ?? []).map((row) => [row.itemId, row.rating])), [data]);
 }
 
 /** A single item's rating for one profile; null when unrated. */
