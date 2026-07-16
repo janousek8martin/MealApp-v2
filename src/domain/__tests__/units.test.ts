@@ -12,6 +12,8 @@ import {
   kitchenWeightToGrams,
   lbsToKg,
   mergedKitchenUnitRows,
+  flOzToMl,
+  mlToFlOz,
   mlToUsCups,
   poundsToGrams,
   usCupsToMl,
@@ -33,6 +35,11 @@ describe('unit conversions', () => {
   it('converts volumes using the US customary cup', () => {
     expect(mlToUsCups(236.588)).toBeCloseTo(1, 4);
     expect(usCupsToMl(2)).toBeCloseTo(473.176, 2);
+  });
+
+  it('converts ml to/from fl oz', () => {
+    expect(mlToFlOz(1000)).toBeCloseTo(33.814, 2);
+    expect(flOzToMl(mlToFlOz(750))).toBeCloseTo(750, 5);
   });
 
   it('converts grams to ounces', () => {

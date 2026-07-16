@@ -103,6 +103,14 @@ export function kitchenVolumeToMl(amount: number, unit: KitchenVolumeUnit): numb
   return amount * KITCHEN_VOLUME_ML[unit];
 }
 
+export function mlToFlOz(ml: number): number {
+  return ml / KITCHEN_VOLUME_ML.fl_oz;
+}
+
+export function flOzToMl(flOz: number): number {
+  return flOz * KITCHEN_VOLUME_ML.fl_oz;
+}
+
 export function poundsToGrams(lb: number): number {
   return lbsToKg(lb) * 1000;
 }
