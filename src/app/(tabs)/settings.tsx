@@ -7,7 +7,6 @@ import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
-import { KitchenUnitsModal } from '@/components/KitchenUnitsModal';
 import { ProfileDropdownMenu } from '@/components/ProfileDropdownMenu';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { ManualAdjustmentCard, MacroDayOverridesEditor, MacroOverridesCard } from '@/components/ProfileNutritionCards';
@@ -612,7 +611,6 @@ export default function SettingsScreen() {
   const activeProfileId = useAppStore((s) => s.activeProfileId);
   const setActiveProfileId = useAppStore((s) => s.setActiveProfileId);
   const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>(undefined);
-  const [kitchenUnitsVisible, setKitchenUnitsVisible] = useState(false);
   const [deletedProfile, setDeletedProfile] = useState<{ id: string; name: string } | null>(null);
 
   const notifications = parseNotifications(settings?.notificationsJson ?? null);
@@ -705,25 +703,6 @@ export default function SettingsScreen() {
             ]}
             value={settings.unitSystem}
             onChange={(v) => updateHouseholdSettings(db, household.id, { unitSystem: v as 'metric' | 'us' })}
-          />
-          <Pressable
-            accessibilityRole="button"
-            style={styles.kitchenUnitsRow}
-            onPress={() => setKitchenUnitsVisible(true)}>
-            <Text style={styles.slotLabel}>{t('settings.kitchenUnits')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </Pressable>
-          <ChipSelect
-            label={t('settings.kitchenUnitDisplayMode')}
-            options={[
-              { value: 'grams', label: t('settings.kitchenUnitDisplayGrams') },
-              { value: 'hybrid', label: t('settings.kitchenUnitDisplayHybrid') },
-              { value: 'kitchen', label: t('settings.kitchenUnitDisplayKitchen') },
-            ]}
-            value={settings.kitchenUnitDisplayMode}
-            onChange={(v) =>
-              updateHouseholdSettings(db, household.id, { kitchenUnitDisplayMode: v as 'grams' | 'hybrid' | 'kitchen' })
-            }
           />
           <ChipSelect
             label={t('settings.language')}
@@ -820,12 +799,6 @@ export default function SettingsScreen() {
         visible={scrollHint.visible}
         onPressIn={scrollHint.onPressIn}
         onPressOut={scrollHint.onPressOut}
-      />
-
-      <KitchenUnitsModal
-        visible={kitchenUnitsVisible}
-        onClose={() => setKitchenUnitsVisible(false)}
-        householdId={household.id}
       />
 
       {deletedProfile ? (
@@ -953,13 +926,6 @@ function createStyles(colors: ColorTokens) {
       color: colors.textSecondary,
       fontSize: typography.small,
       marginTop: spacing.sm,
-    },
-    kitchenUnitsRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: spacing.sm,
-      marginBottom: spacing.sm,
     },
     slotLabel: {
       color: colors.text,

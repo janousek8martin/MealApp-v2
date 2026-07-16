@@ -6,7 +6,6 @@ import { db } from '@/db/client';
 import {
   bodyMetrics,
   householdAvoidedItems,
-  householdCustomUnits,
   householdRestrictions,
   householdSettings,
   households,
@@ -14,7 +13,6 @@ import {
   profileSlotPortions,
   profiles,
 } from '@/db/schema';
-import type { CustomKitchenUnit } from '@/domain/units';
 import { applyWorkoutDayCycling } from '@/domain/workoutDays';
 import { targetsForProfile, type ProfileRow } from '@/hooks/dataMapping';
 import { useAppStore } from '@/stores/appStore';
@@ -47,24 +45,6 @@ export function useHouseholdSettings(householdId: string | undefined) {
     [householdId],
   );
   return data?.[0] ?? null;
-}
-
-/** Household-defined kitchen units (e.g. a specific mug/scoop), for the Settings kitchen-units table. */
-export function useCustomKitchenUnits(householdId: string | undefined): CustomKitchenUnit[] {
-  const { data } = useLiveQuery(
-    db
-      .select()
-      .from(householdCustomUnits)
-      .where(and(eq(householdCustomUnits.householdId, householdId ?? ''), isNull(householdCustomUnits.deletedAt))),
-    [householdId],
-  );
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    name: row.name,
-    unitType: row.unitType,
-    conversionValue: row.conversionValue,
-    aliases: row.aliasesJson ? (JSON.parse(row.aliasesJson) as string[]) : [],
-  }));
 }
 
 export function useProfiles(householdId: string | undefined) {

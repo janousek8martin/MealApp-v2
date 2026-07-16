@@ -13,7 +13,7 @@ import { ALLERGEN_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
 import { setRating, softDeleteRecipe } from '@/db/repositories/library';
 import { detectRecipeRatingConflict, setRecipeResolution } from '@/db/repositories/ratings';
-import { useActiveProfile, useHousehold, useHouseholdSettings } from '@/hooks/data';
+import { useActiveProfile, useHousehold } from '@/hooks/data';
 import {
   recipeNutritionOf,
   useItemRating,
@@ -25,7 +25,6 @@ import {
 } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
-import { formatCupQuarters, kitchenEquivalent } from '@/domain/units';
 import { localizedInstructions, localizedName } from '@/utils/localized';
 
 export default function RecipeDetailScreen() {
@@ -37,9 +36,6 @@ export default function RecipeDetailScreen() {
   const ingredientRows = useRecipeIngredients(id);
   const photo = usePhoto('recipe', id);
   const { household } = useHousehold();
-  const householdSettings = useHouseholdSettings(household?.id);
-  const unitDisplayMode = householdSettings?.kitchenUnitDisplayMode ?? 'hybrid';
-  const showKitchenEquivalent = unitDisplayMode === 'hybrid' || unitDisplayMode === 'kitchen';
   const activeProfile = useActiveProfile(household?.id);
   const rating = useItemRating(activeProfile?.id, 'recipe', recipe?.id);
   const recipeTagsMap = useRecipeTagsMap();
@@ -139,21 +135,8 @@ export default function RecipeDetailScreen() {
 
         <Text style={styles.sectionTitle}>{t('recipeDetail.ingredients')}</Text>
         {ingredientRows.map((row) => {
-          const equivalent = showKitchenEquivalent
-            ? kitchenEquivalent(row.ingredient.amount, row.food.baseUnit, row.food.gramsPerCup)
-            : null;
-          const equivalentLabel = equivalent
-            ? equivalent.unit === 'cup'
-              ? t('recipeDetail.kitchenEquivalentCup', { fraction: formatCupQuarters(equivalent.quarters) })
-              : t(`recipeDetail.kitchenEquivalent${equivalent.unit === 'tbsp' ? 'Tbsp' : 'Tsp'}`, { count: equivalent.amount })
-            : null;
           const ingredientPhoto = photoMap.get(`food:${row.food.id}`);
           const gramsLabel = `${row.ingredient.amount} ${row.food.baseUnit === 'piece' ? t('units.pcs') : row.food.baseUnit}`;
-          // 'kitchen' mode shows only the kitchen measure, falling back to
-          // grams when no equivalent exists (e.g. piece-based ingredients).
-          const kitchenOnly = unitDisplayMode === 'kitchen';
-          const primaryLabel = kitchenOnly && equivalentLabel ? equivalentLabel : gramsLabel;
-          const secondaryLabel = kitchenOnly ? null : equivalentLabel;
           return (
             <View key={row.ingredient.id} style={styles.ingredientRow}>
               {ingredientPhoto ? (
@@ -165,8 +148,7 @@ export default function RecipeDetailScreen() {
                 {localizedName(row.food)}
               </Text>
               <View style={styles.ingredientAmountCol}>
-                <Text style={styles.ingredientAmount}>{primaryLabel}</Text>
-                {secondaryLabel ? <Text style={styles.ingredientEquivalent}>{secondaryLabel}</Text> : null}
+                <Text style={styles.ingredientAmount}>{gramsLabel}</Text>
               </View>
             </View>
           );
@@ -315,11 +297,6 @@ function createStyles(colors: ColorTokens) {
     ingredientAmount: {
       color: colors.textSecondary,
       fontSize: typography.body,
-    },
-    ingredientEquivalent: {
-      color: colors.textSecondary,
-      fontSize: typography.small - 1,
-      marginTop: 1,
     },
     instructions: {
       color: colors.text,
