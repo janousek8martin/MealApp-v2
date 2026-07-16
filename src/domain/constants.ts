@@ -139,6 +139,18 @@ export const MAINTENANCE_PHASE = {
 };
 
 /**
+ * Estimated fraction of weight lost during a deficit that is fat mass (vs.
+ * lean mass), used only to project the DIET_CYCLE_BF_DROP_* trigger onto the
+ * weight-projection graph when a starting body-fat% is known. This app's
+ * deficit-phase protein tier (2.3-3.1 g/kg LBM) is specifically chosen to
+ * maximize fat-mass loss and minimize lean loss (Helms et al., 2014), so a
+ * high fraction is a reasonable population-level approximation - not a
+ * precise per-user figure (individual composition-of-loss varies with
+ * training status, protein intake, and deficit size).
+ */
+export const FAT_MASS_LOSS_FRACTION = 0.85;
+
+/**
  * Expected shortfall of real-world weight loss vs. a naive linear projection
  * (adaptive thermogenesis) - applied only to deficit weeks, not maintenance
  * or gain weeks. Rešerše-c (2026) is explicit this is a practical

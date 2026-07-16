@@ -86,7 +86,13 @@ export default function ProgressScreen() {
     ) {
       return null;
     }
-    return computeWeightProjection(history[0].weightKg, activeProfile.goalWeightKg, activeProfile.goalRateKgPerWeek);
+    return computeWeightProjection(
+      history[0].weightKg,
+      activeProfile.goalWeightKg,
+      activeProfile.goalRateKgPerWeek,
+      activeProfile.sex,
+      history[0].bodyFatPct ?? undefined,
+    );
   }, [activeProfile, history]);
 
   const actualPoints = useMemo(() => {

@@ -282,8 +282,8 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
     if (weightKg === null || isChild || goal === 'maintain' || goalWeightKg === null || rateKgPerWeek <= 0) {
       return null;
     }
-    return computeWeightProjection(weightKg, goalWeightKg, rateKgPerWeek);
-  }, [weightKg, isChild, goal, goalWeightKg, rateKgPerWeek]);
+    return computeWeightProjection(weightKg, goalWeightKg, rateKgPerWeek, sex ?? undefined, bodyFatPct ?? undefined);
+  }, [weightKg, isChild, goal, goalWeightKg, rateKgPerWeek, sex, bodyFatPct]);
 
   const isLastCard = currentKey === 'summary';
 
