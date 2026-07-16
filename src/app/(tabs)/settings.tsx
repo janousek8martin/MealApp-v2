@@ -184,6 +184,7 @@ function ProfileSections({
   const targets = useProfileTargets(profile);
   const latestMetric = useLatestBodyMetric(profile.id);
   const restrictions = useProfileRestrictions(profile.id);
+  const householdSettings = useHouseholdSettings(profile.householdId);
 
   const saveProfile = async (value: ProfileFormValue) => {
     await updateProfile(db, profile.id, {
@@ -257,12 +258,15 @@ function ProfileSections({
       </AccordionCard>
 
       <AccordionCard title={t('water.cardTitle')}>
-        <WaterSettingsCard
-          profileId={profile.id}
-          trackWater={profile.trackWater}
-          waterGoalMl={profile.waterGoalMl}
-          waterGlassMl={profile.waterGlassMl}
-        />
+        {householdSettings ? (
+          <WaterSettingsCard
+            profileId={profile.id}
+            trackWater={profile.trackWater}
+            waterGoalMl={profile.waterGoalMl}
+            waterGlassMl={profile.waterGlassMl}
+            unitSystem={householdSettings.unitSystem}
+          />
+        ) : null}
       </AccordionCard>
 
       {onDelete ? (

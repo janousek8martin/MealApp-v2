@@ -20,6 +20,7 @@ import {
   useActiveProfile,
   useDailyProfileTargets,
   useHousehold,
+  useHouseholdSettings,
   useLatestBodyMetric,
   useProfileTargets,
 } from '@/hooks/data';
@@ -54,6 +55,7 @@ export default function TodayScreen() {
   const { onScroll: onRestoreScroll, scrollEventThrottle } = useTabScrollRestore(scrollRef);
   const scrollHint = useScrollDownHint(scrollRef);
   const { household } = useHousehold();
+  const settings = useHouseholdSettings(household?.id);
   const activeProfile = useActiveProfile(household?.id);
   const targets = useProfileTargets(activeProfile);
   const today = todayIsoDate();
@@ -193,7 +195,7 @@ export default function TodayScreen() {
           </Pressable>
         </View>
 
-        {activeProfile?.trackWater && latestMetric ? (
+        {activeProfile?.trackWater && latestMetric && settings ? (
           <WaterCard
             profileId={activeProfile.id}
             sex={activeProfile.sex}
@@ -201,6 +203,7 @@ export default function TodayScreen() {
             trackWater={activeProfile.trackWater}
             waterGoalMl={activeProfile.waterGoalMl}
             waterGlassMl={activeProfile.waterGlassMl}
+            unitSystem={settings.unitSystem}
           />
         ) : null}
 

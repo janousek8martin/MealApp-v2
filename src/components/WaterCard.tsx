@@ -28,6 +28,8 @@ type Props = {
   waterGoalMl: number | null;
   /** Size of one logged serving; falls back to DEFAULT_GLASS_ML. */
   waterGlassMl: number | null;
+  /** 'us' displays fl oz throughout; amounts are always stored in ml. */
+  unitSystem: 'metric' | 'us';
 };
 
 /**
@@ -36,7 +38,7 @@ type Props = {
  * icon between them shows what one tap means) and a link to the per-profile
  * water settings (goal + glass size) opened in place.
  */
-export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, waterGlassMl }: Props) {
+export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, waterGlassMl, unitSystem }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -146,6 +148,7 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
               trackWater={trackWater}
               waterGoalMl={waterGoalMl}
               waterGlassMl={waterGlassMl}
+              unitSystem={unitSystem}
             />
           </Pressable>
         </Pressable>
