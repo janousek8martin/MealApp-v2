@@ -15,6 +15,8 @@ export type ColorTokens = {
   /** Secondary (violet) accent – decorative highlights, charts, alt CTAs. */
   secondary: string;
   secondaryLight: string;
+  /** Water/hydration accent (sky blue) – used by WaterCard, distinct from the green primary. */
+  water: string;
   success: string;
   /** Kept for API compatibility with older call sites; same as `success`. */
   teal: string;
@@ -39,6 +41,7 @@ export const lightColors: ColorTokens = {
   onPrimary: '#FFFFFF',
   secondary: '#7C3AED',
   secondaryLight: '#8B5CF6',
+  water: '#0EA5E9',
   success: '#22C55E',
   teal: '#22C55E',
   mint: '#D1FAE5',
@@ -61,6 +64,7 @@ export const darkColors: ColorTokens = {
   onPrimary: '#0D1512',
   secondary: '#A78BFA',
   secondaryLight: '#C4B5FD',
+  water: '#38BDF8',
   success: '#4ADE80',
   teal: '#4ADE80',
   mint: '#123527',
