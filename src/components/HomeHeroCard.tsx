@@ -40,13 +40,12 @@ function NextMealRow({ slotLabel, meal, colors, styles }: { slotLabel: string; m
   const photo = usePhoto(meal.itemType, meal.itemId);
   const name = recipe ? localizedName(recipe) : food ? localizedName(food) : '';
 
-  const openDetail = () => {
-    if (meal.itemType === 'recipe') router.push({ pathname: '/recipe/[id]', params: { id: meal.itemId } });
-    else router.push({ pathname: '/food/[id]', params: { id: meal.itemId } });
-  };
+  // Tapping the next-meal preview goes to the full day plan (not the recipe/
+  // food detail) - this row IS the Home screen's entry point into Plan.
+  const openPlan = () => router.push('/plan');
 
   return (
-    <Pressable accessibilityRole="button" style={styles.nextMealRow} onPress={openDetail}>
+    <Pressable accessibilityRole="button" style={styles.nextMealRow} onPress={openPlan}>
       {photo ? (
         <Image source={{ uri: photo.uri }} style={styles.nextMealThumb} contentFit="cover" />
       ) : (

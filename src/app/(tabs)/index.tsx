@@ -195,12 +195,14 @@ export default function TodayScreen() {
           />
         ) : null}
 
-        <Button
-          label={t('today.viewMealPlan')}
-          variant="secondary"
-          onPress={() => router.push('/plan')}
-          style={styles.viewPlanButton}
-        />
+        {!nextMealEntry?.meal ? (
+          <Button
+            label={t('today.viewMealPlan')}
+            variant="secondary"
+            onPress={() => router.push('/plan')}
+            style={styles.viewPlanButton}
+          />
+        ) : null}
       </ScrollView>
 
       <ScrollDownHintButton
