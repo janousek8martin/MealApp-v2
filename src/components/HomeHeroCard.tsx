@@ -2,12 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ProfileDropdownChip } from '@/components/ProfileDropdownChip';
 import { ProgressRing } from '@/components/ProgressRing';
+import { StreakDetailModal } from '@/components/StreakDetailModal';
+import { longestConsecutiveRun } from '@/domain/streak';
 import type { TargetsResult } from '@/domain/targets';
 import { useFood, usePhoto, useRecipe } from '@/hooks/library';
 import type { MealRow } from '@/hooks/plan';
@@ -24,6 +26,11 @@ type Props = {
   nextMeal?: { slotLabel: string; meal: MealRow };
   mealStreak: number;
   waterStreak: number;
+  mealCompletionDates: Set<string>;
+  waterGoalDates: Set<string>;
+  todayMealCount: number;
+  todayMealTotal: number;
+  onAddMeal: () => void;
 };
 
 function NextMealRow({ slotLabel, meal, colors, styles }: { slotLabel: string; meal: MealRow; colors: ColorTokens; styles: ReturnType<typeof createStyles> }) {
@@ -71,10 +78,16 @@ export function HomeHeroCard({
   nextMeal,
   mealStreak,
   waterStreak,
+  mealCompletionDates,
+  waterGoalDates,
+  todayMealCount,
+  todayMealTotal,
+  onAddMeal,
 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [openStreak, setOpenStreak] = useState<'meal' | 'water' | null>(null);
   const heroGradient = useMemo(
     () => [colors.heroGradientStart, colors.heroGradientEnd] as const,
     [colors],
@@ -137,21 +150,32 @@ export function HomeHeroCard({
       </View>
 
       <View style={styles.streaksRow}>
-        <View style={styles.streak}>
+        <Pressable accessibilityRole="button" style={styles.streak} onPress={() => setOpenStreak('meal')}>
           <Ionicons name="flame" size={16} color={colors.mint} />
           <Text style={styles.streakValue}>{mealStreak}</Text>
           <Text style={styles.streakLabel}>{t('today.mealStreak')}</Text>
-        </View>
-        <View style={styles.streak}>
+        </Pressable>
+        <Pressable accessibilityRole="button" style={styles.streak} onPress={() => setOpenStreak('water')}>
           <Ionicons name="water" size={16} color={colors.mint} />
           <Text style={styles.streakValue}>{waterStreak}</Text>
           <Text style={styles.streakLabel}>{t('today.waterStreak')}</Text>
-        </View>
+        </Pressable>
       </View>
 
       {nextMeal ? (
         <NextMealRow slotLabel={nextMeal.slotLabel} meal={nextMeal.meal} colors={colors} styles={styles} />
       ) : null}
+
+      <StreakDetailModal
+        visible={openStreak !== null}
+        onClose={() => setOpenStreak(null)}
+        kind={openStreak ?? 'meal'}
+        current={openStreak === 'water' ? waterStreak : mealStreak}
+        best={longestConsecutiveRun(openStreak === 'water' ? waterGoalDates : mealCompletionDates)}
+        todayCount={openStreak === 'meal' ? todayMealCount : undefined}
+        todayTotal={openStreak === 'meal' ? todayMealTotal : undefined}
+        onAddMeal={openStreak === 'meal' ? onAddMeal : undefined}
+      />
     </LinearGradient>
   );
 }

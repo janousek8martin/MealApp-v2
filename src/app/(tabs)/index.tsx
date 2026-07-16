@@ -103,6 +103,8 @@ export default function TodayScreen() {
   const eaten = activeProfile
     ? sumNutrition(profilePortionsToday.filter((row) => row.portion.status === 'eaten'))
     : null;
+  const todayMealTotal = profilePortionsToday.length;
+  const todayMealCount = profilePortionsToday.filter((row) => row.portion.status === 'eaten').length;
 
   const nowHHMM = currentHHMM();
   const nextMealEntry = activeProfile
@@ -141,6 +143,11 @@ export default function TodayScreen() {
             }
             mealStreak={mealStreak}
             waterStreak={waterStreak}
+            mealCompletionDates={mealCompletionDates}
+            waterGoalDates={waterGoalDates}
+            todayMealCount={todayMealCount}
+            todayMealTotal={todayMealTotal}
+            onAddMeal={() => router.push('/plan')}
           />
         ) : null}
 
