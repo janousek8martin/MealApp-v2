@@ -6,6 +6,7 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BodyFatCarousel } from '@/components/BodyFatCarousel';
 import { BodyFatChartModal } from '@/components/BodyFatChartModal';
 import { DateOfBirthPicker } from '@/components/DateOfBirthPicker';
+import { DietRadioList } from '@/components/DietRadioList';
 import { GoalReviewCard } from '@/components/GoalReviewCard';
 import { LifestylePicker } from '@/components/LifestylePicker';
 import { MealSlotsPicker } from '@/components/MealSlotsPicker';
@@ -17,8 +18,8 @@ import { Button } from '@/components/ui/Button';
 import { ChipSelect, resolveChipSelectTap } from '@/components/ui/ChipSelect';
 import { SwitchRow } from '@/components/ui/SwitchRow';
 import { TextField } from '@/components/ui/TextField';
-import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
-import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
+import { ALLERGEN_ICONS } from '@/constants/chipIcons';
+import { ALLERGEN_KEYS } from '@/constants/options';
 import { SPEED_PRESETS_GAIN, SPEED_PRESETS_LOSE_PCT_BW, type ActivityLevel } from '@/domain/constants';
 import { ageYears } from '@/domain/age';
 import { computeWeightProjection } from '@/domain/projection';
@@ -559,12 +560,10 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
         {currentKey === 'diet' ? (
           <View>
             <Text style={styles.cardTitle}>{t('carousel.cardDiet')}</Text>
-            <ChipSelect
-              label={t('form.diets')}
-              multi
-              options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`), icon: DIET_ICONS[key] }))}
-              value={diets}
-              onChange={setDiets}
+            <DietRadioList
+              value={diets[0] ?? null}
+              onChange={(key) => setDiets(key ? [key] : [])}
+              recommendedKey="mediterranean"
             />
           </View>
         ) : null}

@@ -6,6 +6,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 're
 import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DietRadioList } from '@/components/DietRadioList';
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
 import { ProfileDropdownMenu } from '@/components/ProfileDropdownMenu';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
@@ -19,8 +20,8 @@ import { ChipSelect } from '@/components/ui/ChipSelect';
 import { Snackbar } from '@/components/ui/Snackbar';
 import { SwitchRow } from '@/components/ui/SwitchRow';
 import { TextField } from '@/components/ui/TextField';
-import { CUISINE_ICONS, DIET_ICONS } from '@/constants/chipIcons';
-import { BUDGET_LEVELS, COOKING_EXPERIENCE_LEVELS, COOKING_TIME_LIMIT_OPTIONS, CUISINE_KEYS, DIET_KEYS } from '@/constants/options';
+import { CUISINE_ICONS } from '@/constants/chipIcons';
+import { BUDGET_LEVELS, COOKING_EXPERIENCE_LEVELS, COOKING_TIME_LIMIT_OPTIONS, CUISINE_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { renameHousehold, replaceHouseholdPreferences, updateHouseholdSettings, updateMealSlotSetting } from '@/db/repositories/households';
 import { restoreProfile, softDeleteProfile, updateProfile } from '@/db/repositories/profiles';
@@ -418,12 +419,11 @@ function HouseholdSection({
         onPress={() => void renameHousehold(db, householdId, name.trim())}
       />
 
-      <ChipSelect
-        label={t('settings.householdDiets')}
-        multi
-        options={DIET_KEYS.map((key) => ({ value: key, label: t(`diets.${key}`), icon: DIET_ICONS[key] }))}
-        value={restrictions.diets}
-        onChange={(diets) => void replaceHouseholdPreferences(db, householdId, { diets })}
+      <Text style={styles.slotLabel}>{t('settings.householdDiets')}</Text>
+      <DietRadioList
+        value={restrictions.diets[0] ?? null}
+        onChange={(key) => void replaceHouseholdPreferences(db, householdId, { diets: key ? [key] : [] })}
+        recommendedKey="mediterranean"
       />
 
       <ChipSelect
