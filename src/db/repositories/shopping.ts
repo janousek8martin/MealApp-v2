@@ -1,5 +1,6 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
+import { PANTRY_STAPLE_SEED_KEYS } from '@/domain/pantryStaples';
 import {
   computeShoppingNeeds,
   deductFromPantryBatches,
@@ -249,6 +250,28 @@ export async function addPantryItem(db: AppDb, householdId: string, input: Pantr
     purchasedAt: todayIsoDate(),
     expiresAt,
   });
+}
+
+export async function prefillPantryStaples(db: AppDb, householdId: string): Promise<{ added: number; alreadyPresent: number }> {
+  const existing = await db
+    .select()
+    .from(pantryItems)
+    .where(and(eq(pantryItems.householdId, householdId), isNull(pantryItems.deletedAt)));
+  const existingFoodIds = new Set(existing.map((row) => row.foodId));
+
+  let added = 0;
+  let alreadyPresent = 0;
+  for (const staple of PANTRY_STAPLE_SEED_KEYS) {
+    const [food] = await db.select().from(foods).where(eq(foods.seedKey, staple.seedKey));
+    if (!food) continue; // staple has no matching seed food in this DB - skip silently, not an error
+    if (existingFoodIds.has(food.id)) {
+      alreadyPresent++;
+      continue;
+    }
+    await addPantryItem(db, householdId, { foodId: food.id, quantity: staple.quantity });
+    added++;
+  }
+  return { added, alreadyPresent };
 }
 
 export type IngredientNeed = { foodId: string; amount: number };

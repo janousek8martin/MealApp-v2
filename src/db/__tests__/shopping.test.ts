@@ -1,5 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 
+import { PANTRY_STAPLE_SEED_KEYS } from '../../domain/pantryStaples';
 import { MONTHLY_SHELF_LIFE_THRESHOLD_DAYS } from '../../domain/shopping';
 import { startOfWeek } from '../../domain/week';
 import { newId } from '../id';
@@ -11,6 +12,7 @@ import {
   addManualShoppingItem,
   addPantryItem,
   generateShoppingList,
+  prefillPantryStaples,
   removePantryItem,
   removeShoppingItem,
   setShoppingItemChecked,
@@ -351,5 +353,36 @@ describe('shopping list generator (repository)', () => {
       .from(shoppingListItems)
       .where(and(eq(shoppingListItems.id, item.id), isNull(shoppingListItems.deletedAt)));
     expect(remaining).toHaveLength(0);
+  });
+
+  describe('prefillPantryStaples', () => {
+    it('adds a pantry row for every staple that has a matching seed food and none already in the pantry', async () => {
+      const db = createTestDb();
+      const householdId = await createHouseholdWithDefaults(db, 'Test');
+      await seedIfEmpty(db);
+
+      const result = await prefillPantryStaples(db, householdId);
+
+      expect(result.added).toBe(PANTRY_STAPLE_SEED_KEYS.length);
+      expect(result.alreadyPresent).toBe(0);
+
+      const rows = await db.select().from(pantryItems).where(eq(pantryItems.householdId, householdId));
+      expect(rows.length).toBe(PANTRY_STAPLE_SEED_KEYS.length);
+    });
+
+    it('skips staples already present in the pantry instead of duplicating them', async () => {
+      const db = createTestDb();
+      const householdId = await createHouseholdWithDefaults(db, 'Test');
+      await seedIfEmpty(db);
+
+      await prefillPantryStaples(db, householdId);
+      const secondRun = await prefillPantryStaples(db, householdId);
+
+      expect(secondRun.added).toBe(0);
+      expect(secondRun.alreadyPresent).toBe(PANTRY_STAPLE_SEED_KEYS.length);
+
+      const rows = await db.select().from(pantryItems).where(eq(pantryItems.householdId, householdId));
+      expect(rows.length).toBe(PANTRY_STAPLE_SEED_KEYS.length);
+    });
   });
 });
