@@ -16,6 +16,7 @@ import {
   removeShoppingItem,
   setShoppingItemChecked,
 } from '@/db/repositories/shopping';
+import { suggestPurchaseQuantity } from '@/domain/shopping';
 import { useHousehold } from '@/hooks/data';
 import { useFood } from '@/hooks/library';
 import { useShoppingItems, type ShoppingItemRow } from '@/hooks/shopping';
@@ -55,6 +56,57 @@ function ShoppingRow({ item, onToggle, onRemove }: { item: ShoppingItemRow; onTo
   );
 }
 
+function PurchaseQuantityOverlay({
+  item,
+  quantityText,
+  onChangeQuantityText,
+  onCancel,
+  onConfirm,
+  onJustNeeded,
+  styles,
+}: {
+  item: ShoppingItemRow;
+  quantityText: string;
+  onChangeQuantityText: (text: string) => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+  onJustNeeded: () => void;
+  styles: ReturnType<typeof createStyles>;
+}) {
+  const { t } = useTranslation();
+  const food = useFood(item.foodId ?? undefined);
+  const name = food ? localizedName(food) : (item.customName ?? '');
+  const unitLabel = item.unit ?? t('units.pcs');
+  const qty = Number(quantityText.replace(',', '.'));
+
+  return (
+    <View style={styles.quantityOverlay}>
+      <View style={styles.quantityCard}>
+        <Text style={styles.quantityTitle}>{t('shopping.purchasedTitle')}</Text>
+        <Text style={styles.purchasedSubtitle}>{name}</Text>
+        <TextField
+          label={t('shopping.quantity', { unit: unitLabel })}
+          value={quantityText}
+          onChangeText={onChangeQuantityText}
+          keyboardType="decimal-pad"
+        />
+        <View style={styles.quantityActions}>
+          <Button label={t('common.cancel')} variant="secondary" onPress={onCancel} style={styles.actionButton} />
+          <Button
+            label={t('shopping.purchasedConfirm')}
+            onPress={onConfirm}
+            disabled={!Number.isFinite(qty) || qty <= 0}
+            style={styles.actionButton}
+          />
+        </View>
+        <Pressable accessibilityRole="button" onPress={onJustNeeded} style={styles.purchasedJustNeededRow}>
+          <Text style={styles.purchasedJustNeededLabel}>{t('shopping.purchasedJustNeeded')}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 export default function ShoppingScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -67,6 +119,8 @@ export default function ShoppingScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pendingFood, setPendingFood] = useState<FoodRow | null>(null);
   const [quantity, setQuantity] = useState('');
+  const [purchasingItem, setPurchasingItem] = useState<ShoppingItemRow | null>(null);
+  const [purchaseQtyText, setPurchaseQtyText] = useState('');
 
   const shoppingItems = useShoppingItems(household?.id);
   const sectionOffsets = useRef<{ weekly: number; monthly: number }>({ weekly: 0, monthly: 0 });
@@ -98,6 +152,33 @@ export default function ShoppingScreen() {
     setPickerVisible(false);
     setPendingFood(null);
     setQuantity('');
+  };
+
+  // Checking OFF (unchecked -> checked) a food-backed item asks how much was
+  // actually bought (nobody buys exactly the 1697 ml a recipe needs, they
+  // buy the next 2L bottle) - the surplus then sits in the pantry after the
+  // recipe's own need is later deducted. Un-checking and free-text items
+  // stay a plain single tap.
+  const startCheckOff = (item: ShoppingItemRow) => {
+    if (!item.foodId || item.quantity === null) {
+      void setShoppingItemChecked(db, item.id, true);
+      return;
+    }
+    setPurchasingItem(item);
+    setPurchaseQtyText(String(suggestPurchaseQuantity(item.quantity, item.unit ?? 'piece')));
+  };
+
+  const closePurchaseFlow = () => {
+    setPurchasingItem(null);
+    setPurchaseQtyText('');
+  };
+
+  const confirmPurchase = async (justNeeded: boolean) => {
+    if (!purchasingItem) return;
+    const qty = Number(purchaseQtyText.replace(',', '.'));
+    const purchasedQuantity = !justNeeded && Number.isFinite(qty) && qty > 0 ? qty : undefined;
+    await setShoppingItemChecked(db, purchasingItem.id, true, { purchasedQuantity });
+    closePurchaseFlow();
   };
 
   const confirmAddItem = async () => {
@@ -169,7 +250,7 @@ export default function ShoppingScreen() {
               <ShoppingRow
                 key={item.id}
                 item={item}
-                onToggle={() => void setShoppingItemChecked(db, item.id, !item.checked)}
+                onToggle={() => (item.checked ? void setShoppingItemChecked(db, item.id, false) : startCheckOff(item))}
                 onRemove={() => void removeShoppingItem(db, item.id)}
               />
             ))}
@@ -182,7 +263,7 @@ export default function ShoppingScreen() {
               <ShoppingRow
                 key={item.id}
                 item={item}
-                onToggle={() => void setShoppingItemChecked(db, item.id, !item.checked)}
+                onToggle={() => (item.checked ? void setShoppingItemChecked(db, item.id, false) : startCheckOff(item))}
                 onRemove={() => void removeShoppingItem(db, item.id)}
               />
             ))}
@@ -229,6 +310,18 @@ export default function ShoppingScreen() {
             </View>
           </View>
         </View>
+      ) : null}
+
+      {purchasingItem ? (
+        <PurchaseQuantityOverlay
+          item={purchasingItem}
+          quantityText={purchaseQtyText}
+          onChangeQuantityText={setPurchaseQtyText}
+          onCancel={closePurchaseFlow}
+          onConfirm={() => void confirmPurchase(false)}
+          onJustNeeded={() => void confirmPurchase(true)}
+          styles={styles}
+        />
       ) : null}
 
       <ScrollDownHintButton
@@ -367,6 +460,22 @@ function createStyles(colors: ColorTokens) {
       flexDirection: 'row',
       gap: spacing.sm,
       marginTop: spacing.sm,
+    },
+    purchasedSubtitle: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      marginTop: -spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    purchasedJustNeededRow: {
+      alignItems: 'center',
+      marginTop: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    purchasedJustNeededLabel: {
+      color: colors.primary,
+      fontSize: typography.small,
+      fontWeight: '600',
     },
   });
 }

@@ -1,10 +1,11 @@
+import { Image as ExpoImage } from 'expo-image';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ALLERGEN_ICONS } from '@/constants/chipIcons';
 import type { foods } from '@/db/schema';
-import { useFoodAllergensMap, useFoods } from '@/hooks/library';
+import { useFoodAllergensMap, useFoods, usePhotoMap } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
@@ -27,6 +28,7 @@ export function FoodPickerModal({ visible, onClose, onPick, restrictedAllergens 
   const [search, setSearch] = useState('');
   const foodRows = useFoods();
   const foodAllergensMap = useFoodAllergensMap();
+  const photoMap = usePhotoMap();
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -67,20 +69,27 @@ export function FoodPickerModal({ visible, onClose, onPick, restrictedAllergens 
                 onPick(item.food);
                 setSearch('');
               }}>
-              <View style={styles.rowTitleRow}>
-                <Text style={styles.rowName}>{localizedName(item.food)}</Text>
-                {item.conflicts.map((allergen) => (
-                  <Image
-                    key={allergen}
-                    source={ALLERGEN_ICONS[allergen]}
-                    style={styles.allergenIcon}
-                    accessibilityLabel={t(`allergens.${allergen}`)}
-                  />
-                ))}
+              {photoMap.get(`food:${item.food.id}`) ? (
+                <ExpoImage source={{ uri: photoMap.get(`food:${item.food.id}`) }} style={styles.thumb} contentFit="cover" />
+              ) : (
+                <View style={[styles.thumb, styles.thumbPlaceholder]} />
+              )}
+              <View style={styles.rowTextCol}>
+                <View style={styles.rowTitleRow}>
+                  <Text style={styles.rowName}>{localizedName(item.food)}</Text>
+                  {item.conflicts.map((allergen) => (
+                    <Image
+                      key={allergen}
+                      source={ALLERGEN_ICONS[allergen]}
+                      style={styles.allergenIcon}
+                      accessibilityLabel={t(`allergens.${allergen}`)}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.rowMeta}>
+                  {Math.round(item.food.kcalPer100)} kcal / 100 {item.food.baseUnit === 'piece' ? 'g' : item.food.baseUnit}
+                </Text>
               </View>
-              <Text style={styles.rowMeta}>
-                {Math.round(item.food.kcalPer100)} kcal / 100 {item.food.baseUnit === 'piece' ? 'g' : item.food.baseUnit}
-              </Text>
             </Pressable>
           )}
         />
@@ -117,6 +126,9 @@ function createStyles(colors: ColorTokens) {
       marginBottom: spacing.sm,
     },
     row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
       backgroundColor: colors.surface,
       borderRadius: radius.input,
       borderWidth: 1,
@@ -124,6 +136,17 @@ function createStyles(colors: ColorTokens) {
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
       marginBottom: spacing.xs + 2,
+    },
+    thumb: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.input - 4,
+    },
+    thumbPlaceholder: {
+      backgroundColor: colors.border,
+    },
+    rowTextCol: {
+      flex: 1,
     },
     rowTitleRow: {
       flexDirection: 'row',

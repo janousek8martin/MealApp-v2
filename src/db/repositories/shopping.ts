@@ -201,7 +201,12 @@ export async function removeShoppingItem(db: AppDb, itemId: string): Promise<voi
  * re-checking an already-checked item, or a duplicate call, can never
  * double-stock the same purchase.
  */
-export async function setShoppingItemChecked(db: AppDb, itemId: string, checked: boolean): Promise<void> {
+export async function setShoppingItemChecked(
+  db: AppDb,
+  itemId: string,
+  checked: boolean,
+  opts?: { purchasedQuantity?: number },
+): Promise<void> {
   const [item] = await db.select().from(shoppingListItems).where(eq(shoppingListItems.id, itemId));
   if (!item) return;
   const wasChecked = item.checked;
@@ -221,7 +226,12 @@ export async function setShoppingItemChecked(db: AppDb, itemId: string, checked:
     updatedAt: now,
     householdId: item.householdId,
     foodId: item.foodId,
-    quantity: item.quantity,
+    // Stocking the ACTUAL purchased amount (e.g. a 2L bottle when only
+    // 1697ml was needed) when the user says how much they bought - the
+    // surplus stays in the pantry after the recipe's own need is later
+    // deducted, instead of always assuming they bought exactly what the
+    // list said.
+    quantity: opts?.purchasedQuantity ?? item.quantity,
     purchasedAt: todayIsoDate(),
     expiresAt,
   });

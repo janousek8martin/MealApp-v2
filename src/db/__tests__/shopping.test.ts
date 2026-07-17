@@ -204,6 +204,34 @@ describe('shopping list generator (repository)', () => {
     expect(pantryRows[0].expiresAt).not.toBeNull();
   });
 
+  it('stocks the pantry with the actually-purchased quantity when given, not just the listed need', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    const milkId = await upsertFood(db, {
+      nameCs: 'Mléko',
+      nameEn: 'Milk',
+      category: 'dairy',
+      baseUnit: 'ml',
+      kcalPer100: 42,
+      proteinPer100: 3.4,
+      carbsPer100: 5,
+      fatPer100: 1,
+      budget: 'cheap',
+      shelfLifeDays: 7,
+      snackSuitable: false,
+      dietFlags: ['vegetarian'],
+      allergens: ['lactose'],
+    });
+    await addManualShoppingItem(db, householdId, { foodId: milkId, quantity: 1697, unit: 'ml', horizon: 'weekly' });
+    const [item] = await db.select().from(shoppingListItems).where(eq(shoppingListItems.foodId, milkId));
+
+    await setShoppingItemChecked(db, item.id, true, { purchasedQuantity: 2000 });
+
+    const pantryRows = await db.select().from(pantryItems).where(eq(pantryItems.foodId, milkId));
+    expect(pantryRows).toHaveLength(1);
+    expect(pantryRows[0].quantity).toBe(2000);
+  });
+
   it('re-checking an already-checked item does not duplicate its pantry stock (D1 regression)', async () => {
     const db = createTestDb();
     const householdId = await createHouseholdWithDefaults(db, 'Test');

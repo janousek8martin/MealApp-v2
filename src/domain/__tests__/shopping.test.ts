@@ -2,6 +2,7 @@ import {
   computeShoppingNeeds,
   deductFromPantryBatches,
   MONTHLY_SHELF_LIFE_THRESHOLD_DAYS,
+  suggestPurchaseQuantity,
   sumWeeklyNeeds,
   type FoodShelfInfo,
   type PantryBatch,
@@ -123,5 +124,26 @@ describe('deductFromPantryBatches', () => {
   it('returns no updates when there is nothing to deduct', () => {
     const batches: PantryBatch[] = [{ id: 'a', quantity: 50, expiresAt: null }];
     expect(deductFromPantryBatches(batches, 0)).toEqual([]);
+  });
+});
+
+describe('suggestPurchaseQuantity', () => {
+  it('rounds a weight/volume need up to the next 250 g/ml step', () => {
+    expect(suggestPurchaseQuantity(1697, 'ml')).toBe(1750);
+    expect(suggestPurchaseQuantity(100, 'g')).toBe(250);
+  });
+
+  it('returns the exact amount when it already lands on a 250 step', () => {
+    expect(suggestPurchaseQuantity(500, 'ml')).toBe(500);
+  });
+
+  it('rounds a piece count up to the next whole piece', () => {
+    expect(suggestPurchaseQuantity(2.3, 'piece')).toBe(3);
+    expect(suggestPurchaseQuantity(4, 'piece')).toBe(4);
+  });
+
+  it('returns 0 for a non-positive need', () => {
+    expect(suggestPurchaseQuantity(0, 'g')).toBe(0);
+    expect(suggestPurchaseQuantity(-5, 'g')).toBe(0);
   });
 });

@@ -73,6 +73,21 @@ export function computeShoppingNeeds(
   return result;
 }
 
+/** Round-up step (g/ml) used to suggest a realistic purchased quantity - nobody buys exactly 1697 ml of milk, they buy the next 250 ml pack up. */
+const PURCHASE_ROUND_STEP = 250;
+
+/**
+ * Suggests a realistic "how much did you actually buy" default for the
+ * purchased-quantity prompt: the needed amount rounded UP to the next whole
+ * pack-sized step (250 g/ml) for weight/volume foods, or the next whole unit
+ * for piece-counted foods. Never suggests less than what was needed.
+ */
+export function suggestPurchaseQuantity(neededQuantity: number, baseUnit: string): number {
+  if (neededQuantity <= 0) return 0;
+  if (baseUnit === 'piece') return Math.ceil(neededQuantity);
+  return Math.ceil(neededQuantity / PURCHASE_ROUND_STEP) * PURCHASE_ROUND_STEP;
+}
+
 export type PantryBatch = { id: string; quantity: number; expiresAt: string | null };
 
 /**

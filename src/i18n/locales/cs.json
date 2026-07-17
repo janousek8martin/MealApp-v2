@@ -104,7 +104,10 @@
     "expiresOn": "spotřebovat do {{date}}",
     "goToShoppingList": "Nákupní seznam",
     "prefillStaples": "Doplnit základy",
-    "prefillStapleResult": "Přidáno {{added}} základních položek ({{alreadyPresent}} už bylo ve spíži)"
+    "prefillStapleResult": "Přidáno {{added}} základních položek ({{alreadyPresent}} už bylo ve spíži)",
+    "purchasedTitle": "Kolik jsi toho koupil?",
+    "purchasedConfirm": "Přidat do spíže",
+    "purchasedJustNeeded": "Jen potřebné množství"
   },
   "progress": {
     "logWeight": "Zapsat váhu",

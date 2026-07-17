@@ -104,7 +104,10 @@
     "expiresOn": "use by {{date}}",
     "goToShoppingList": "Shopping list",
     "prefillStaples": "Prefill pantry",
-    "prefillStapleResult": "Added {{added}} staples ({{alreadyPresent}} already in your pantry)"
+    "prefillStapleResult": "Added {{added}} staples ({{alreadyPresent}} already in your pantry)",
+    "purchasedTitle": "How much did you buy?",
+    "purchasedConfirm": "Add to pantry",
+    "purchasedJustNeeded": "Just the needed amount"
   },
   "progress": {
     "logWeight": "Log weight",
