@@ -668,7 +668,6 @@
     "cardBody": "Body",
     "cardGoal": "Goal",
     "cardTempo": "Tempo",
-    "cardGoalReview": "Goal review",
     "cardLifestyle": "Lifestyle",
     "cardTraining": "Training",
     "cardMeals": "Meals",
@@ -792,7 +791,9 @@
     "ambitiousBody": "Achievable, but expect several months of sustained consistency.",
     "challengingTitle": "Challenging",
     "challengingBody": "A significant transformation - success and long-term maintenance rates drop noticeably at this scale in outcome research. Consider a longer timeline or medical guidance.",
-    "changeLabel": "{{pct}}% of current weight"
+    "changeLabel": "{{pct}}% of current weight",
+    "duration": "≈ {{weeks}} weeks at this pace",
+    "paceWarning": "This pace is above the ~1%/week safe band — muscle loss becomes likely (Garthe et al., 2011)."
   },
   "summary": {
     "title": "Summary",

@@ -32,7 +32,6 @@ const CARD_KEYS = [
   'body',
   'goal',
   'tempo',
-  'goalReview',
   'lifestyle',
   'training',
   'meals',
@@ -131,13 +130,12 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
 
   const cardKeys = useMemo<CardKey[]>(() => {
     return CARD_KEYS.filter((key) => {
-      if (isChild && (key === 'goal' || key === 'tempo' || key === 'goalReview' || key === 'training')) return false;
+      if (isChild && (key === 'goal' || key === 'tempo' || key === 'training')) return false;
       if (!isChild && key === 'tempo' && goal === 'maintain') return false;
-      if (key === 'goalReview' && (goal === 'maintain' || goalWeightKg === null)) return false;
       if (key === 'diet' && sharesMainMeals) return false;
       return true;
     });
-  }, [isChild, goal, goalWeightKg, sharesMainMeals]);
+  }, [isChild, goal, sharesMainMeals]);
 
   const index = Math.max(0, cardKeys.indexOf(currentKey));
 
@@ -447,14 +445,8 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
                 <Ionicons name="add" size={18} color={colors.primary} />
               </Pressable>
             </View>
-          </View>
-        ) : null}
-
-        {currentKey === 'goalReview' ? (
-          <View>
-            <Text style={styles.cardTitle}>{t('carousel.cardGoalReview')}</Text>
             {weightKg !== null && goalWeightKg !== null ? (
-              <GoalReviewCard currentWeightKg={weightKg} goalWeightKg={goalWeightKg} />
+              <GoalReviewCard currentWeightKg={weightKg} goalWeightKg={goalWeightKg} rateKgPerWeek={rateKgPerWeek} />
             ) : null}
           </View>
         ) : null}

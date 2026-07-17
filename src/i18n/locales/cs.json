@@ -668,7 +668,6 @@
     "cardBody": "Tělo",
     "cardGoal": "Cíl",
     "cardTempo": "Tempo",
-    "cardGoalReview": "Zhodnocení cíle",
     "cardLifestyle": "Životní styl",
     "cardTraining": "Trénink",
     "cardMeals": "Jídla",
@@ -792,7 +791,9 @@
     "ambitiousBody": "Dosažitelné, ale očekávejte několik měsíců vytrvalosti.",
     "challengingTitle": "Náročný",
     "challengingBody": "Výrazná proměna - úspěšnost a dlouhodobé udržení v této škále podle výzkumu citelně klesají. Zvažte delší časový horizont nebo odborné vedení.",
-    "changeLabel": "{{pct}} % současné váhy"
+    "changeLabel": "{{pct}} % současné váhy",
+    "duration": "≈ {{weeks}} týdnů tímto tempem",
+    "paceWarning": "Toto tempo překračuje bezpečné pásmo ~1 % váhy týdně — hrozí ztráta svalů spolu s tukem (Garthe et al., 2011)."
   },
   "summary": {
     "title": "Souhrn",
