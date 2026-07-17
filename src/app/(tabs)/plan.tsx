@@ -81,8 +81,6 @@ function describeConflicts(conflicts: RestrictionConflict[], t: (key: string, op
 
 const SWIPE_THRESHOLD = 60;
 const DAY_STRIP_GAP = spacing.xs;
-/** Height of the animated "jump to today" row: top margin + button. */
-const TODAY_ROW_HEIGHT = spacing.sm + 34;
 
 export default function PlanScreen() {
   const { t, i18n } = useTranslation();
@@ -370,13 +368,26 @@ export default function PlanScreen() {
           onPress={() => animateTo(weekJumpTarget(selectedDate, -1))}>
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
-        <Text style={styles.monthTitle}>{monthTitle(viewedMonday, i18n.language)}</Text>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.weekNavButton}
-          onPress={() => animateTo(weekJumpTarget(selectedDate, 1))}>
-          <Ionicons name="chevron-forward" size={20} color={colors.text} />
-        </Pressable>
+        <Text style={styles.monthTitle} numberOfLines={1}>
+          {monthTitle(viewedMonday, i18n.language)}
+        </Text>
+        <View style={styles.headerRightGroup}>
+          <Animated.View style={{ opacity: todayAnim, transform: [{ scale: todayAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }] }}>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.todayPill}
+              onPress={() => animateTo(today)}
+              pointerEvents={showToday ? 'auto' : 'none'}>
+              <Text style={styles.todayPillLabel}>{t('planScreen.jumpToToday')}</Text>
+            </Pressable>
+          </Animated.View>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.weekNavButton}
+            onPress={() => animateTo(weekJumpTarget(selectedDate, 1))}>
+            <Ionicons name="chevron-forward" size={20} color={colors.text} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.weekStripWrap}>
@@ -414,20 +425,6 @@ export default function PlanScreen() {
           })}
         </View>
       </View>
-
-      <Animated.View
-        style={[
-          styles.todayWrap,
-          {
-            height: todayAnim.interpolate({ inputRange: [0, 1], outputRange: [0, TODAY_ROW_HEIGHT] }),
-            opacity: todayAnim,
-          },
-        ]}
-        pointerEvents={showToday ? 'auto' : 'none'}>
-        <Pressable accessibilityRole="button" style={styles.todayButton} onPress={() => animateTo(today)}>
-          <Text style={styles.todayButtonLabel}>{t('planScreen.jumpToToday')}</Text>
-        </Pressable>
-      </Animated.View>
 
       <View style={styles.pagerClip}>
         {household && activeProfile ? (
@@ -621,9 +618,16 @@ function createStyles(colors: ColorTokens) {
       justifyContent: 'center',
     },
     monthTitle: {
+      flex: 1,
+      textAlign: 'center',
       color: colors.text,
       fontSize: typography.subtitle,
       fontWeight: '700',
+    },
+    headerRightGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
     },
     weekStripWrap: {
       paddingHorizontal: spacing.md,
@@ -641,21 +645,17 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.input,
       backgroundColor: colors.primary,
     },
-    todayWrap: {
-      overflow: 'hidden',
-      paddingHorizontal: spacing.md,
-    },
-    todayButton: {
-      marginTop: spacing.sm,
-      height: 34,
+    todayPill: {
+      height: 30,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingHorizontal: spacing.sm + 2,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.primary,
       borderRadius: radius.chip,
     },
-    todayButtonLabel: {
+    todayPillLabel: {
       color: colors.primary,
       fontSize: typography.small,
       fontWeight: '700',

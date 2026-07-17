@@ -9,6 +9,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ProfileDropdownChip } from '@/components/ProfileDropdownChip';
 import { ProgressRing } from '@/components/ProgressRing';
 import { StreakDetailModal } from '@/components/StreakDetailModal';
+import { todayIsoDate } from '@/db/time';
 import { longestConsecutiveRun } from '@/domain/streak';
 import type { TargetsResult } from '@/domain/targets';
 import { useFood, usePhoto, useRecipe } from '@/hooks/library';
@@ -23,7 +24,7 @@ type Props = {
   eatenKcal: number;
   targetKcal: number;
   onEditProfile: () => void;
-  nextMeal?: { slotLabel: string; meal: MealRow };
+  nextMeal?: { slotLabel: string; slotKey: string; meal: MealRow };
   mealStreak: number;
   waterStreak: number;
   mealCompletionDates: Set<string>;
@@ -33,16 +34,30 @@ type Props = {
   onAddMeal: () => void;
 };
 
-function NextMealRow({ slotLabel, meal, colors, styles }: { slotLabel: string; meal: MealRow; colors: ColorTokens; styles: ReturnType<typeof createStyles> }) {
+function NextMealRow({
+  slotLabel,
+  slotKey,
+  meal,
+  colors,
+  styles,
+}: {
+  slotLabel: string;
+  slotKey: string;
+  meal: MealRow;
+  colors: ColorTokens;
+  styles: ReturnType<typeof createStyles>;
+}) {
   const { t } = useTranslation();
   const recipe = useRecipe(meal.itemType === 'recipe' ? meal.itemId : undefined);
   const food = useFood(meal.itemType === 'food' ? meal.itemId : undefined);
   const photo = usePhoto(meal.itemType, meal.itemId);
   const name = recipe ? localizedName(recipe) : food ? localizedName(food) : '';
 
-  // Tapping the next-meal preview goes to the full day plan (not the recipe/
-  // food detail) - this row IS the Home screen's entry point into Plan.
-  const openPlan = () => router.push('/plan');
+  // Tapping the next-meal preview goes to the full day plan, with that exact
+  // slot expanded, not the recipe/food detail - this row IS the Home
+  // screen's entry point into Plan.
+  const openPlan = () =>
+    router.push({ pathname: '/plan', params: { date: todayIsoDate(), expandSlot: slotKey } });
 
   return (
     <Pressable accessibilityRole="button" style={styles.nextMealRow} onPress={openPlan}>
@@ -162,7 +177,13 @@ export function HomeHeroCard({
       </View>
 
       {nextMeal ? (
-        <NextMealRow slotLabel={nextMeal.slotLabel} meal={nextMeal.meal} colors={colors} styles={styles} />
+        <NextMealRow
+          slotLabel={nextMeal.slotLabel}
+          slotKey={nextMeal.slotKey}
+          meal={nextMeal.meal}
+          colors={colors}
+          styles={styles}
+        />
       ) : null}
 
       <StreakDetailModal

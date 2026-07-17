@@ -138,7 +138,11 @@ export default function TodayScreen() {
             onEditProfile={() => router.push({ pathname: '/profile/[id]', params: { id: activeProfile.id } })}
             nextMeal={
               nextMealEntry?.meal
-                ? { slotLabel: slotDisplayLabel(t, nextMealEntry.slot), meal: nextMealEntry.meal }
+                ? {
+                    slotLabel: slotDisplayLabel(t, nextMealEntry.slot),
+                    slotKey: nextMealEntry.slot.slotKey,
+                    meal: nextMealEntry.meal,
+                  }
                 : undefined
             }
             mealStreak={mealStreak}
