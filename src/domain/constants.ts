@@ -7,21 +7,24 @@ export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'ver
 export type Sex = 'male' | 'female';
 
 /**
- * TDEE = BMR × coefficient. Unlike the classic combined 1.2-1.9 scale (which
- * blends everyday movement with structured exercise into one number), these
- * are NEAT-only: they describe daily movement outside of training, while
- * training itself is added separately via WORKOUT_DAY_KCAL_BONUS_PCT on
- * workout days. Sourced from FAO/WHO/UNU PAL bands, refined with
- * doubly-labelled-water anchor points (rešerše-a, 2026); see LifestylePicker
- * for the matching "how is your lifestyle" (not "how hard do you train")
- * framing.
+ * TDEE = BMR × coefficient. The classic COMBINED activity scale (Mifflin
+ * companion factors, 1.2-1.9): each tier describes overall activity
+ * INCLUDING structured exercise ("moderately active ≈ exercise 3-5×/week").
+ * This replaced the earlier NEAT-only 1.45-2.05 scale (2026-07 revision):
+ * that scale relied on training being ADDED on top, but workout-day cycling
+ * is deliberately weekly-neutral carb redistribution (see workoutDays.ts),
+ * so exercise energy was never actually counted - a systematic undercount
+ * for anyone who trains. With the combined scale the multiplier carries the
+ * exercise energy and the weekly-neutral carb cycling stays correct (no
+ * double count). Existing profiles keep their stored activityMultiplier;
+ * only new selections use these values.
  */
 export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
-  sedentary: 1.45,
-  light: 1.55,
-  moderate: 1.7,
-  active: 1.82,
-  very_active: 2.05,
+  sedentary: 1.2,
+  light: 1.375,
+  moderate: 1.55,
+  active: 1.725,
+  very_active: 1.9,
 };
 
 /**
@@ -31,11 +34,11 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
  * value of each tuple always equals ACTIVITY_MULTIPLIERS[level].
  */
 export const ACTIVITY_MULTIPLIER_DOTS: Record<ActivityLevel, readonly [number, number, number]> = {
-  sedentary: [1.4, 1.45, 1.5],
-  light: [1.5, 1.55, 1.6],
-  moderate: [1.65, 1.7, 1.75],
-  active: [1.77, 1.82, 1.87],
-  very_active: [2.0, 2.05, 2.1],
+  sedentary: [1.15, 1.2, 1.25],
+  light: [1.325, 1.375, 1.425],
+  moderate: [1.5, 1.55, 1.6],
+  active: [1.675, 1.725, 1.775],
+  very_active: [1.85, 1.9, 1.95],
 };
 
 /** ISSN ranges, g per kg of lean body mass per day. Defaults are the midpoints. */

@@ -250,22 +250,22 @@
     "activityHigh": "High"
   },
   "activity": {
-    "sedentary": "Mostly Sitting",
-    "light": "On My Feet Sometimes",
-    "moderate": "Mostly on My Feet",
-    "active": "Moving All Day",
-    "very_active": "Hard Physical Work"
+    "sedentary": "Sedentary",
+    "light": "Lightly Active",
+    "moderate": "Moderately Active",
+    "active": "Very Active",
+    "very_active": "Extra Active"
   },
   "activityInfo": {
-    "sedentary": "Desk job or home-based.",
-    "light": "Mix of sitting and moving.",
-    "moderate": "Standing or walking regularly.",
-    "active": "Physical work, frequent walking.",
-    "very_active": "Heavy labor."
+    "sedentary": "Desk job, little or no exercise.",
+    "light": "Light exercise 1–3×/week, or a job with some walking.",
+    "moderate": "Exercise 3–5×/week, or a job on your feet.",
+    "active": "Hard exercise 6–7×/week, or a physically demanding job.",
+    "very_active": "Physical job plus very hard exercise, or athletic training."
   },
   "activityQuestion": {
-    "title": "How is your lifestyle?",
-    "hint": "Exercise doesn't count here - this is just about everyday movement outside of training.",
+    "title": "How active are you?",
+    "hint": "Include your training — this is your overall activity, exercise included.",
     "exampleLabel": "Example:"
   },
   "customTdee": {

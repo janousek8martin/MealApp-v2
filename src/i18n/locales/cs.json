@@ -250,22 +250,22 @@
     "activityHigh": "Vyšší"
   },
   "activity": {
-    "sedentary": "Většinou sedím",
-    "light": "Občas na nohou",
-    "moderate": "Většinou na nohou",
-    "active": "Pohyb celý den",
-    "very_active": "Fyzicky náročná práce"
+    "sedentary": "Sedavý",
+    "light": "Lehce aktivní",
+    "moderate": "Středně aktivní",
+    "active": "Velmi aktivní",
+    "very_active": "Extrémně aktivní"
   },
   "activityInfo": {
-    "sedentary": "Kancelářská práce nebo práce z domova.",
-    "light": "Kombinace sezení a chození.",
-    "moderate": "Pravidelné stání nebo chození.",
-    "active": "Fyzická práce, časté chození.",
-    "very_active": "Namáhavá manuální práce."
+    "sedentary": "Kancelářská práce, málo nebo žádné cvičení.",
+    "light": "Lehké cvičení 1–3× týdně, nebo práce s trochou chození.",
+    "moderate": "Cvičení 3–5× týdně, nebo práce na nohou.",
+    "active": "Tvrdý trénink 6–7× týdně, nebo fyzicky náročná práce.",
+    "very_active": "Fyzická práce plus velmi tvrdý trénink, nebo sportovní příprava."
   },
   "activityQuestion": {
-    "title": "Jaký je tvůj životní styl?",
-    "hint": "Cvičení sem nepočítej – ptáme se jen na běžný pohyb mimo trénink.",
+    "title": "Jak jsi aktivní?",
+    "hint": "Započítej i trénink — ptáme se na celkovou aktivitu včetně cvičení.",
     "exampleLabel": "Příklad:"
   },
   "customTdee": {
