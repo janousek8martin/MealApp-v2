@@ -30,6 +30,7 @@ import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
+import { displayRecipeTag } from '@/utils/recipeTags';
 
 type Segment = 'recipes' | 'foods';
 type RecipeFilter = 'all' | 'breakfast' | 'lunch_dinner' | 'snack' | 'side';
@@ -92,7 +93,7 @@ export default function LibraryScreen() {
     for (const recipe of recipeRows) {
       if (recipe.tagsJson) for (const tag of JSON.parse(recipe.tagsJson) as string[]) set.add(tag);
     }
-    return [...set].sort().map((key) => ({ value: key, label: t(`recipeTags.${key}`) }));
+    return [...set].sort().map((key) => ({ value: key, label: displayRecipeTag(t, key) }));
   }, [recipeRows, t]);
 
   const dietOptions = useMemo(
@@ -435,7 +436,7 @@ export default function LibraryScreen() {
                 rating={recipeRatings.get(item.id) ?? null}
                 tags={[
                   { label: t(`budget.${item.budget}`) },
-                  ...tags.map((tag) => ({ label: t(`recipeTags.${tag}`) })),
+                  ...tags.map((tag) => ({ label: displayRecipeTag(t, tag) })),
                 ]}
                 allergenTags={allergens.map((allergen) => ({
                   label: t(`allergens.${allergen}`),

@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
@@ -16,10 +16,13 @@ import { TextField } from '@/components/ui/TextField';
 import { COOKING_EXPERIENCE_LEVELS, CUISINE_KEYS, RECIPE_TAG_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { setPhoto, upsertRecipe } from '@/db/repositories/library';
+import { resources } from '@/i18n';
 import { computeRecipeNutrition } from '@/domain/recipeNutrition';
-import { useFoods, usePhoto, usePhotoMap, useRecipe, useRecipeIngredients } from '@/hooks/library';
+import { findSimilarTag, type TagMatchCandidate } from '@/domain/recipeTags';
+import { useFoods, usePhoto, usePhotoMap, useRecipe, useRecipeIngredients, useRecipes } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { displayRecipeTag } from '@/utils/recipeTags';
 import { localizedName } from '@/utils/localized';
 
 const RECIPE_CATEGORIES = ['breakfast', 'lunch_dinner', 'snack'] as const;
@@ -47,6 +50,7 @@ export default function RecipeEditScreen() {
   const foodRows = useFoods();
   const foodById = new Map(foodRows.map((food) => [food.id, food]));
   const photoMap = usePhotoMap();
+  const allRecipes = useRecipes();
 
   const [nameCs, setNameCs] = useState('');
   const [nameEn, setNameEn] = useState('');
@@ -66,6 +70,65 @@ export default function RecipeEditScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [loadedId, setLoadedId] = useState<string | null>(null);
+  const [customTagInput, setCustomTagInput] = useState('');
+
+  // Dedup candidates: the fixed tag set's translations in BOTH locales (a
+  // Czech-typed tag should still match an English fixed key and vice versa),
+  // plus every custom tag already used on another recipe.
+  const tagCandidates = useMemo<TagMatchCandidate[]>(() => {
+    const fixed = RECIPE_TAG_KEYS.flatMap((key) => [
+      { tag: key, label: resources.cs.translation.recipeTags[key] },
+      { tag: key, label: resources.en.translation.recipeTags[key] },
+    ]);
+    const customTags = new Set<string>();
+    for (const recipe of allRecipes) {
+      if (!recipe.tagsJson) continue;
+      for (const tag of JSON.parse(recipe.tagsJson) as string[]) {
+        if (!(RECIPE_TAG_KEYS as readonly string[]).includes(tag)) customTags.add(tag);
+      }
+    }
+    return [...fixed, ...[...customTags].map((tag) => ({ tag, label: tag }))];
+  }, [allRecipes]);
+
+  const addCustomTag = () => {
+    const trimmed = customTagInput.trim();
+    if (!trimmed || tags.includes(trimmed)) {
+      setCustomTagInput('');
+      return;
+    }
+    const similar = findSimilarTag(trimmed, tagCandidates);
+    if (similar && similar.tag !== trimmed) {
+      Alert.alert(
+        t('recipeEdit.tagDidYouMeanTitle'),
+        t('recipeEdit.tagDidYouMean', { tag: displayRecipeTag(t, similar.tag) }),
+        [
+          {
+            text: t('recipeEdit.tagUseExisting'),
+            onPress: () => {
+              if (!tags.includes(similar.tag)) setTags((prev) => [...prev, similar.tag]);
+              setCustomTagInput('');
+            },
+          },
+          {
+            text: t('recipeEdit.tagCreateNew'),
+            onPress: () => {
+              setTags((prev) => [...prev, trimmed]);
+              setCustomTagInput('');
+            },
+          },
+        ],
+      );
+      return;
+    }
+    setTags((prev) => [...prev, trimmed]);
+    setCustomTagInput('');
+  };
+
+  const removeCustomTag = (tag: string) => {
+    setTags((prev) => prev.filter((existing) => existing !== tag));
+  };
+
+  const customTagsInUse = tags.filter((tag) => !(RECIPE_TAG_KEYS as readonly string[]).includes(tag));
 
   useEffect(() => {
     if (!existing || loadedId === existing.id) return;
@@ -215,6 +278,27 @@ export default function RecipeEditScreen() {
           value={tags}
           onChange={setTags}
         />
+        {customTagsInUse.length > 0 ? (
+          <View style={styles.customTagsRow}>
+            {customTagsInUse.map((tag) => (
+              <Pressable key={tag} accessibilityRole="button" style={styles.customTagChip} onPress={() => removeCustomTag(tag)}>
+                <Text style={styles.customTagChipLabel}>{tag}</Text>
+                <Ionicons name="close" size={14} color={colors.primary} />
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+        <View style={styles.customTagInputRow}>
+          <TextField
+            label={t('recipeEdit.addCustomTag')}
+            value={customTagInput}
+            onChangeText={setCustomTagInput}
+            placeholder={t('recipeEdit.addCustomTagPlaceholder')}
+          />
+          <Pressable accessibilityRole="button" style={styles.customTagAddButton} onPress={addCustomTag} disabled={!customTagInput.trim()}>
+            <Ionicons name="add-circle" size={28} color={customTagInput.trim() ? colors.primary : colors.border} />
+          </Pressable>
+        </View>
 
         <ChipSelect
           label={t('recipeEdit.budget')}
@@ -358,6 +442,37 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.subtitle,
       fontWeight: '700',
       marginVertical: spacing.sm,
+    },
+    customTagsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.xs,
+      marginBottom: spacing.sm,
+    },
+    customTagChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.chip,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm,
+    },
+    customTagChipLabel: {
+      color: colors.primary,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
+    customTagInputRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    customTagAddButton: {
+      marginBottom: spacing.sm,
     },
     switchRow: {
       flexDirection: 'row',
