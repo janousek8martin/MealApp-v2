@@ -159,7 +159,7 @@
     "doneTitle": "Hotovo!",
     "doneSubtitle": "Domácnost je připravená. Cokoli můžete později doladit v Nastavení.",
     "enterApp": "Vstoupit do appky",
-    "backToComposition": "Zpět na složení domácnosti",
+    "backStep": "Zpět",
     "compositionMismatchTitle": "Složení domácnosti nesedí",
     "compositionMismatchMessage": "Původně jste zadali {{adults}} dospělých a {{children}} dětí, ale vytvořili jste {{actualAdults}} dospělých a {{actualChildren}} dětí. Chcete přesto pokračovat?",
     "finishAnyway": "Přesto dokončit"

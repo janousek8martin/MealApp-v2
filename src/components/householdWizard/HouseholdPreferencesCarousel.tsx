@@ -58,6 +58,8 @@ const ANY_TIME_KEY = 'any';
 type Props = {
   submitLabel: string;
   onSubmit: (value: HouseholdPreferencesValue) => void;
+  /** Called when Back is pressed on the FIRST card - steps back to the previous wizard step. */
+  onBack?: () => void;
 };
 
 /**
@@ -67,7 +69,7 @@ type Props = {
  * required field: every setting has a sensible schema-matching default, so
  * canProceed is always true and Back/Next never blocks.
  */
-export function HouseholdPreferencesCarousel({ submitLabel, onSubmit }: Props) {
+export function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -345,6 +347,8 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit }: Props) {
       <View style={styles.navRow}>
         {index > 0 ? (
           <Button label={t('carousel.back')} variant="secondary" onPress={goBack} style={styles.navButton} />
+        ) : onBack ? (
+          <Button label={t('carousel.back')} variant="secondary" onPress={onBack} style={styles.navButton} />
         ) : (
           <View style={styles.navButton} />
         )}

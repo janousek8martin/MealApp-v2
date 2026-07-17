@@ -68,6 +68,8 @@ type Props = {
   householdId: string;
   submitLabel: string;
   onSubmit: (value: ProfileFormValue) => void;
+  /** Called when Back is pressed on the FIRST card - steps back to the previous wizard step. */
+  onBack?: () => void;
   initialProfileType?: 'adult' | 'child';
 };
 
@@ -78,7 +80,7 @@ type Props = {
  * Next/Back-button-driven (animated slide) rather than a raw swipe gesture,
  * so each card's validity can gate progression.
  */
-export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initialProfileType }: Props) {
+export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBack, initialProfileType }: Props) {
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -600,6 +602,8 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, initi
       <View style={styles.navRow}>
         {index > 0 ? (
           <Button label={t('carousel.back')} variant="secondary" onPress={goBack} style={styles.navButton} />
+        ) : onBack ? (
+          <Button label={t('carousel.back')} variant="secondary" onPress={onBack} style={styles.navButton} />
         ) : (
           <View style={styles.navButton} />
         )}

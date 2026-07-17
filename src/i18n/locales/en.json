@@ -159,7 +159,7 @@
     "doneTitle": "All set!",
     "doneSubtitle": "Your household is ready. You can fine-tune anything later in Settings.",
     "enterApp": "Enter the app",
-    "backToComposition": "Back to household composition",
+    "backStep": "Back",
     "compositionMismatchTitle": "Household composition doesn't match",
     "compositionMismatchMessage": "You originally set {{adults}} adults and {{children}} children, but created {{actualAdults}} adults and {{actualChildren}} children. Continue anyway?",
     "finishAnyway": "Finish anyway"

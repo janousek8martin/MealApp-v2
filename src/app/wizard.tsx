@@ -148,8 +148,11 @@ export default function WizardScreen() {
     }
   };
 
-  const backToComposition = () => {
-    setStep('composition');
+  // Steps back one macro step (profile -> preferences -> composition). For
+  // profile 2+ this still returns to preferences - re-walking already-created
+  // profiles isn't supported (documented simplification).
+  const backStep = () => {
+    setStep(step === 'profile' ? 'preferences' : 'composition');
   };
 
   const stepLabel =
@@ -171,9 +174,9 @@ export default function WizardScreen() {
           {stepLabel ? <Text style={styles.stepLabel}>{stepLabel}</Text> : null}
 
           {step === 'preferences' || step === 'profile' ? (
-            <Pressable accessibilityRole="button" onPress={backToComposition} style={styles.backRow} hitSlop={8}>
+            <Pressable accessibilityRole="button" onPress={backStep} style={styles.backRow} hitSlop={8}>
               <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
-              <Text style={styles.backLabel}>{t('wizard.backToComposition')}</Text>
+              <Text style={styles.backLabel}>{t('wizard.backStep')}</Text>
             </Pressable>
           ) : null}
 
@@ -200,6 +203,7 @@ export default function WizardScreen() {
                 <HouseholdPreferencesCarousel
                   submitLabel={t('common.continue')}
                   onSubmit={handlePreferencesSubmit}
+                  onBack={backStep}
                 />
               </View>
             ) : null}
@@ -213,6 +217,7 @@ export default function WizardScreen() {
                   householdId={householdId}
                   submitLabel={profileIndex + 1 >= totalMembers ? t('wizard.finishProfiles') : t('wizard.nextProfile')}
                   onSubmit={handleCreateProfile}
+                  onBack={backStep}
                   initialProfileType={profileIndex < adults ? 'adult' : 'child'}
                 />
               </View>

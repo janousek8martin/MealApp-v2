@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -6,6 +7,7 @@ import {
   Animated,
   Easing,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -117,6 +119,18 @@ export default function WalkthroughScreen() {
     listRef.current?.scrollToIndex({ index: Math.min(pageIndex + 1, PAGES.length - 1) });
   };
 
+  const goBack = () => {
+    listRef.current?.scrollToIndex({ index: Math.max(pageIndex - 1, 0) });
+  };
+
+  // Back chevron fades with page position (swipe already works both ways;
+  // this is the visible affordance). Opacity-only - no layout shift.
+  const backOpacity = scrollX.interpolate({
+    inputRange: [0, width * 0.6],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
   const startWizard = () => {
     setWalkthroughSeen(true);
     router.replace('/wizard');
@@ -132,6 +146,11 @@ export default function WalkthroughScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <Animated.View style={[styles.backWrap, { opacity: backOpacity }]} pointerEvents={pageIndex > 0 ? 'auto' : 'none'}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('carousel.back')} style={styles.backButton} onPress={goBack} hitSlop={8}>
+          <Ionicons name="chevron-back" size={22} color={colors.text} />
+        </Pressable>
+      </Animated.View>
       <FlatList
         ref={listRef}
         data={PAGES}
@@ -211,6 +230,22 @@ function createStyles(colors: ColorTokens) {
       justifyContent: 'center',
       padding: spacing.lg,
       gap: spacing.lg,
+    },
+    backWrap: {
+      position: 'absolute',
+      top: spacing.xl,
+      left: spacing.lg,
+      zIndex: 1,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     illustration: {
       width: '100%',
