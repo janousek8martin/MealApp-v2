@@ -20,7 +20,7 @@ import { SwitchRow } from '@/components/ui/SwitchRow';
 import { TextField } from '@/components/ui/TextField';
 import { ALLERGEN_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS } from '@/constants/options';
-import { SPEED_PRESETS_GAIN, SPEED_PRESETS_LOSE_PCT_BW, type ActivityLevel } from '@/domain/constants';
+import { ACTIVITY_MULTIPLIERS, SPEED_PRESETS_GAIN, SPEED_PRESETS_LOSE_PCT_BW, type ActivityLevel } from '@/domain/constants';
 import { ageYears } from '@/domain/age';
 import { computeWeightProjection } from '@/domain/projection';
 import { computeTargets } from '@/domain/targets';
@@ -100,17 +100,17 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
   const [goalWeight, setGoalWeight] = useState('');
   const [goalBodyFat, setGoalBodyFat] = useState('');
 
-  // No preselection: null means no chip is highlighted until the user
-  // actively picks one. Calculations fall back to 'recommended' so the rate
-  // stepper and goal review still show a sensible starting value.
-  const [tempoPreset, setTempoPreset] = useState<'slow' | 'recommended' | 'fast' | null>(null);
+  // These have a reasonable, estimable middle-ground default and start
+  // PRESELECTED (unlike diet/allergies, which are personal and can't be
+  // guessed) - the user can still change any of them.
+  const [tempoPreset, setTempoPreset] = useState<'slow' | 'recommended' | 'fast' | null>('recommended');
   const [customRate, setCustomRate] = useState<number | null>(null);
 
-  const [activityLevel, setActivityLevel] = useState<string | null>(null);
-  const [activityMultiplier, setActivityMultiplier] = useState<number | null>(null);
+  const [activityLevel, setActivityLevel] = useState<string | null>('moderate');
+  const [activityMultiplier, setActivityMultiplier] = useState<number | null>(ACTIVITY_MULTIPLIERS.moderate);
   const [customTdeeKcal, setCustomTdeeKcal] = useState('');
 
-  const [fitnessExperience, setFitnessExperience] = useState<string | null>(null);
+  const [fitnessExperience, setFitnessExperience] = useState<string | null>('intermediate');
   const [workoutDays, setWorkoutDays] = useState<string[]>([]);
 
   const [enabledSlotKeys, setEnabledSlotKeys] = useState<string[] | null>(null);
@@ -143,9 +143,9 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
   const index = Math.max(0, cardKeys.indexOf(currentKey));
 
   // A single rate (kg/week, magnitude) drives both the preset pills and the
-  // fine-tune stepper - the preset just sets the starting value. No chip is
-  // preselected, but 'recommended' still backs the calculation so the rate
-  // stepper and goal review show a sensible value from the start.
+  // fine-tune stepper - the preset just sets the starting value. 'recommended'
+  // is preselected by default (see state above) but tempoPreset can still be
+  // cleared, so this keeps the calculation working even without a chip picked.
   const effectiveTempoPreset = tempoPreset ?? 'recommended';
   const presetRateKgPerWeek =
     goal === 'lose'

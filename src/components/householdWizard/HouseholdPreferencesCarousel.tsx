@@ -87,9 +87,12 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack }: 
   const [favoriteCuisines, setFavoriteCuisines] = useState<string[]>([]);
   const [avoidFoodGroupKeys, setAvoidFoodGroupKeys] = useState<string[]>([]);
 
-  const [cookingExperienceLevel, setCookingExperienceLevel] = useState<'easy' | 'medium' | 'hard' | null>(null);
-  const [cookingTimeKey, setCookingTimeKey] = useState<string | null>(null);
-  const [budgetLevel, setBudgetLevel] = useState<'low' | 'medium' | 'high' | null>(null);
+  // These have a reasonable, estimable middle-ground default and start
+  // PRESELECTED (unlike diet/cuisine/avoided-food choices, which are
+  // personal and can't be guessed) - the user can still change any of them.
+  const [cookingExperienceLevel, setCookingExperienceLevel] = useState<'easy' | 'medium' | 'hard' | null>('medium');
+  const [cookingTimeKey, setCookingTimeKey] = useState<string | null>('45');
+  const [budgetLevel, setBudgetLevel] = useState<'low' | 'medium' | 'high' | null>('medium');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [weighInTime, setWeighInTime] = useState(defaultNotificationSettings.weighInTime);
   const [planningTime, setPlanningTime] = useState(defaultNotificationSettings.planningTime);
