@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
 
 import { newId } from '../id';
 import { households, householdAvoidedItems, householdRestrictions, householdSettings, mealSlotSettings } from '../schema';
@@ -17,19 +17,38 @@ export type SlotSeed = {
 };
 
 /**
- * Default day structure per the approved plan: 25/30/25/10/10 % of the daily
- * calorie target. Breakfast sharing follows households.breakfastMode; snacks
- * are always individual (they absorb per-profile nutritional differences).
- * `second_dinner` is an optional 6th slot households can turn on later
- * (Settings) or per-profile (profile meal-slot picker) - seeded disabled so
- * it doesn't change any existing day structure by default.
+ * Default day structure. Breakfast sharing follows households.breakfastMode;
+ * snacks are always individual (they absorb per-profile nutritional
+ * differences). `snack_morning`/`snack_afternoon`/`second_dinner` are seeded
+ * disabled - research doesn't support meal count itself changing outcomes
+ * (3-6 meals is fine) - so a new household starts with just the 3 main
+ * meals, sized to 30/40/30% so they alone cover the full daily target.
+ * Turning snacks on (via "add recommended snack slots" or "+ Add meal")
+ * rebalances the mains back to MAIN_SLOT_SHARES_WITH_SNACKS (25/30/25) to
+ * make room - see enableRecommendedSnackSlots.
  */
 export const defaultSlots: SlotSeed[] = [
-  { slotKey: 'breakfast', kind: 'main', sharing: 'shared', time: '07:30', calorieShare: 0.25, sortOrder: 1 },
-  { slotKey: 'snack_morning', kind: 'snack', sharing: 'individual', time: '10:00', calorieShare: 0.1, sortOrder: 2 },
-  { slotKey: 'lunch', kind: 'main', sharing: 'shared', time: '12:30', calorieShare: 0.3, sortOrder: 3 },
-  { slotKey: 'snack_afternoon', kind: 'snack', sharing: 'individual', time: '15:30', calorieShare: 0.1, sortOrder: 4 },
-  { slotKey: 'dinner', kind: 'main', sharing: 'shared', time: '18:30', calorieShare: 0.25, sortOrder: 5 },
+  { slotKey: 'breakfast', kind: 'main', sharing: 'shared', time: '07:30', calorieShare: 0.3, sortOrder: 1 },
+  {
+    slotKey: 'snack_morning',
+    kind: 'snack',
+    sharing: 'individual',
+    time: '10:00',
+    calorieShare: 0.1,
+    sortOrder: 2,
+    enabled: false,
+  },
+  { slotKey: 'lunch', kind: 'main', sharing: 'shared', time: '12:30', calorieShare: 0.4, sortOrder: 3 },
+  {
+    slotKey: 'snack_afternoon',
+    kind: 'snack',
+    sharing: 'individual',
+    time: '15:30',
+    calorieShare: 0.1,
+    sortOrder: 4,
+    enabled: false,
+  },
+  { slotKey: 'dinner', kind: 'main', sharing: 'shared', time: '18:30', calorieShare: 0.3, sortOrder: 5 },
   {
     slotKey: 'second_dinner',
     kind: 'main',
@@ -40,6 +59,12 @@ export const defaultSlots: SlotSeed[] = [
     enabled: false,
   },
 ];
+
+/** Slot keys the "add recommended snack slots" button turns on (Task 10). */
+export const RECOMMENDED_SNACK_SLOT_KEYS = ['snack_morning', 'snack_afternoon'] as const;
+
+/** The 3 mains' calorieShare once snacks are back in the picture (sums to 1 with 2×0.1 snacks). */
+const MAIN_SLOT_SHARES_WITH_SNACKS: Record<string, number> = { breakfast: 0.25, lunch: 0.3, dinner: 0.25 };
 
 export async function createHouseholdWithDefaults(db: AppDb, name: string): Promise<string> {
   const householdId = newId();
@@ -165,6 +190,50 @@ export async function insertMealSlot(
 
 export async function deleteMealSlot(db: AppDb, slotId: string): Promise<void> {
   await db.update(mealSlotSettings).set({ deletedAt: nowIso(), updatedAt: nowIso() }).where(eq(mealSlotSettings.id, slotId));
+}
+
+/** Bulk-enable/disable household slots by slotKey. */
+export async function setMealSlotsEnabled(
+  db: AppDb,
+  householdId: string,
+  slotKeys: string[],
+  enabled: boolean,
+): Promise<void> {
+  await db
+    .update(mealSlotSettings)
+    .set({ enabled, updatedAt: nowIso() })
+    .where(
+      and(
+        eq(mealSlotSettings.householdId, householdId),
+        inArray(mealSlotSettings.slotKey, slotKeys),
+        isNull(mealSlotSettings.deletedAt),
+      ),
+    );
+}
+
+/**
+ * The "add recommended snack slots" button (Task 10): turns on the two
+ * default snack slots AND rebalances the 3 mains from their snack-less
+ * 30/40/30 split back to 25/30/25, so the day's calorieShare still sums to 1
+ * once the snacks' 10/10 is back in the mix. Only touches the built-in
+ * breakfast/lunch/dinner rows (matched by slotKey) - custom "+ Add meal"
+ * slots are untouched.
+ */
+export async function enableRecommendedSnackSlots(db: AppDb, householdId: string): Promise<void> {
+  await setMealSlotsEnabled(db, householdId, [...RECOMMENDED_SNACK_SLOT_KEYS], true);
+  const now = nowIso();
+  for (const [slotKey, calorieShare] of Object.entries(MAIN_SLOT_SHARES_WITH_SNACKS)) {
+    await db
+      .update(mealSlotSettings)
+      .set({ calorieShare, updatedAt: now })
+      .where(
+        and(
+          eq(mealSlotSettings.householdId, householdId),
+          eq(mealSlotSettings.slotKey, slotKey),
+          isNull(mealSlotSettings.deletedAt),
+        ),
+      );
+  }
 }
 
 export type MealSlotPatch = Partial<{ time: string; calorieShare: number; enabled: boolean }>;

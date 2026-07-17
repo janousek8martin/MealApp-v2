@@ -3,6 +3,7 @@ import { and, asc, eq, isNull } from 'drizzle-orm';
 import {
   createHouseholdWithDefaults,
   deleteMealSlot,
+  enableRecommendedSnackSlots,
   insertMealSlot,
   renameHousehold,
   replaceHouseholdPreferences,
@@ -85,6 +86,37 @@ describe('replaceHouseholdPreferences', () => {
     await replaceHouseholdPreferences(db, householdId, { favoriteCuisines: ['italian', 'czech'] });
     const [row] = await db.select().from(householdSettings).where(eq(householdSettings.householdId, householdId));
     expect(JSON.parse(row.favoriteCuisinesJson ?? '[]')).toEqual(['italian', 'czech']);
+  });
+});
+
+describe('enableRecommendedSnackSlots', () => {
+  it('turns on the two default snack slots and rebalances the mains so the total calorieShare stays 1', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+
+    const before = await db.select().from(mealSlotSettings).where(eq(mealSlotSettings.householdId, householdId));
+    expect(before.find((s) => s.slotKey === 'snack_morning')!.enabled).toBe(false);
+    expect(before.find((s) => s.slotKey === 'snack_afternoon')!.enabled).toBe(false);
+    const beforeMainTotal = before
+      .filter((s) => s.enabled)
+      .reduce((sum, s) => sum + s.calorieShare, 0);
+    expect(beforeMainTotal).toBeCloseTo(1, 5);
+
+    await enableRecommendedSnackSlots(db, householdId);
+
+    const after = await db.select().from(mealSlotSettings).where(eq(mealSlotSettings.householdId, householdId));
+    expect(after.find((s) => s.slotKey === 'snack_morning')!.enabled).toBe(true);
+    expect(after.find((s) => s.slotKey === 'snack_afternoon')!.enabled).toBe(true);
+    const afterTotal = after.filter((s) => s.enabled).reduce((sum, s) => sum + s.calorieShare, 0);
+    expect(afterTotal).toBeCloseTo(1, 5);
+  });
+
+  it('leaves second_dinner and custom slots untouched', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await enableRecommendedSnackSlots(db, householdId);
+    const slots = await db.select().from(mealSlotSettings).where(eq(mealSlotSettings.householdId, householdId));
+    expect(slots.find((s) => s.slotKey === 'second_dinner')!.enabled).toBe(false);
   });
 });
 

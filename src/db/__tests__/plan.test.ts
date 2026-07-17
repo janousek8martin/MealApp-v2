@@ -4,7 +4,12 @@ import { ageYears } from '../../domain/age';
 import { computeRecipeNutrition } from '../../domain/recipeNutrition';
 import { computeTargets } from '../../domain/targets';
 import { addDays, startOfWeek, weekDates } from '../../domain/week';
-import { createHouseholdWithDefaults, insertMealSlot, updateHouseholdSettings } from '../repositories/households';
+import {
+  createHouseholdWithDefaults,
+  enableRecommendedSnackSlots,
+  insertMealSlot,
+  updateHouseholdSettings,
+} from '../repositories/households';
 import { setRating, upsertFood, upsertRecipe } from '../repositories/library';
 import {
   addMealExtra,
@@ -119,6 +124,7 @@ describe('plan generator (repository)', () => {
   it('generates a full week of shared main meals and per-profile snacks for a single adult', async () => {
     const db = createTestDb();
     const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await enableRecommendedSnackSlots(db, householdId);
     const profileId = await createAdult(db, householdId);
     await seedIfEmpty(db);
 
@@ -156,6 +162,7 @@ describe('plan generator (repository)', () => {
   it('a profile without a slot in enabledSlotKeys never gets a meal there (phase H)', async () => {
     const db = createTestDb();
     const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await enableRecommendedSnackSlots(db, householdId);
     await createAdult(db, householdId, {
       enabledSlotKeys: ['breakfast', 'lunch', 'dinner', 'snack_morning'], // no snack_afternoon
     });
@@ -174,6 +181,7 @@ describe('plan generator (repository)', () => {
   it('splits remaining calories across multiple snack slots instead of giving it all to the first one', async () => {
     const db = createTestDb();
     const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await enableRecommendedSnackSlots(db, householdId);
     await seedIfEmpty(db);
 
     const existingSlots = await db.select().from(mealSlotSettings).where(eq(mealSlotSettings.householdId, householdId));
@@ -814,6 +822,7 @@ describe('plan generator (repository)', () => {
   it('saveMealAsRecipe approximates a food-backed meal as a single 100g-times-multiplier ingredient', async () => {
     const db = createTestDb();
     const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await enableRecommendedSnackSlots(db, householdId);
     const profileId = await createAdult(db, householdId);
 
     const foodId = await upsertFood(db, {

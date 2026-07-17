@@ -5,7 +5,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AddMealSlotModal } from '@/components/AddMealSlotModal';
 import { db } from '@/db/client';
-import { deleteMealSlot } from '@/db/repositories/households';
+import { deleteMealSlot, enableRecommendedSnackSlots, RECOMMENDED_SNACK_SLOT_KEYS } from '@/db/repositories/households';
 import { useMealSlots } from '@/hooks/plan';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -60,11 +60,15 @@ export function MealSlotsPicker({ householdId, sharesMainMeals, value, onChange 
   };
 
   const enabledCount = (value ?? slots.map((s) => s.slotKey)).length;
+  const householdSlotKeys = new Set(slots.map((s) => s.slotKey));
+  const showRecommendedButton =
+    !!householdId && RECOMMENDED_SNACK_SLOT_KEYS.every((key) => !householdSlotKeys.has(key));
 
   return (
     <View>
       <Text style={styles.title}>{t('mealSlots.title')}</Text>
       <Text style={styles.hint}>{t('mealSlots.hint')}</Text>
+      <Text style={styles.hint}>{t('mealSlots.recommendHint')}</Text>
       <View style={styles.list}>
         {slots.map((slot) => {
           const selected = value === null || value.includes(slot.slotKey);
@@ -93,6 +97,15 @@ export function MealSlotsPicker({ householdId, sharesMainMeals, value, onChange 
 
       {enabledCount < 3 ? <Text style={styles.countHint}>{t('addMeal.countLow')}</Text> : null}
       {enabledCount > 6 ? <Text style={styles.countHint}>{t('addMeal.countHigh')}</Text> : null}
+
+      {showRecommendedButton ? (
+        <Pressable
+          style={styles.addRow}
+          onPress={() => void enableRecommendedSnackSlots(db, householdId as string)}>
+          <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
+          <Text style={styles.addLabel}>{t('mealSlots.useRecommended')}</Text>
+        </Pressable>
+      ) : null}
 
       {householdId ? (
         <Pressable style={styles.addRow} onPress={() => setAddVisible(true)}>

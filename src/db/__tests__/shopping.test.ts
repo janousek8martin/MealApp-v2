@@ -4,7 +4,7 @@ import { PANTRY_STAPLE_SEED_KEYS } from '../../domain/pantryStaples';
 import { MONTHLY_SHELF_LIFE_THRESHOLD_DAYS } from '../../domain/shopping';
 import { startOfWeek } from '../../domain/week';
 import { newId } from '../id';
-import { createHouseholdWithDefaults } from '../repositories/households';
+import { createHouseholdWithDefaults, enableRecommendedSnackSlots } from '../repositories/households';
 import { upsertFood, upsertRecipe } from '../repositories/library';
 import { assignManualMeal, generateWeek, setPortionStatus } from '../repositories/plan';
 import { createProfile } from '../repositories/profiles';
@@ -278,6 +278,7 @@ describe('shopping list generator (repository)', () => {
   it('marking a meal eaten deducts its ingredients from pantry stock, and un-marking it restocks them', async () => {
     const db = createTestDb();
     const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await enableRecommendedSnackSlots(db, householdId);
     const profileId = await createAdult(db, householdId);
 
     const kefirId = await upsertFood(db, {
