@@ -1,5 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 
+import type { MicronutrientKey } from '../../domain/micronutrients';
 import { newId } from '../id';
 import { foodRestrictions, foods, photos, profileItemRatings, recipeIngredients, recipes } from '../schema';
 import { nowIso } from '../time';
@@ -9,13 +10,8 @@ import type { AppDb } from '../types';
 // Foods
 // ---------------------------------------------------------------------------
 
-export type MicronutrientsInput = {
-  ironMg?: number | null;
-  vitaminDUg?: number | null;
-  b12Ug?: number | null;
-  calciumMg?: number | null;
-  omega3G?: number | null;
-};
+/** One entry per tracked micronutrient (see domain/micronutrients.ts); an omitted/null field stays unknown, never becomes 0. */
+export type MicronutrientsInput = Partial<Record<MicronutrientKey, number | null>>;
 
 export type FoodInput = {
   nameCs: string;

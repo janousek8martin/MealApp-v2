@@ -1,4 +1,4 @@
-import { micronutrientRda } from '../micronutrients';
+import { MICRONUTRIENT_KEYS, MICRONUTRIENTS, micronutrientRda } from '../micronutrients';
 
 describe('micronutrientRda', () => {
   it('gives premenopausal-age women a higher iron RDA than men', () => {
@@ -30,5 +30,32 @@ describe('micronutrientRda', () => {
   it('gives men a higher omega-3 (ALA) RDA than women', () => {
     expect(micronutrientRda('male', 30).omega3G).toBe(1.6);
     expect(micronutrientRda('female', 30).omega3G).toBe(1.1);
+  });
+});
+
+describe('MICRONUTRIENTS registry', () => {
+  it('has exactly 20 entries', () => {
+    expect(MICRONUTRIENT_KEYS).toHaveLength(20);
+  });
+
+  it('every entry has a positive dri and, when set, a driMax greater than dri', () => {
+    for (const key of MICRONUTRIENT_KEYS) {
+      const entry = MICRONUTRIENTS[key];
+      expect(entry.dri).toBeGreaterThan(0);
+      if (entry.driMax !== undefined) {
+        expect(entry.driMax).toBeGreaterThan(entry.dri);
+      }
+    }
+  });
+
+  it('groups every entry into vitamins, minerals, or lipids', () => {
+    const groups = new Set(MICRONUTRIENT_KEYS.map((key) => MICRONUTRIENTS[key].group));
+    expect(groups).toEqual(new Set(['vitamins', 'minerals', 'lipids']));
+  });
+
+  it('includes the original 5 soft-target keys used by micronutrientRda', () => {
+    expect(MICRONUTRIENT_KEYS).toEqual(
+      expect.arrayContaining(['ironMg', 'vitaminDUg', 'b12Ug', 'calciumMg', 'omega3G']),
+    );
   });
 });

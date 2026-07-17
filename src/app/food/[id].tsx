@@ -12,6 +12,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
 import { setRating, softDeleteFood } from '@/db/repositories/library';
+import { MICRONUTRIENTS, type MicronutrientGroup, type MicronutrientKey } from '@/domain/micronutrients';
 import { useActiveProfile, useHousehold } from '@/hooks/data';
 import { useFood, useFoodAllergens, useItemRating, usePhoto } from '@/hooks/library';
 import { useTheme } from '@/theme/ThemeContext';
@@ -40,9 +41,19 @@ export default function FoodDetailScreen() {
   };
 
   const micronutrients = food.micronutrientsJson
-    ? (JSON.parse(food.micronutrientsJson) as Record<string, number>)
+    ? (JSON.parse(food.micronutrientsJson) as Partial<Record<MicronutrientKey, number>>)
     : null;
   const dietFlags = food.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : [];
+
+  const GROUP_ORDER: MicronutrientGroup[] = ['vitamins', 'minerals', 'lipids'];
+  const micronutrientsByGroup = micronutrients
+    ? GROUP_ORDER.map((group) => ({
+        group,
+        entries: (Object.entries(micronutrients) as [MicronutrientKey, number][]).filter(
+          ([key]) => MICRONUTRIENTS[key]?.group === group,
+        ),
+      })).filter((g) => g.entries.length > 0)
+    : [];
 
   const rows: { label: string; value: string }[] = [
     { label: 'kcal', value: String(Math.round(food.kcalPer100)) },
@@ -119,17 +130,22 @@ export default function FoodDetailScreen() {
           ) : null}
         </View>
 
-        {micronutrients && Object.keys(micronutrients).length > 0 ? (
+        {micronutrientsByGroup.length > 0 ? (
           <>
             <Text style={styles.sectionTitle}>{t('foodDetail.micronutrients')}</Text>
-            <View style={styles.card}>
-              {Object.entries(micronutrients).map(([key, value]) => (
-                <View key={key} style={styles.row}>
-                  <Text style={styles.rowLabel}>{t(`micros.${key}`)}</Text>
-                  <Text style={styles.rowValue}>{value}</Text>
-                </View>
-              ))}
-            </View>
+            {micronutrientsByGroup.map(({ group, entries }) => (
+              <View key={group} style={styles.card}>
+                <Text style={styles.microGroupLabel}>{t(`foodDetail.microGroup.${group}`)}</Text>
+                {entries.map(([key, value]) => (
+                  <View key={key} style={styles.row}>
+                    <Text style={styles.rowLabel}>{t(`micros.${key}`)}</Text>
+                    <Text style={styles.rowValue}>
+                      {value} {MICRONUTRIENTS[key].unit}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ))}
           </>
         ) : null}
 
@@ -214,6 +230,13 @@ function createStyles(colors: ColorTokens) {
       borderColor: colors.border,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.xs,
+      marginBottom: spacing.sm,
+    },
+    microGroupLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '700',
+      marginTop: spacing.xs,
     },
     row: {
       flexDirection: 'row',

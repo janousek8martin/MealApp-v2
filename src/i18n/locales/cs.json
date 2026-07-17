@@ -422,10 +422,25 @@
     "days": "dní"
   },
   "micros": {
-    "ironMg": "Železo (mg)",
+    "vitaminAUg": "Vitamín A (µg)",
+    "vitaminCMg": "Vitamín C (mg)",
     "vitaminDUg": "Vitamín D (µg)",
+    "vitaminEMg": "Vitamín E (mg)",
+    "vitaminKUg": "Vitamín K (µg)",
+    "b1Mg": "B1 - thiamin (mg)",
+    "b2Mg": "B2 - riboflavin (mg)",
+    "b3Mg": "B3 - niacin (mg)",
+    "b6Mg": "B6 (mg)",
     "b12Ug": "B12 (µg)",
+    "folateUg": "Kyselina listová (µg)",
     "calciumMg": "Vápník (mg)",
+    "ironMg": "Železo (mg)",
+    "magnesiumMg": "Hořčík (mg)",
+    "potassiumMg": "Draslík (mg)",
+    "sodiumMg": "Sodík (mg)",
+    "zincMg": "Zinek (mg)",
+    "seleniumUg": "Selen (µg)",
+    "iodineUg": "Jód (µg)",
     "omega3G": "Omega-3 (g)"
   },
   "foodCategory": {
@@ -462,6 +477,7 @@
     "canServeCold": "Lze podávat studené",
     "mealPrepFriendly": "Vhodné na krabičky",
     "dietFlags": "Vhodné pro dietu",
+    "advancedNutrition": "Pokročilé nutriční údaje (mikroživiny)",
     "scanBarcode": "Naskenovat čárový kód",
     "lookingUpBarcode": "Hledám produkt…",
     "scanBarcodeTitle": "Naskenovat čárový kód",
@@ -477,6 +493,11 @@
     "nutritionPer100": "Nutriční hodnoty na 100 {{unit}}",
     "pieceWeight": "Hmotnost 1 kusu",
     "micronutrients": "Mikroživiny",
+    "microGroup": {
+      "vitamins": "Vitamíny",
+      "minerals": "Minerální látky",
+      "lipids": "Tuky"
+    },
     "tags": "Štítky",
     "shelfLife": "trvanlivost {{count}} dní"
   },

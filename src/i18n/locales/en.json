@@ -422,10 +422,25 @@
     "days": "days"
   },
   "micros": {
-    "ironMg": "Iron (mg)",
+    "vitaminAUg": "Vitamin A (µg)",
+    "vitaminCMg": "Vitamin C (mg)",
     "vitaminDUg": "Vitamin D (µg)",
+    "vitaminEMg": "Vitamin E (mg)",
+    "vitaminKUg": "Vitamin K (µg)",
+    "b1Mg": "B1 - Thiamine (mg)",
+    "b2Mg": "B2 - Riboflavin (mg)",
+    "b3Mg": "B3 - Niacin (mg)",
+    "b6Mg": "B6 (mg)",
     "b12Ug": "B12 (µg)",
+    "folateUg": "Folate (µg)",
     "calciumMg": "Calcium (mg)",
+    "ironMg": "Iron (mg)",
+    "magnesiumMg": "Magnesium (mg)",
+    "potassiumMg": "Potassium (mg)",
+    "sodiumMg": "Sodium (mg)",
+    "zincMg": "Zinc (mg)",
+    "seleniumUg": "Selenium (µg)",
+    "iodineUg": "Iodine (µg)",
     "omega3G": "Omega-3 (g)"
   },
   "foodCategory": {
@@ -462,6 +477,7 @@
     "canServeCold": "Can be served cold",
     "mealPrepFriendly": "Good for meal prep (boxes)",
     "dietFlags": "Suitable for diet",
+    "advancedNutrition": "Advanced nutrition (micronutrients)",
     "scanBarcode": "Scan barcode",
     "lookingUpBarcode": "Looking up product…",
     "scanBarcodeTitle": "Scan barcode",
@@ -477,6 +493,11 @@
     "nutritionPer100": "Nutrition per 100 {{unit}}",
     "pieceWeight": "Weight per piece",
     "micronutrients": "Micronutrients",
+    "microGroup": {
+      "vitamins": "Vitamins",
+      "minerals": "Minerals",
+      "lipids": "Fats"
+    },
     "tags": "Tags",
     "shelfLife": "shelf life {{count}} days"
   },

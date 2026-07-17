@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AdvancedExpander } from '@/components/ui/AdvancedExpander';
 import { BarcodeScannerModal } from '@/components/BarcodeScannerModal';
 import { HintedScrollView } from '@/components/HintedScrollView';
 import { PhotoPicker } from '@/components/PhotoPicker';
@@ -15,10 +16,15 @@ import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, MANUAL_DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
 import { setPhoto, upsertFood } from '@/db/repositories/library';
+import { MICRONUTRIENT_KEYS, MICRONUTRIENTS, type MicronutrientGroup, type MicronutrientKey } from '@/domain/micronutrients';
 import { useFood, useFoodAllergens, usePhoto } from '@/hooks/library';
 import { getProductByBarcode } from '@/services/openFoodFacts';
 import { useTheme } from '@/theme/ThemeContext';
 import { spacing, typography, type ColorTokens } from '@/theme/tokens';
+
+const MICRO_GROUP_ORDER: MicronutrientGroup[] = ['vitamins', 'minerals', 'lipids'];
+const emptyMicronutrients = (): Record<MicronutrientKey, string> =>
+  Object.fromEntries(MICRONUTRIENT_KEYS.map((key) => [key, ''])) as Record<MicronutrientKey, string>;
 
 const CATEGORY_KEYS = [
   'meat', 'fish', 'eggs', 'dairy', 'grains', 'legumes', 'bakery', 'vegetables', 'fruit',
@@ -50,11 +56,9 @@ export default function FoodEditScreen() {
   const [carbs, setCarbs] = useState('');
   const [fat, setFat] = useState('');
   const [fiber, setFiber] = useState('');
-  const [ironMg, setIronMg] = useState('');
-  const [vitaminDUg, setVitaminDUg] = useState('');
-  const [b12Ug, setB12Ug] = useState('');
-  const [calciumMg, setCalciumMg] = useState('');
-  const [omega3G, setOmega3G] = useState('');
+  const [micronutrients, setMicronutrients] = useState<Record<MicronutrientKey, string>>(emptyMicronutrients());
+  const setMicronutrient = (key: MicronutrientKey, value: string) =>
+    setMicronutrients((prev) => ({ ...prev, [key]: value }));
   const [budget, setBudget] = useState<'cheap' | 'average' | 'expensive'>('average');
   const [shelfLifeDays, setShelfLifeDays] = useState('');
   const [storage, setStorage] = useState<string | null>(null);
@@ -83,14 +87,14 @@ export default function FoodEditScreen() {
     setCarbs(String(existing.carbsPer100));
     setFat(String(existing.fatPer100));
     setFiber(existing.fiberPer100 !== null ? String(existing.fiberPer100) : '');
-    const micronutrients = existing.micronutrientsJson
-      ? (JSON.parse(existing.micronutrientsJson) as Record<string, number>)
+    const loadedMicros = existing.micronutrientsJson
+      ? (JSON.parse(existing.micronutrientsJson) as Partial<Record<MicronutrientKey, number>>)
       : {};
-    setIronMg(micronutrients.ironMg !== undefined ? String(micronutrients.ironMg) : '');
-    setVitaminDUg(micronutrients.vitaminDUg !== undefined ? String(micronutrients.vitaminDUg) : '');
-    setB12Ug(micronutrients.b12Ug !== undefined ? String(micronutrients.b12Ug) : '');
-    setCalciumMg(micronutrients.calciumMg !== undefined ? String(micronutrients.calciumMg) : '');
-    setOmega3G(micronutrients.omega3G !== undefined ? String(micronutrients.omega3G) : '');
+    setMicronutrients(
+      Object.fromEntries(
+        MICRONUTRIENT_KEYS.map((key) => [key, loadedMicros[key] !== undefined ? String(loadedMicros[key]) : '']),
+      ) as Record<MicronutrientKey, string>,
+    );
     setBudget(existing.budget);
     setShelfLifeDays(existing.shelfLifeDays !== null ? String(existing.shelfLifeDays) : '');
     setStorage(existing.storage);
@@ -132,13 +136,9 @@ export default function FoodEditScreen() {
         carbsPer100: num(carbs)!,
         fatPer100: num(fat)!,
         fiberPer100: num(fiber),
-        micronutrients: {
-          ironMg: num(ironMg),
-          vitaminDUg: num(vitaminDUg),
-          b12Ug: num(b12Ug),
-          calciumMg: num(calciumMg),
-          omega3G: num(omega3G),
-        },
+        micronutrients: Object.fromEntries(
+          MICRONUTRIENT_KEYS.map((key) => [key, num(micronutrients[key])]),
+        ) as Record<MicronutrientKey, number | null>,
         budget,
         shelfLifeDays: num(shelfLifeDays),
         storage: (storage ?? null) as 'pantry' | 'fridge' | 'freezer' | null,
@@ -245,13 +245,6 @@ export default function FoodEditScreen() {
         <TextField label={t('macros.fat')} value={fat} onChangeText={setFat} keyboardType="decimal-pad" suffix="g" />
         <TextField label={t('macros.fiber')} value={fiber} onChangeText={setFiber} keyboardType="decimal-pad" suffix="g" />
 
-        <Text style={styles.section}>{t('foodDetail.micronutrients')}</Text>
-        <TextField label={t('micros.ironMg')} value={ironMg} onChangeText={setIronMg} keyboardType="decimal-pad" />
-        <TextField label={t('micros.vitaminDUg')} value={vitaminDUg} onChangeText={setVitaminDUg} keyboardType="decimal-pad" />
-        <TextField label={t('micros.b12Ug')} value={b12Ug} onChangeText={setB12Ug} keyboardType="decimal-pad" />
-        <TextField label={t('micros.calciumMg')} value={calciumMg} onChangeText={setCalciumMg} keyboardType="decimal-pad" />
-        <TextField label={t('micros.omega3G')} value={omega3G} onChangeText={setOmega3G} keyboardType="decimal-pad" />
-
         <ChipSelect
           label={t('foodEdit.budget')}
           options={[
@@ -325,6 +318,23 @@ export default function FoodEditScreen() {
           onChange={setDietFlags}
         />
 
+        <AdvancedExpander label={t('foodEdit.advancedNutrition')}>
+          {MICRO_GROUP_ORDER.map((group) => (
+            <View key={group}>
+              <Text style={styles.microGroupLabel}>{t(`foodDetail.microGroup.${group}`)}</Text>
+              {MICRONUTRIENT_KEYS.filter((key) => MICRONUTRIENTS[key].group === group).map((key) => (
+                <TextField
+                  key={key}
+                  label={t(`micros.${key}`)}
+                  value={micronutrients[key]}
+                  onChangeText={(value) => setMicronutrient(key, value)}
+                  keyboardType="decimal-pad"
+                />
+              ))}
+            </View>
+          ))}
+        </AdvancedExpander>
+
         <View style={styles.actions}>
           <Button label={t('common.cancel')} variant="secondary" onPress={() => router.back()} style={styles.action} />
           <Button label={t('common.save')} onPress={save} disabled={!canSave} style={styles.action} />
@@ -369,6 +379,13 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.subtitle,
       fontWeight: '700',
       marginVertical: spacing.sm,
+    },
+    microGroupLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '700',
+      marginTop: spacing.sm,
+      marginBottom: spacing.xs,
     },
     switchRow: {
       flexDirection: 'row',

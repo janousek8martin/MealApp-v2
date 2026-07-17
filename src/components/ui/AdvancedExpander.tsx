@@ -7,7 +7,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 /** Collapsed-by-default "Pokročilé" toggle wrapping advanced/rarely-used controls. Pure UI reorganization: nothing inside changes behavior, it's just hidden until opened. */
-export function AdvancedExpander({ children }: { children: ReactNode }) {
+export function AdvancedExpander({ children, label }: { children: ReactNode; label?: string }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -16,7 +16,7 @@ export function AdvancedExpander({ children }: { children: ReactNode }) {
   return (
     <View style={styles.container}>
       <Pressable accessibilityRole="button" style={styles.header} onPress={() => setExpanded((prev) => !prev)}>
-        <Text style={styles.label}>{t('settings.advanced')}</Text>
+        <Text style={styles.label}>{label ?? t('settings.advanced')}</Text>
         <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
       </Pressable>
       {expanded ? <View>{children}</View> : null}
