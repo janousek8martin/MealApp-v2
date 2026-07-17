@@ -4,6 +4,7 @@ import { PANTRY_STAPLE_SEED_KEYS } from '@/domain/pantryStaples';
 import {
   computeShoppingNeeds,
   deductFromPantryBatches,
+  MONTHLY_SHELF_LIFE_THRESHOLD_DAYS,
   sumWeeklyNeeds,
   type FoodShelfInfo,
   type PlannedMealIngredientNeed,
@@ -262,26 +263,55 @@ export async function addPantryItem(db: AppDb, householdId: string, input: Pantr
   });
 }
 
-export async function prefillPantryStaples(db: AppDb, householdId: string): Promise<{ added: number; alreadyPresent: number }> {
-  const existing = await db
+/**
+ * "Prefill pantry" adds the curated staple foods to the SHOPPING LIST
+ * (unchecked, not straight into the pantry) - skipping anything already
+ * covered by non-expired pantry stock or already sitting unchecked on the
+ * list, so re-tapping the button doesn't pile up duplicates.
+ */
+export async function prefillStaplesToShoppingList(
+  db: AppDb,
+  householdId: string,
+): Promise<{ added: number; skipped: number }> {
+  const today = todayIsoDate();
+  const inStock = await db
     .select()
     .from(pantryItems)
     .where(and(eq(pantryItems.householdId, householdId), isNull(pantryItems.deletedAt)));
-  const existingFoodIds = new Set(existing.map((row) => row.foodId));
+  const inStockFoodIds = new Set(
+    inStock.filter((row) => row.quantity > 0 && (row.expiresAt === null || row.expiresAt >= today)).map((row) => row.foodId),
+  );
+
+  const listed = await db
+    .select()
+    .from(shoppingListItems)
+    .where(
+      and(
+        eq(shoppingListItems.householdId, householdId),
+        eq(shoppingListItems.checked, false),
+        isNull(shoppingListItems.deletedAt),
+      ),
+    );
+  const listedFoodIds = new Set(listed.map((row) => row.foodId).filter((id): id is string => id !== null));
 
   let added = 0;
-  let alreadyPresent = 0;
+  let skipped = 0;
   for (const staple of PANTRY_STAPLE_SEED_KEYS) {
     const [food] = await db.select().from(foods).where(eq(foods.seedKey, staple.seedKey));
     if (!food) continue; // staple has no matching seed food in this DB - skip silently, not an error
-    if (existingFoodIds.has(food.id)) {
-      alreadyPresent++;
+    if (inStockFoodIds.has(food.id) || listedFoodIds.has(food.id)) {
+      skipped++;
       continue;
     }
-    await addPantryItem(db, householdId, { foodId: food.id, quantity: staple.quantity });
+    await addManualShoppingItem(db, householdId, {
+      foodId: food.id,
+      quantity: staple.quantity,
+      unit: food.baseUnit === 'piece' ? undefined : food.baseUnit,
+      horizon: (food.shelfLifeDays ?? 0) >= MONTHLY_SHELF_LIFE_THRESHOLD_DAYS ? 'monthly' : 'weekly',
+    });
     added++;
   }
-  return { added, alreadyPresent };
+  return { added, skipped };
 }
 
 export type IngredientNeed = { foodId: string; amount: number };

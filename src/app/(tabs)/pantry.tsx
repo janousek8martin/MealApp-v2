@@ -11,7 +11,7 @@ import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { db } from '@/db/client';
-import { addPantryItem, prefillPantryStaples, removePantryItem } from '@/db/repositories/shopping';
+import { addPantryItem, prefillStaplesToShoppingList, removePantryItem } from '@/db/repositories/shopping';
 import { todayIsoDate } from '@/db/time';
 import { useHousehold } from '@/hooks/data';
 import { useFood } from '@/hooks/library';
@@ -79,8 +79,8 @@ export default function PantryScreen() {
 
   const prefillStaples = async () => {
     if (!household) return;
-    const result = await prefillPantryStaples(db, household.id);
-    Alert.alert('', t('shopping.prefillStapleResult', { added: result.added, alreadyPresent: result.alreadyPresent }));
+    const result = await prefillStaplesToShoppingList(db, household.id);
+    Alert.alert('', t('shopping.prefillStapleResult', { added: result.added, skipped: result.skipped }));
   };
 
   return (

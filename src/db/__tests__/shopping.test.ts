@@ -12,13 +12,13 @@ import {
   addManualShoppingItem,
   addPantryItem,
   generateShoppingList,
-  prefillPantryStaples,
+  prefillStaplesToShoppingList,
   removePantryItem,
   removeShoppingItem,
   setShoppingItemChecked,
   updatePantryItem,
 } from '../repositories/shopping';
-import { pantryItems, plannedMealPortions, plannedMeals, recipes, shoppingListItems } from '../schema';
+import { foods, pantryItems, plannedMealPortions, plannedMeals, recipes, shoppingListItems } from '../schema';
 import { seedIfEmpty } from '../seed';
 import { createTestDb } from '../testing/testDb';
 
@@ -384,34 +384,56 @@ describe('shopping list generator (repository)', () => {
     expect(remaining).toHaveLength(0);
   });
 
-  describe('prefillPantryStaples', () => {
-    it('adds a pantry row for every staple that has a matching seed food and none already in the pantry', async () => {
+  describe('prefillStaplesToShoppingList', () => {
+    it('adds an unchecked shopping-list row for every staple that has a matching seed food', async () => {
       const db = createTestDb();
       const householdId = await createHouseholdWithDefaults(db, 'Test');
       await seedIfEmpty(db);
 
-      const result = await prefillPantryStaples(db, householdId);
+      const result = await prefillStaplesToShoppingList(db, householdId);
 
       expect(result.added).toBe(PANTRY_STAPLE_SEED_KEYS.length);
-      expect(result.alreadyPresent).toBe(0);
+      expect(result.skipped).toBe(0);
 
-      const rows = await db.select().from(pantryItems).where(eq(pantryItems.householdId, householdId));
+      const rows = await db.select().from(shoppingListItems).where(eq(shoppingListItems.householdId, householdId));
+      expect(rows.length).toBe(PANTRY_STAPLE_SEED_KEYS.length);
+      expect(rows.every((row) => row.checked === false)).toBe(true);
+
+      const pantryRows = await db.select().from(pantryItems).where(eq(pantryItems.householdId, householdId));
+      expect(pantryRows).toHaveLength(0);
+    });
+
+    it('re-running skips staples already on the unchecked list instead of duplicating them', async () => {
+      const db = createTestDb();
+      const householdId = await createHouseholdWithDefaults(db, 'Test');
+      await seedIfEmpty(db);
+
+      await prefillStaplesToShoppingList(db, householdId);
+      const secondRun = await prefillStaplesToShoppingList(db, householdId);
+
+      expect(secondRun.added).toBe(0);
+      expect(secondRun.skipped).toBe(PANTRY_STAPLE_SEED_KEYS.length);
+
+      const rows = await db.select().from(shoppingListItems).where(eq(shoppingListItems.householdId, householdId));
       expect(rows.length).toBe(PANTRY_STAPLE_SEED_KEYS.length);
     });
 
-    it('skips staples already present in the pantry instead of duplicating them', async () => {
+    it('skips a staple already covered by non-expired pantry stock', async () => {
       const db = createTestDb();
       const householdId = await createHouseholdWithDefaults(db, 'Test');
       await seedIfEmpty(db);
+      const [oliveOil] = await db.select().from(foods).where(eq(foods.seedKey, PANTRY_STAPLE_SEED_KEYS[0].seedKey));
+      await addPantryItem(db, householdId, { foodId: oliveOil.id, quantity: 500 });
 
-      await prefillPantryStaples(db, householdId);
-      const secondRun = await prefillPantryStaples(db, householdId);
+      const result = await prefillStaplesToShoppingList(db, householdId);
 
-      expect(secondRun.added).toBe(0);
-      expect(secondRun.alreadyPresent).toBe(PANTRY_STAPLE_SEED_KEYS.length);
-
-      const rows = await db.select().from(pantryItems).where(eq(pantryItems.householdId, householdId));
-      expect(rows.length).toBe(PANTRY_STAPLE_SEED_KEYS.length);
+      expect(result.added).toBe(PANTRY_STAPLE_SEED_KEYS.length - 1);
+      expect(result.skipped).toBe(1);
+      const rows = await db
+        .select()
+        .from(shoppingListItems)
+        .where(and(eq(shoppingListItems.householdId, householdId), eq(shoppingListItems.foodId, oliveOil.id)));
+      expect(rows).toHaveLength(0);
     });
   });
 });

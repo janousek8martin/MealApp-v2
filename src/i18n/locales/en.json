@@ -103,8 +103,8 @@
     "quantity": "Quantity ({{unit}})",
     "expiresOn": "use by {{date}}",
     "goToShoppingList": "Shopping list",
-    "prefillStaples": "Prefill pantry",
-    "prefillStapleResult": "Added {{added}} staples ({{alreadyPresent}} already in your pantry)",
+    "prefillStaples": "Add staples to shopping list",
+    "prefillStapleResult": "Added {{added}} staples to the shopping list ({{skipped}} already stocked or listed)",
     "purchasedTitle": "How much did you buy?",
     "purchasedConfirm": "Add to pantry",
     "purchasedJustNeeded": "Just the needed amount"

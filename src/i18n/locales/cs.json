@@ -103,8 +103,8 @@
     "quantity": "Množství ({{unit}})",
     "expiresOn": "spotřebovat do {{date}}",
     "goToShoppingList": "Nákupní seznam",
-    "prefillStaples": "Doplnit základy",
-    "prefillStapleResult": "Přidáno {{added}} základních položek ({{alreadyPresent}} už bylo ve spíži)",
+    "prefillStaples": "Přidat základy na nákupní seznam",
+    "prefillStapleResult": "Přidáno {{added}} základních položek na nákupní seznam ({{skipped}} už bylo ve spíži nebo seznamu)",
     "purchasedTitle": "Kolik jsi toho koupil?",
     "purchasedConfirm": "Přidat do spíže",
     "purchasedJustNeeded": "Jen potřebné množství"
