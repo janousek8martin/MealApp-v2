@@ -743,7 +743,7 @@
     "title": "Kolik jídel denně chceš?",
     "hint": "Vyber si přesně ta jídla, která chceš — klidně vynech i hlavní jídlo. Štítek „sdíleno“ znamená, že v ten slot budeš jíst stejný recept jako zbytek domácnosti.",
     "shared": "sdíleno",
-    "addButton": "+ Přidat jídlo",
+    "addButton": "Přidat jídlo",
     "deleteConfirmTitle": "Odebrat toto jídlo?",
     "deleteConfirmMessage": "Tím se {{name}} odebere všem v domácnosti, kdo ho má zapnuté.",
     "slot": {

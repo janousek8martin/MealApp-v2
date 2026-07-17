@@ -743,7 +743,7 @@
     "title": "How many meals a day?",
     "hint": "Pick every meal you actually want - skip any of them, including main meals. \"Shared\" means you'll eat the same recipe as the rest of the household on that slot.",
     "shared": "shared",
-    "addButton": "+ Add meal",
+    "addButton": "Add meal",
     "deleteConfirmTitle": "Remove this meal?",
     "deleteConfirmMessage": "This removes {{name}} for everyone in the household who has it enabled.",
     "slot": {

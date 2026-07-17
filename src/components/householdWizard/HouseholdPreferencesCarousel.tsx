@@ -138,9 +138,12 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit }: Props) {
       diets,
       favoriteCuisines,
       avoidFoodGroupKeys,
-      cookingExperienceLevel: cookingExperienceLevel ?? 'hard',
-      cookingTimeLimitMinutes: cookingTimeKey === null || cookingTimeKey === ANY_TIME_KEY ? null : Number(cookingTimeKey),
-      budgetLevel: budgetLevel ?? 'high',
+      // Skipped cards fall back to the middle of the road: medium difficulty,
+      // 45-minute recipes, medium budget. An EXPLICIT "any time" pick still
+      // means no limit - only the untouched-null case gets the 45 default.
+      cookingExperienceLevel: cookingExperienceLevel ?? 'medium',
+      cookingTimeLimitMinutes: cookingTimeKey === null ? 45 : cookingTimeKey === ANY_TIME_KEY ? null : Number(cookingTimeKey),
+      budgetLevel: budgetLevel ?? 'medium',
       notificationsEnabled,
       weighInTime: TIME_RE.test(weighInTime) ? weighInTime : defaultNotificationSettings.weighInTime,
       planningTime: TIME_RE.test(planningTime) ? planningTime : defaultNotificationSettings.planningTime,
