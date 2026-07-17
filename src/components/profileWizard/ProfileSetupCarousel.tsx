@@ -100,7 +100,10 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
   const [goalWeight, setGoalWeight] = useState('');
   const [goalBodyFat, setGoalBodyFat] = useState('');
 
-  const [tempoPreset, setTempoPreset] = useState<'slow' | 'recommended' | 'fast'>('recommended');
+  // No preselection: null means no chip is highlighted until the user
+  // actively picks one. Calculations fall back to 'recommended' so the rate
+  // stepper and goal review still show a sensible starting value.
+  const [tempoPreset, setTempoPreset] = useState<'slow' | 'recommended' | 'fast' | null>(null);
   const [customRate, setCustomRate] = useState<number | null>(null);
 
   const [activityLevel, setActivityLevel] = useState<string | null>(null);
@@ -140,15 +143,18 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
   const index = Math.max(0, cardKeys.indexOf(currentKey));
 
   // A single rate (kg/week, magnitude) drives both the preset pills and the
-  // fine-tune stepper - the preset just sets the starting value.
+  // fine-tune stepper - the preset just sets the starting value. No chip is
+  // preselected, but 'recommended' still backs the calculation so the rate
+  // stepper and goal review show a sensible value from the start.
+  const effectiveTempoPreset = tempoPreset ?? 'recommended';
   const presetRateKgPerWeek =
     goal === 'lose'
-      ? (weightKg ?? 0) * SPEED_PRESETS_LOSE_PCT_BW[tempoPreset]
-      : SPEED_PRESETS_GAIN[tempoPreset] === undefined
+      ? (weightKg ?? 0) * SPEED_PRESETS_LOSE_PCT_BW[effectiveTempoPreset]
+      : SPEED_PRESETS_GAIN[effectiveTempoPreset] === undefined
         ? 0
         : // Gain presets are flat kcal, not a rate - approximate a kg/week
           // equivalent just for the stepper's starting point (≈7700 kcal/kg).
-          SPEED_PRESETS_GAIN[tempoPreset] / (7700 / 7);
+          SPEED_PRESETS_GAIN[effectiveTempoPreset] / (7700 / 7);
   const rateKgPerWeek = customRate ?? presetRateKgPerWeek;
 
   const EXIT_DISTANCE = 24;
@@ -421,11 +427,11 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
             <View style={styles.proConBox}>
               <Text style={styles.proConLine}>
                 <Text style={styles.proConLabel}>{t('common.pro')} </Text>
-                {t(`tempo.${tempoPreset}Pro${goal === 'lose' ? 'Lose' : 'Gain'}`)}
+                {t(`tempo.${effectiveTempoPreset}Pro${goal === 'lose' ? 'Lose' : 'Gain'}`)}
               </Text>
               <Text style={styles.proConLine}>
                 <Text style={styles.proConLabel}>{t('common.con')} </Text>
-                {t(`tempo.${tempoPreset}Con${goal === 'lose' ? 'Lose' : 'Gain'}`)}
+                {t(`tempo.${effectiveTempoPreset}Con${goal === 'lose' ? 'Lose' : 'Gain'}`)}
               </Text>
             </View>
             <View style={styles.rateRow}>
