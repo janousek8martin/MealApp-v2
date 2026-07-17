@@ -13,6 +13,7 @@ function item(id: string, overrides: Partial<RecipeCandidate> = {}): GeneratorIt
     maxRepetitionsPerWeek: null,
     allowConsecutiveDays: null,
     canServeCold: false,
+    mealPrepFriendly: false,
     ...overrides,
   };
   return { itemType: 'recipe', candidate };
@@ -153,6 +154,64 @@ describe('pickMealForSlot', () => {
     );
     expect(result?.candidate.id).toBe('warm');
   });
+
+  const baseHouseholdFilters = {
+    cookingExperienceLevel: 'hard' as const,
+    cookingTimeLimitMinutes: null,
+    budgetLevel: 'high' as const,
+    allowSameLunchDinner: true,
+  };
+
+  it('when mealPrepMode is on, only picks mealPrepFriendly main-meal candidates', () => {
+    const candidates = [item('boxed', { mealPrepFriendly: true }), item('freshOnly', { mealPrepFriendly: false })];
+    const rng = createSeededRng(3);
+    for (let i = 0; i < 20; i += 1) {
+      const result = pickMealForSlot(
+        candidates,
+        [noRestrictions],
+        repetitionCtx(),
+        baseScoringExtras,
+        rng,
+        [],
+        undefined,
+        false,
+        { ...baseHouseholdFilters, mealPrepMode: true },
+      );
+      expect(result?.candidate.id).toBe('boxed');
+    }
+  });
+
+  it('falls back to a non-mealPrepFriendly candidate rather than leaving the slot empty when none are flagged', () => {
+    const candidates = [item('freshOnly', { mealPrepFriendly: false })];
+    const result = pickMealForSlot(
+      candidates,
+      [noRestrictions],
+      repetitionCtx(),
+      baseScoringExtras,
+      createSeededRng(1),
+      [],
+      undefined,
+      false,
+      { ...baseHouseholdFilters, mealPrepMode: true },
+    );
+    expect(result?.candidate.id).toBe('freshOnly');
+  });
+
+  it('mealPrepMode off allows any candidate regardless of the flag', () => {
+    const candidates = [item('freshOnly', { mealPrepFriendly: false })];
+    const result = pickMealForSlot(
+      candidates,
+      [noRestrictions],
+      repetitionCtx(),
+      baseScoringExtras,
+      createSeededRng(1),
+      [],
+      undefined,
+      false,
+      { ...baseHouseholdFilters, mealPrepMode: false },
+    );
+    expect(result?.candidate.id).toBe('freshOnly');
+  });
 });
 
 describe('pickSnackForSlot', () => {
@@ -210,6 +269,24 @@ describe('pickSnackForSlot', () => {
       { kcal: 200, proteinG: 20, carbsG: 20, fatG: 6 },
     );
     expect(result).toBeNull();
+  });
+
+  it('mealPrepMode does not restrict snacks - a non-mealPrepFriendly snack still gets picked', () => {
+    const candidates = [item('snack', { mealPrepFriendly: false, nutritionPerPortion: { kcal: 200, proteinG: 20, carbsG: 20, fatG: 6, fiberG: 0 } })];
+    const result = pickSnackForSlot(
+      candidates,
+      noRestrictions,
+      repetitionCtx(),
+      { kcal: 200, proteinG: 20, carbsG: 20, fatG: 6 },
+      {
+        cookingExperienceLevel: 'hard',
+        cookingTimeLimitMinutes: null,
+        budgetLevel: 'high',
+        allowSameLunchDinner: true,
+        mealPrepMode: true,
+      },
+    );
+    expect(result?.candidate.id).toBe('snack');
   });
 });
 

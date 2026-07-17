@@ -5,6 +5,7 @@ import {
   passesBudgetFilter,
   passesCookingExperienceFilter,
   passesCookingTimeFilter,
+  passesMealPrepFilter,
   passesRepetitionRules,
   passesSameDayRepeatRule,
 } from './filters';
@@ -84,6 +85,9 @@ export function pickMealForSlot(
     );
     allowed = applyHardFilterWithFallback(allowed, (item) =>
       passesBudgetFilter(item.candidate, householdFilters.budgetLevel),
+    );
+    allowed = applyHardFilterWithFallback(allowed, (item) =>
+      passesMealPrepFilter(item.candidate, householdFilters.mealPrepMode),
     );
     if (slotKey) {
       allowed = applyHardFilterWithFallback(allowed, (item) =>

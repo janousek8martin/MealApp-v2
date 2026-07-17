@@ -36,6 +36,8 @@ export type RecipeCandidate = {
   allowConsecutiveDays: boolean | null;
   /** Can be eaten cold – eligible for the generator's cold-dinner day selection. */
   canServeCold: boolean;
+  /** Suitable for batch-cooked boxed meals – gates the household mealPrepMode filter. */
+  mealPrepFriendly: boolean;
   /** Undefined for standalone foods – difficulty is a recipe-only concept, so the cooking-experience filter always passes foods through. */
   difficulty?: Difficulty;
   /** Undefined/null for standalone foods or recipes without a set prep time – the cooking-time filter always passes those through. */
@@ -120,6 +122,8 @@ export type HouseholdCandidateFilters = {
   cookingTimeLimitMinutes: number | null;
   budgetLevel: 'low' | 'medium' | 'high';
   allowSameLunchDinner: boolean;
+  /** "Krabičková dieta" - only applied to main-meal slots, snacks are exempt. */
+  mealPrepMode: boolean;
 };
 
 export type ScoredCandidate = { candidate: RecipeCandidate; score: number };

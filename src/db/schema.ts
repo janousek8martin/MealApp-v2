@@ -78,6 +78,8 @@ export const householdSettings = sqliteTable('household_settings', {
   cookingTimeLimitMinutes: integer('cooking_time_limit_minutes'),
   /** Ceiling on recipes/foods budget the generator will pick automatically; 'high' = no restriction. */
   budgetLevel: text('budget_level', { enum: ['low', 'medium', 'high'] }).notNull().default('high'),
+  /** "Krabičková dieta" - when on, the generator only picks mealPrepFriendly main-meal candidates (snacks exempt). */
+  mealPrepMode: integer('meal_prep_mode', { mode: 'boolean' }).notNull().default(false),
 });
 
 /**
@@ -376,6 +378,8 @@ export const foods = sqliteTable('foods', {
   snackSuitable: integer('snack_suitable', { mode: 'boolean' }).notNull().default(false),
   /** Can be eaten cold – lets this food stand in for a main dish on a cold-dinner day. */
   canServeCold: integer('can_serve_cold', { mode: 'boolean' }).notNull().default(false),
+  /** Suitable for batch-cooked boxed meals ("krabičková dieta") – gates the household mealPrepMode generator filter. */
+  mealPrepFriendly: integer('meal_prep_friendly', { mode: 'boolean' }).notNull().default(false),
   /** EAN – reserved for the V1.x barcode scanner. */
   barcode: text('barcode'),
   /** Audit reference: 'usda:fdc/171287', 'nutridatabaze:123', 'user'. */
@@ -422,6 +426,8 @@ export const recipes = sqliteTable('recipes', {
   allowConsecutiveDays: integer('allow_consecutive_days', { mode: 'boolean' }),
   /** Can be served cold – eligible for the generator's cold-dinner day selection. */
   canServeCold: integer('can_serve_cold', { mode: 'boolean' }).notNull().default(false),
+  /** Suitable for batch-cooked boxed meals ("krabičková dieta") – gates the household mealPrepMode generator filter. */
+  mealPrepFriendly: integer('meal_prep_friendly', { mode: 'boolean' }).notNull().default(false),
   source: text('source').notNull().default('user'),
 });
 

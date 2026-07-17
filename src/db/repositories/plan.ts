@@ -329,6 +329,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
       maxRepetitionsPerWeek: recipe.maxRepetitionsPerWeek,
       allowConsecutiveDays: recipe.allowConsecutiveDays,
       canServeCold: recipe.canServeCold,
+      mealPrepFriendly: recipe.mealPrepFriendly,
       difficulty: recipe.difficulty,
       prepTimeMinutes: recipe.prepTimeMinutes,
     };
@@ -374,6 +375,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
       maxRepetitionsPerWeek: null,
       allowConsecutiveDays: null,
       canServeCold: food.canServeCold,
+      mealPrepFriendly: food.mealPrepFriendly,
     };
     snackItems.push({ itemType: 'food', candidate });
   }
@@ -408,6 +410,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
       cookingTimeLimitMinutes: settingsRow?.cookingTimeLimitMinutes ?? null,
       budgetLevel: settingsRow?.budgetLevel ?? 'high',
       allowSameLunchDinner: settingsRow?.allowSameLunchDinner ?? false,
+      mealPrepMode: settingsRow?.mealPrepMode ?? false,
     },
     preferPantryItems: settingsRow?.preferPantryItems ?? true,
     slots,

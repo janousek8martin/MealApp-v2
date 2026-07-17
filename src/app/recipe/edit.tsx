@@ -53,6 +53,7 @@ export default function RecipeEditScreen() {
   const [category, setCategory] = useState<(typeof RECIPE_CATEGORIES)[number]>('lunch_dinner');
   const [isSide, setIsSide] = useState(false);
   const [canServeCold, setCanServeCold] = useState(false);
+  const [mealPrepFriendly, setMealPrepFriendly] = useState(false);
   const [cuisine, setCuisine] = useState<string | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [budget, setBudget] = useState<'cheap' | 'average' | 'expensive'>('average');
@@ -74,6 +75,7 @@ export default function RecipeEditScreen() {
     setCategory(existing.category);
     setIsSide(existing.isSide);
     setCanServeCold(existing.canServeCold);
+    setMealPrepFriendly(existing.mealPrepFriendly);
     setCuisine(existing.cuisine);
     setTags(existing.tagsJson ? (JSON.parse(existing.tagsJson) as string[]) : []);
     setBudget(existing.budget);
@@ -135,6 +137,7 @@ export default function RecipeEditScreen() {
         category,
         isSide,
         canServeCold,
+        mealPrepFriendly,
         cuisine,
         tags,
         budget,
@@ -184,6 +187,16 @@ export default function RecipeEditScreen() {
           <Switch
             value={canServeCold}
             onValueChange={setCanServeCold}
+            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            thumbColor={colors.surface}
+          />
+        </View>
+
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>{t('recipeEdit.mealPrepFriendly')}</Text>
+          <Switch
+            value={mealPrepFriendly}
+            onValueChange={setMealPrepFriendly}
             trackColor={{ true: colors.primaryLight, false: colors.border }}
             thumbColor={colors.surface}
           />

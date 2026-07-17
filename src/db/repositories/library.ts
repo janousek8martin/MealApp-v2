@@ -40,6 +40,8 @@ export type FoodInput = {
   barcode?: string | null;
   /** Can be eaten cold; defaults to false. */
   canServeCold?: boolean;
+  /** Suitable for batch-cooked boxed meals; defaults to false. */
+  mealPrepFriendly?: boolean;
 };
 
 /** Serializes only the micronutrients the user actually filled in – an omitted field stays unknown, never becomes 0. */
@@ -73,6 +75,7 @@ export async function upsertFood(db: AppDb, input: FoodInput, foodId?: string): 
     dietFlagsJson: JSON.stringify(input.dietFlags),
     barcode: input.barcode ?? null,
     canServeCold: input.canServeCold ?? false,
+    mealPrepFriendly: input.mealPrepFriendly ?? false,
     updatedAt: now,
   };
 
@@ -127,6 +130,8 @@ export type RecipeInput = {
   ingredients: { foodId: string; amount: number }[];
   /** Can be served cold; defaults to false. */
   canServeCold?: boolean;
+  /** Suitable for batch-cooked boxed meals; defaults to false. */
+  mealPrepFriendly?: boolean;
   /** Sets which household cooking-experience ceiling this recipe is drawn under; defaults to 'medium'. */
   difficulty?: 'easy' | 'medium' | 'hard';
 };
@@ -149,6 +154,7 @@ export async function upsertRecipe(db: AppDb, input: RecipeInput, recipeId?: str
     maxRepetitionsPerWeek: input.maxRepetitionsPerWeek ?? null,
     allowConsecutiveDays: input.allowConsecutiveDays ?? null,
     canServeCold: input.canServeCold ?? false,
+    mealPrepFriendly: input.mealPrepFriendly ?? false,
     difficulty: input.difficulty ?? 'medium',
     updatedAt: now,
   };

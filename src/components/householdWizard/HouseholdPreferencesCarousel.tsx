@@ -43,6 +43,7 @@ export type HouseholdPreferencesValue = {
   mealVarietyLevel: 'low' | 'medium' | 'high';
   coldDinnerFrequencyPerWeek: number;
   diets: string[];
+  mealPrepMode: boolean;
   favoriteCuisines: string[];
   avoidFoodGroupKeys: string[];
   cookingExperienceLevel: 'easy' | 'medium' | 'hard';
@@ -82,6 +83,7 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack }: 
   const [coldDinnerFrequencyPerWeek, setColdDinnerFrequencyPerWeek] = useState(0);
 
   const [diets, setDiets] = useState<string[]>([]);
+  const [mealPrepMode, setMealPrepMode] = useState(false);
   const [favoriteCuisines, setFavoriteCuisines] = useState<string[]>([]);
   const [avoidFoodGroupKeys, setAvoidFoodGroupKeys] = useState<string[]>([]);
 
@@ -138,6 +140,7 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack }: 
       mealVarietyLevel,
       coldDinnerFrequencyPerWeek,
       diets,
+      mealPrepMode,
       favoriteCuisines,
       avoidFoodGroupKeys,
       // Skipped cards fall back to the middle of the road: medium difficulty,
@@ -233,6 +236,12 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack }: 
               value={diets}
               onChange={setDiets}
             />
+            <SwitchRow
+              label={t('householdCarousel.mealPrepMode')}
+              value={mealPrepMode}
+              onChange={setMealPrepMode}
+            />
+            <Text style={styles.hintText}>{t('householdCarousel.mealPrepModeHint')}</Text>
           </View>
         ) : null}
 

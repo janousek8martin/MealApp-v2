@@ -44,6 +44,8 @@ export type RecipeSeed = {
   instructionsCs?: string;
   instructionsEn?: string;
   tags?: string[];
+  /** Suitable for batch-cooked boxed meals ("krabičková dieta"); defaults to false. */
+  mealPrepFriendly?: boolean;
   /** amount in the food's base unit per 1 reference portion */
   ingredients: { foodKey: string; amount: number }[];
 };

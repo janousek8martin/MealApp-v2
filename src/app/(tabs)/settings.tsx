@@ -538,6 +538,13 @@ function HouseholdSection({
         />
 
         <SwitchRow
+          label={t('householdCarousel.mealPrepMode')}
+          hint={t('householdCarousel.mealPrepModeHint')}
+          value={settings.mealPrepMode}
+          onChange={(v) => updateHouseholdSettings(db, householdId, { mealPrepMode: v })}
+        />
+
+        <SwitchRow
           label={t('settings.preferPantryItems')}
           hint={t('settings.preferPantryItemsHint')}
           value={settings.preferPantryItems}

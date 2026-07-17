@@ -7,6 +7,7 @@ import {
   passesBudgetFilter,
   passesCookingExperienceFilter,
   passesCookingTimeFilter,
+  passesMealPrepFilter,
   passesRepetitionRules,
   passesSameDayRepeatRule,
   relaxAvoidedRecipesForResolutions,
@@ -27,6 +28,7 @@ function candidate(overrides: Partial<RecipeCandidate> = {}): RecipeCandidate {
     maxRepetitionsPerWeek: null,
     allowConsecutiveDays: null,
     canServeCold: false,
+    mealPrepFriendly: false,
     ...overrides,
   };
 }
@@ -426,5 +428,17 @@ describe('passesSameDayRepeatRule', () => {
 
   it('allows a recipe not used in the sibling slot', () => {
     expect(passesSameDayRepeatRule(candidate({ id: 'r2' }), 'dinner', new Set(['r1']), false)).toBe(true);
+  });
+});
+
+describe('passesMealPrepFilter', () => {
+  it('allows everything when mealPrepMode is off', () => {
+    expect(passesMealPrepFilter(candidate({ mealPrepFriendly: false }), false)).toBe(true);
+    expect(passesMealPrepFilter(candidate({ mealPrepFriendly: true }), false)).toBe(true);
+  });
+
+  it('only allows mealPrepFriendly candidates when mealPrepMode is on', () => {
+    expect(passesMealPrepFilter(candidate({ mealPrepFriendly: true }), true)).toBe(true);
+    expect(passesMealPrepFilter(candidate({ mealPrepFriendly: false }), true)).toBe(false);
   });
 });

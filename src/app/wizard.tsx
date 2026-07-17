@@ -90,6 +90,7 @@ export default function WizardScreen() {
       cookingExperienceLevel: value.cookingExperienceLevel,
       cookingTimeLimitMinutes: value.cookingTimeLimitMinutes,
       budgetLevel: value.budgetLevel,
+      mealPrepMode: value.mealPrepMode,
     });
     const avoidedFoodIds = AVOID_FOOD_GROUPS.filter((group) => value.avoidFoodGroupKeys.includes(group.key))
       .flatMap((group) => group.foodKeys)

@@ -82,6 +82,7 @@ export async function seedIfEmpty(
       budget: seed.budget ?? 'average',
       prepTimeMinutes: seed.prepTimeMinutes,
       tagsJson: seed.tags ? JSON.stringify(seed.tags) : null,
+      mealPrepFriendly: seed.mealPrepFriendly ?? false,
       source: 'seed',
     });
 

@@ -245,6 +245,12 @@ export function passesCookingTimeFilter(candidate: RecipeCandidate, limitMinutes
   return candidate.prepTimeMinutes <= limitMinutes;
 }
 
+/** "Krabičková dieta" - when the household's mealPrepMode is on, only mealPrepFriendly-flagged candidates pass; the mode off means everything passes (no restriction). */
+export function passesMealPrepFilter(candidate: RecipeCandidate, mealPrepMode: boolean): boolean {
+  if (!mealPrepMode) return true;
+  return candidate.mealPrepFriendly;
+}
+
 /**
  * When same-day lunch/dinner repeats aren't allowed, excludes a candidate
  * already used in the other of that pair for this track today. `usedTodayIds`

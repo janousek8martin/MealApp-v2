@@ -114,6 +114,7 @@ export type HouseholdSettingsPatch = Partial<{
   cookingExperienceLevel: 'easy' | 'medium' | 'hard';
   cookingTimeLimitMinutes: number | null;
   budgetLevel: 'low' | 'medium' | 'high';
+  mealPrepMode: boolean;
 }>;
 
 export async function updateHouseholdSettings(

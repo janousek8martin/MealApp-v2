@@ -20,6 +20,7 @@ import m0015 from './0015_crazy_unicorn.sql';
 import m0016 from './0016_oval_taskmaster.sql';
 import m0017 from './0017_windy_rhodey.sql';
 import m0018 from './0018_groovy_the_hand.sql';
+import m0019 from './0019_nasty_carnage.sql';
 
   export default {
     journal,
@@ -42,7 +43,8 @@ m0014,
 m0015,
 m0016,
 m0017,
-m0018
+m0018,
+m0019
     }
   }
   

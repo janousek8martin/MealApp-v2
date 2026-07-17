@@ -13,6 +13,7 @@ function candidate(overrides: Partial<RecipeCandidate> = {}): RecipeCandidate {
     maxRepetitionsPerWeek: null,
     allowConsecutiveDays: null,
     canServeCold: false,
+    mealPrepFriendly: false,
     ...overrides,
   };
 }

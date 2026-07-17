@@ -183,6 +183,7 @@ export const seedRecipes: RecipeSeed[] = [
     instructionsCs: 'Hovězí poduste s cibulí a mrkví doměkka, podávejte s vařenou pohankou.',
     instructionsEn: 'Braise the beef with onion and carrot until tender, serve over cooked buckwheat.',
     tags: ['czech', 'batch_friendly'],
+    mealPrepFriendly: true,
     ingredients: [
       { foodKey: 'beef_lean', amount: 150 },
       { foodKey: 'onion', amount: 50 },
@@ -241,6 +242,7 @@ export const seedRecipes: RecipeSeed[] = [
     instructionsCs: 'Uvařenou čočku zahustěte, dochuťte octem; podávejte s vejcem a opečenou cibulkou.',
     instructionsEn: 'Cook the lentils, season with vinegar; serve with an egg and fried onion.',
     tags: ['czech', 'vegetarian', 'batch_friendly'],
+    mealPrepFriendly: true,
     ingredients: [
       { foodKey: 'lentils_dry', amount: 90 },
       { foodKey: 'egg', amount: 1 },
@@ -296,6 +298,7 @@ export const seedRecipes: RecipeSeed[] = [
     instructionsCs: 'Cibuli a česnek orestujte, přidejte rajčata a cizrnu, poduste; podávejte s rýží.',
     instructionsEn: 'Sauté onion and garlic, add tomatoes and chickpeas, simmer; serve with rice.',
     tags: ['vegan', 'mediterranean', 'batch_friendly'],
+    mealPrepFriendly: true,
     ingredients: [
       { foodKey: 'chickpeas_canned', amount: 200 },
       { foodKey: 'tomato', amount: 200 },
@@ -393,6 +396,7 @@ export const seedRecipes: RecipeSeed[] = [
     instructionsCs: 'Mleté maso orestujte s cibulí, přidejte rajčata a fazole, duste; podávejte s rýží.',
     instructionsEn: 'Brown the beef with onion, add tomatoes and beans, simmer; serve with rice.',
     tags: ['batch_friendly'],
+    mealPrepFriendly: true,
     ingredients: [
       { foodKey: 'ground_beef_10', amount: 120 },
       { foodKey: 'beans_red_canned', amount: 150 },
@@ -432,6 +436,7 @@ export const seedRecipes: RecipeSeed[] = [
     instructionsCs: 'Cibuli orestujte, přidejte rýži a žampiony, podlévejte a vařte; vmíchejte sýr.',
     instructionsEn: 'Sauté onion, add rice and mushrooms, cook gradually adding water; stir in cheese.',
     tags: ['vegetarian', 'batch_friendly'],
+    mealPrepFriendly: true,
     ingredients: [
       { foodKey: 'rice_white_dry', amount: 90 },
       { foodKey: 'mushrooms', amount: 150 },
