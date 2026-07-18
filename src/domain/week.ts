@@ -48,3 +48,26 @@ export function addDays(dateIso: string, days: number): string {
   date.setDate(date.getDate() + days);
   return formatIsoDate(date);
 }
+
+/** Same day-of-month `months` away, clamped to the target month's last day (e.g. Jan 31 + 1mo -> Feb 28/29). */
+export function addMonths(dateIso: string, months: number): string {
+  const date = parseIsoDate(dateIso);
+  const day = date.getDate();
+  date.setDate(1);
+  date.setMonth(date.getMonth() + months);
+  const lastDayOfTargetMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  date.setDate(Math.min(day, lastDayOfTargetMonth));
+  return formatIsoDate(date);
+}
+
+/**
+ * A Monday-start 6-week (42-day) grid covering the calendar month that
+ * `dateIso` falls in, including leading/trailing days from neighbouring
+ * months so every row is a full week.
+ */
+export function monthGridDates(dateIso: string): string[] {
+  const [y, m] = dateIso.split('-').map(Number);
+  const firstOfMonth = formatIsoDate(new Date(y, m - 1, 1));
+  const gridStart = startOfWeek(firstOfMonth);
+  return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
+}

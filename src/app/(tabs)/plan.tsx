@@ -21,6 +21,7 @@ import { FoodPickerModal } from '@/components/FoodPickerModal';
 import { MealActionsMenu } from '@/components/MealActionsMenu';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { PlanDayList } from '@/components/PlanDayList';
+import { PlanMonthPickerModal } from '@/components/PlanMonthPickerModal';
 import { ProfileDropdownChip } from '@/components/ProfileDropdownChip';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
@@ -99,6 +100,7 @@ export default function PlanScreen() {
   const [viewedMonday, setViewedMonday] = useState(() => startOfWeek(today));
   const [selectedDate, setSelectedDate] = useState(today);
   const [transition, setTransition] = useState<PagerTransition | null>(null);
+  const [monthPickerVisible, setMonthPickerVisible] = useState(false);
   const [pickerSlot, setPickerSlot] = useState<SlotRow | null>(null);
   const [extraMealId, setExtraMealId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<'week' | 'day' | null>(null);
@@ -368,9 +370,15 @@ export default function PlanScreen() {
           onPress={() => animateTo(weekJumpTarget(selectedDate, -1))}>
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
-        <Text style={styles.monthTitle} numberOfLines={1}>
-          {monthTitle(viewedMonday, i18n.language)}
-        </Text>
+        <Pressable
+          accessibilityRole="button"
+          style={styles.monthTitleButton}
+          onPress={() => setMonthPickerVisible(true)}>
+          <Text style={styles.monthTitle} numberOfLines={1}>
+            {monthTitle(viewedMonday, i18n.language)}
+          </Text>
+          <Ionicons name="chevron-down" size={16} color={colors.text} />
+        </Pressable>
         <View style={styles.headerRightGroup}>
           <Animated.View style={{ opacity: todayAnim, transform: [{ scale: todayAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }] }}>
             <Pressable
@@ -510,6 +518,15 @@ export default function PlanScreen() {
         ) : null}
       </View>
 
+      <PlanMonthPickerModal
+        visible={monthPickerVisible}
+        initialDate={viewedMonday}
+        today={today}
+        selectedDate={visualDate}
+        onSelectDate={(date) => animateTo(date)}
+        onClose={() => setMonthPickerVisible(false)}
+      />
+
       {pickerSlot && household && activeProfile ? (
         <MealPickerModal
           visible
@@ -617,8 +634,14 @@ function createStyles(colors: ColorTokens) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    monthTitle: {
+    monthTitleButton: {
       flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 2,
+    },
+    monthTitle: {
       textAlign: 'center',
       color: colors.text,
       fontSize: typography.subtitle,
