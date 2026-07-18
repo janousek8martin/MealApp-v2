@@ -1,10 +1,6 @@
-export type Micronutrients = {
-  ironMg?: number;
-  vitaminDUg?: number;
-  b12Ug?: number;
-  calciumMg?: number;
-  omega3G?: number;
-};
+import type { MicronutrientKey } from '../../domain/micronutrients';
+
+export type Micronutrients = Partial<Record<MicronutrientKey, number>>;
 
 export type FoodSeed = {
   key: string;
