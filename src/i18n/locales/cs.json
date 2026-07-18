@@ -505,6 +505,9 @@
   "foodDetail": {
     "deleteTitle": "Smazat potravinu?",
     "deleteMessage": "Tato potravina bude odstraněna z knihovny.",
+    "needsReviewBanner": "Data u této potraviny ještě nejsou ověřená – hlavně alergeny mohou být neúplné. Dokud to nepotvrdíš, appka ji nenabídne nikomu s alergií.",
+    "needsReviewBannerEdit": "Data u této potraviny ještě nejsou ověřená. Zkontroluj alergeny níže a ulož, čímž je potvrdíš.",
+    "confirmReviewed": "Potvrdit data",
     "nutritionPer100": "Nutriční hodnoty na 100 {{unit}}",
     "pieceWeight": "Hmotnost 1 kusu",
     "micronutrients": "Mikroživiny",

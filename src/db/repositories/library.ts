@@ -122,6 +122,11 @@ export async function softDeleteFood(db: AppDb, foodId: string): Promise<void> {
   await db.update(foods).set({ deletedAt: now, updatedAt: now }).where(eq(foods.id, foodId));
 }
 
+/** Clears a food's needsReview flag once a human has looked at it (see src/domain/nutrientProvenance.ts) - makes it eligible again for a profile with an active allergy, once its data is actually trustworthy. */
+export async function confirmFoodReviewed(db: AppDb, foodId: string): Promise<void> {
+  await db.update(foods).set({ needsReview: false, updatedAt: nowIso() }).where(eq(foods.id, foodId));
+}
+
 // ---------------------------------------------------------------------------
 // Recipes
 // ---------------------------------------------------------------------------

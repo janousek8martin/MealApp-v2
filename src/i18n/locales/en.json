@@ -505,6 +505,9 @@
   "foodDetail": {
     "deleteTitle": "Delete this food?",
     "deleteMessage": "This food will be removed from the library.",
+    "needsReviewBanner": "This food's data hasn't been reviewed yet - allergens especially may be incomplete. It won't be suggested to anyone with an allergy until you confirm it.",
+    "needsReviewBannerEdit": "This food's data hasn't been reviewed yet. Check the allergens below, then save to confirm it.",
+    "confirmReviewed": "Confirm data",
     "nutritionPer100": "Nutrition per 100 {{unit}}",
     "pieceWeight": "Weight per piece",
     "micronutrients": "Micronutrients",

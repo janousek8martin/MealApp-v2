@@ -11,7 +11,7 @@ import { HintedScrollView } from '@/components/HintedScrollView';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { db } from '@/db/client';
-import { setRating, softDeleteFood } from '@/db/repositories/library';
+import { confirmFoodReviewed, setRating, softDeleteFood } from '@/db/repositories/library';
 import { MICRONUTRIENTS, type MicronutrientGroup, type MicronutrientKey } from '@/domain/micronutrients';
 import { useActiveProfile, useHousehold } from '@/hooks/data';
 import { useFood, useFoodAllergens, useItemRating, usePhoto } from '@/hooks/library';
@@ -79,6 +79,19 @@ export default function FoodDetailScreen() {
             />
           }
         />
+
+        {food.needsReview ? (
+          <View style={styles.reviewBanner}>
+            <Ionicons name="alert-circle-outline" size={20} color={colors.danger} />
+            <Text style={styles.reviewBannerText}>{t('foodDetail.needsReviewBanner')}</Text>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.reviewBannerButton}
+              onPress={() => void confirmFoodReviewed(db, food.id)}>
+              <Text style={styles.reviewBannerButtonLabel}>{t('foodDetail.confirmReviewed')}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {photo ? (
           <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" />
@@ -184,6 +197,35 @@ function createStyles(colors: ColorTokens) {
     content: {
       padding: spacing.md,
       paddingBottom: spacing.xl,
+    },
+    reviewBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.danger,
+      borderRadius: radius.input,
+      padding: spacing.sm + 2,
+      marginBottom: spacing.sm,
+    },
+    reviewBannerText: {
+      flex: 1,
+      color: colors.text,
+      fontSize: typography.small,
+      lineHeight: 18,
+    },
+    reviewBannerButton: {
+      alignSelf: 'flex-start',
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm + 2,
+      borderRadius: radius.chip,
+      backgroundColor: colors.danger,
+    },
+    reviewBannerButtonLabel: {
+      color: colors.onPrimary,
+      fontSize: typography.small,
+      fontWeight: '700',
     },
     photo: {
       width: '100%',

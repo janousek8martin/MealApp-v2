@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,12 +16,12 @@ import { TextField } from '@/components/ui/TextField';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, MANUAL_DIET_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
-import { setPhoto, upsertFood } from '@/db/repositories/library';
+import { confirmFoodReviewed, setPhoto, upsertFood } from '@/db/repositories/library';
 import { MICRONUTRIENT_KEYS, MICRONUTRIENTS, type MicronutrientGroup, type MicronutrientKey } from '@/domain/micronutrients';
 import { useFood, useFoodAllergens, usePhoto } from '@/hooks/library';
 import { getProductByBarcode } from '@/services/openFoodFacts';
 import { useTheme } from '@/theme/ThemeContext';
-import { spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 const MICRO_GROUP_ORDER: MicronutrientGroup[] = ['vitamins', 'minerals', 'lipids'];
 const emptyMicronutrients = (): Record<MicronutrientKey, string> =>
@@ -166,6 +167,11 @@ export default function FoodEditScreen() {
     if (photoUri) {
       await setPhoto(db, 'food', foodId, photoUri);
     }
+    // Editing an already-flagged food IS the review - a fresh scan's own
+    // needsReview:true (set above via upsertFood) is left untouched here.
+    if (id && existing?.needsReview) {
+      await confirmFoodReviewed(db, foodId);
+    }
     router.back();
   };
 
@@ -203,6 +209,13 @@ export default function FoodEditScreen() {
       <HintedScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ScreenHeader />
         <Text style={styles.title}>{id ? t('foodEdit.editTitle') : t('foodEdit.newTitle')}</Text>
+
+        {existing?.needsReview ? (
+          <View style={styles.reviewBanner}>
+            <Ionicons name="alert-circle-outline" size={20} color={colors.danger} />
+            <Text style={styles.reviewBannerText}>{t('foodDetail.needsReviewBannerEdit')}</Text>
+          </View>
+        ) : null}
 
         <Button
           label={lookingUpBarcode ? t('foodEdit.lookingUpBarcode') : t('foodEdit.scanBarcode')}
@@ -382,6 +395,23 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.title,
       fontWeight: '800',
       marginBottom: spacing.md,
+    },
+    reviewBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.danger,
+      borderRadius: radius.input,
+      padding: spacing.sm + 2,
+      marginBottom: spacing.md,
+    },
+    reviewBannerText: {
+      flex: 1,
+      color: colors.text,
+      fontSize: typography.small,
+      lineHeight: 18,
     },
     scanButton: {
       marginBottom: spacing.xs,
