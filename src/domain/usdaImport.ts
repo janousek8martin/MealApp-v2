@@ -30,7 +30,7 @@ const CORE_MACRO_IDS = { kcal: 1008, protein: 1003, carbs: 1005, fat: 1004, fibe
  * distinct fatty-acid IDs (ALA/EPA/DHA) rather than one combined figure.
  */
 export const USDA_NUTRIENT_ID_MAP: Record<number, MicronutrientKey> = {
-  1104: 'vitaminAUg',
+  1106: 'vitaminAUg', // "Vitamin A, RAE" (µg) - NOT 1104 "Vitamin A, IU", a different unit
   1162: 'vitaminCMg',
   1114: 'vitaminDUg',
   1109: 'vitaminEMg',
