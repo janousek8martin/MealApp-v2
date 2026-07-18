@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AdjustServingsModal } from '@/components/AdjustServingsModal';
 import { FoodPickerModal } from '@/components/FoodPickerModal';
+import { GenerateModal, type GeneratePeriod } from '@/components/GenerateModal';
 import { MealActionsMenu } from '@/components/MealActionsMenu';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { PlanDayList } from '@/components/PlanDayList';
@@ -30,6 +31,7 @@ import {
   addMealExtra,
   assignManualMeal,
   copyDayMeals,
+  generateMonth,
   generateWeek,
   regenerateDay,
   saveMealAsRecipe,
@@ -101,9 +103,10 @@ export default function PlanScreen() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [transition, setTransition] = useState<PagerTransition | null>(null);
   const [monthPickerVisible, setMonthPickerVisible] = useState(false);
+  const [generateModalVisible, setGenerateModalVisible] = useState(false);
   const [pickerSlot, setPickerSlot] = useState<SlotRow | null>(null);
   const [extraMealId, setExtraMealId] = useState<string | null>(null);
-  const [generating, setGenerating] = useState<'week' | 'day' | null>(null);
+  const [generating, setGenerating] = useState<GeneratePeriod | null>(null);
   const [copyingYesterday, setCopyingYesterday] = useState(false);
   const [expandedSlots, setExpandedSlots] = useState<Record<string, boolean>>({});
   const [clipboard, setClipboard] = useState<{ itemType: 'recipe' | 'food'; itemId: string } | null>(null);
@@ -266,23 +269,20 @@ export default function PlanScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showToday]);
 
-  const generateWeekAction = async () => {
+  const generateAction = async (period: GeneratePeriod) => {
     if (!household) return;
-    setGenerating('week');
+    setGenerating(period);
     try {
-      await generateWeek(db, household.id, viewedMonday);
+      if (period === 'day') {
+        await regenerateDay(db, household.id, selectedDate);
+      } else if (period === 'week') {
+        await generateWeek(db, household.id, viewedMonday);
+      } else {
+        await generateMonth(db, household.id, selectedDate);
+      }
     } finally {
       setGenerating(null);
-    }
-  };
-
-  const generateDayAction = async () => {
-    if (!household) return;
-    setGenerating('day');
-    try {
-      await regenerateDay(db, household.id, selectedDate);
-    } finally {
-      setGenerating(null);
+      setGenerateModalVisible(false);
     }
   };
 
@@ -487,22 +487,12 @@ export default function PlanScreen() {
         {generating || copyingYesterday ? <ActivityIndicator style={styles.spinner} color={colors.primary} /> : null}
         <View style={styles.actionsRow}>
           <Button
-            label={generating === 'week' ? t('today.generating') : t('planScreen.generateWeek')}
-            variant="secondary"
+            label={generating ? t('today.generating') : t('planScreen.generate')}
             size="compact"
-            onPress={generateWeekAction}
+            onPress={() => setGenerateModalVisible(true)}
             disabled={generating !== null || copyingYesterday}
             style={styles.actionButton}
           />
-          {!isPast ? (
-            <Button
-              label={generating === 'day' ? t('today.generating') : t('planScreen.generateDay')}
-              size="compact"
-              onPress={generateDayAction}
-              disabled={generating !== null || copyingYesterday}
-              style={styles.actionButton}
-            />
-          ) : null}
         </View>
         {!isPast ? (
           <View style={[styles.actionsRow, styles.secondActionsRow]}>
@@ -526,6 +516,17 @@ export default function PlanScreen() {
         onSelectDate={(date) => animateTo(date)}
         onClose={() => setMonthPickerVisible(false)}
       />
+
+      {household ? (
+        <GenerateModal
+          visible={generateModalVisible}
+          householdId={household.id}
+          generating={generating !== null}
+          allowDay={!isPast}
+          onClose={() => setGenerateModalVisible(false)}
+          onGenerate={(period) => void generateAction(period)}
+        />
+      ) : null}
 
       {pickerSlot && household && activeProfile ? (
         <MealPickerModal

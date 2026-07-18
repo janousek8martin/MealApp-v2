@@ -60,6 +60,13 @@ export function addMonths(dateIso: string, months: number): string {
   return formatIsoDate(date);
 }
 
+/** Every calendar date (1st through the last day) of the month containing `dateIso`. */
+export function daysInCalendarMonth(dateIso: string): string[] {
+  const [y, m] = dateIso.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate(); // day 0 of next month = last day of this month
+  return Array.from({ length: lastDay }, (_, i) => formatIsoDate(new Date(y, m - 1, i + 1)));
+}
+
 /**
  * A Monday-start 6-week (42-day) grid covering the calendar month that
  * `dateIso` falls in, including leading/trailing days from neighbouring

@@ -3,7 +3,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { ageYears } from '../../domain/age';
 import { computeRecipeNutrition } from '../../domain/recipeNutrition';
 import { computeTargets } from '../../domain/targets';
-import { addDays, startOfWeek, weekDates } from '../../domain/week';
+import { addDays, daysInCalendarMonth, startOfWeek, weekDates } from '../../domain/week';
 import {
   createHouseholdWithDefaults,
   enableRecommendedSnackSlots,
@@ -15,6 +15,7 @@ import {
   addMealExtra,
   assignManualMeal,
   copyDayMeals,
+  generateMonth,
   generateWeek,
   regenerateDay,
   regenerateSlot,
@@ -119,6 +120,23 @@ describe('plan generator (repository)', () => {
 
     const rows = await db.select().from(plannedMeals).where(eq(plannedMeals.householdId, householdId));
     expect(rows).toHaveLength(0);
+  });
+
+  it('generates every day of a calendar month', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await createAdult(db, householdId);
+    await seedIfEmpty(db);
+
+    const monthAnchor = '2031-04-15';
+    await generateMonth(db, householdId, monthAnchor, 4242);
+
+    const days = daysInCalendarMonth(monthAnchor);
+    const rows = await db.select().from(plannedMeals).where(eq(plannedMeals.householdId, householdId));
+    for (const date of days) {
+      const meal = rows.find((r) => r.date === date && r.slotKey === 'breakfast');
+      expect(meal).toBeDefined();
+    }
   });
 
   it('generates a full week of shared main meals and per-profile snacks for a single adult', async () => {

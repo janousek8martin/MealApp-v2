@@ -49,6 +49,7 @@
     "addMeal": "Add meal"
   },
   "planScreen": {
+    "generate": "Generate",
     "generateWeek": "Generate week",
     "generateDay": "Generate day",
     "pastNotice": "Past days can't be edited – you can only mark retroactively whether a meal was eaten.",
@@ -64,6 +65,15 @@
     "copyYesterdayConfirmTitle": "Copy yesterday's meals?",
     "copyYesterdayConfirmMessage": "This overwrites today's meals with yesterday's plan, except any already eaten.",
     "copyYesterdayResult": "Copied {{copied}} meals, skipped {{skipped}} (already eaten)."
+  },
+  "generateModal": {
+    "title": "Generate meal plan",
+    "periodLabel": "Period",
+    "periodDay": "Day",
+    "periodWeek": "Week",
+    "periodMonth": "Month",
+    "settingsLabel": "Generator settings",
+    "confirm": "Generate"
   },
   "library": {
     "placeholderTitle": "Recipes & foods",

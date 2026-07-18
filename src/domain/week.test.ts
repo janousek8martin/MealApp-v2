@@ -1,4 +1,4 @@
-import { addMonths, monthGridDates } from './week';
+import { addMonths, daysInCalendarMonth, monthGridDates } from './week';
 
 describe('addMonths', () => {
   it('adds whole months', () => {
@@ -14,6 +14,21 @@ describe('addMonths', () => {
   it('crosses year boundaries', () => {
     expect(addMonths('2026-12-05', 1)).toBe('2027-01-05');
     expect(addMonths('2026-01-05', -1)).toBe('2025-12-05');
+  });
+});
+
+describe('daysInCalendarMonth', () => {
+  it('returns every day of a 31-day month', () => {
+    const days = daysInCalendarMonth('2026-07-15');
+    expect(days).toHaveLength(31);
+    expect(days[0]).toBe('2026-07-01');
+    expect(days[30]).toBe('2026-07-31');
+  });
+
+  it('handles February in a leap year', () => {
+    const days = daysInCalendarMonth('2024-02-10');
+    expect(days).toHaveLength(29);
+    expect(days[28]).toBe('2024-02-29');
   });
 });
 

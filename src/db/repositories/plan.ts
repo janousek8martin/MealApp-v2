@@ -34,7 +34,7 @@ import type {
   RecipeResolution,
   RepetitionContext,
 } from '@/domain/generator/types';
-import { addDays, previousDay, startOfWeek, weekDates } from '@/domain/week';
+import { addDays, daysInCalendarMonth, previousDay, startOfWeek, weekDates } from '@/domain/week';
 import { applyWorkoutDayCycling } from '@/domain/workoutDays';
 // Reused so the generator's daily target computation can never drift from
 // what the UI shows (see the dailyTarget comment in loadGeneratorContext
@@ -933,6 +933,23 @@ export async function generateWeek(
 ): Promise<void> {
   const rng = createSeededRng(rngSeed ?? Date.now());
   for (const date of weekDates(startOfWeek(weekStartDate))) {
+    await generateDay(db, householdId, date, rng);
+  }
+}
+
+/**
+ * Generates (or regenerates) every day of the calendar month containing
+ * `monthAnchorDate` - a coarser sibling of `generateWeek` for the "generate
+ * a whole month at once" option in the Generate modal's period picker.
+ */
+export async function generateMonth(
+  db: AppDb,
+  householdId: string,
+  monthAnchorDate: string,
+  rngSeed?: number,
+): Promise<void> {
+  const rng = createSeededRng(rngSeed ?? Date.now());
+  for (const date of daysInCalendarMonth(monthAnchorDate)) {
     await generateDay(db, householdId, date, rng);
   }
 }

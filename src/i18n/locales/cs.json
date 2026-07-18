@@ -49,6 +49,7 @@
     "addMeal": "Přidat jídlo"
   },
   "planScreen": {
+    "generate": "Generovat",
     "generateWeek": "Vygenerovat týden",
     "generateDay": "Vygenerovat den",
     "pastNotice": "Minulé dny jsou needitovatelné – lze zpětně jen označit, zda bylo jídlo snědené.",
@@ -64,6 +65,15 @@
     "copyYesterdayConfirmTitle": "Zkopírovat včerejší jídla?",
     "copyYesterdayConfirmMessage": "Přepíše dnešní jídla podle včerejšího plánu, kromě těch, co už byly snědené.",
     "copyYesterdayResult": "Zkopírováno {{copied}} jídel, {{skipped}} přeskočeno (už snědeno)."
+  },
+  "generateModal": {
+    "title": "Vygenerovat jídelníček",
+    "periodLabel": "Období",
+    "periodDay": "Den",
+    "periodWeek": "Týden",
+    "periodMonth": "Měsíc",
+    "settingsLabel": "Nastavení generátoru",
+    "confirm": "Generovat"
   },
   "library": {
     "placeholderTitle": "Recepty a potraviny",
