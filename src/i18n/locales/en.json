@@ -684,6 +684,7 @@
     "scrollMemoryHint": "By default every screen resets to the top when you switch to it. Turn this on to restore your last scroll position instead, if you come back quickly.",
     "scrollMemoryEnable": "Restore position on quick return",
     "scrollMemoryTimeout": "Return time limit",
+    "disclaimer": "Built by a hobbyist, with AI assistance, for personal and family use. This is not a medical device, and its calorie, macro, and health suggestions are not medical advice. Consult a doctor or registered dietitian for medical or nutritional guidance, especially if you have a health condition.",
     "selectProfile": "Select profile",
     "addProfile": "Add profile",
     "general": "General",

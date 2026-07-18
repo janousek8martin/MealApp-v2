@@ -800,6 +800,11 @@ export default function SettingsScreen() {
             </View>
           ) : null}
         </AccordionCard>
+
+        <View style={styles.disclaimerCard}>
+          <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+          <Text style={styles.disclaimerText}>{t('settings.disclaimer')}</Text>
+        </View>
       </ScrollView>
 
       <ScrollDownHintButton
@@ -1056,6 +1061,22 @@ function createStyles(colors: ColorTokens) {
       color: colors.primary,
       fontSize: typography.body,
       fontWeight: '600',
+    },
+    disclaimerCard: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radius.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.sm + 2,
+      marginTop: spacing.lg,
+    },
+    disclaimerText: {
+      flex: 1,
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      lineHeight: 18,
     },
   });
 }

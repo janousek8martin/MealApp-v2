@@ -684,6 +684,7 @@
     "scrollMemoryHint": "Ve výchozím nastavení se každá obrazovka po přepnutí zobrazí odshora. Zapněte, pokud chcete, aby se při rychlém návratu obnovila poslední pozice.",
     "scrollMemoryEnable": "Obnovit pozici při rychlém návratu",
     "scrollMemoryTimeout": "Časový limit pro návrat",
+    "disclaimer": "Appku vytvořil amatér s pomocí AI, pro osobní a rodinné použití. Nejde o zdravotnický nástroj a doporučení ohledně kalorií, makroživin a zdraví nejsou lékařská rada. Pro zdravotní nebo nutriční doporučení se poraď s lékařem nebo registrovaným nutričním terapeutem, zejména pokud máš zdravotní potíže.",
     "selectProfile": "Vybrat profil",
     "addProfile": "Přidat profil",
     "general": "Obecné",
