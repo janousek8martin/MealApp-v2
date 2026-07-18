@@ -72,6 +72,13 @@ export default function FoodEditScreen() {
   const [barcode, setBarcode] = useState<string | null>(null);
   const [scannerVisible, setScannerVisible] = useState(false);
   const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
+  // Set only by a barcode scan (see onBarcodeScanned) - a fresh manual add
+  // has none of these and stays needsReview: false (upsertFood's default).
+  const [scannedProvenance, setScannedProvenance] = useState<{
+    novaGroup: number | null;
+    nutriScoreGrade: 'a' | 'b' | 'c' | 'd' | 'e' | null;
+    ecoScoreGrade: 'a' | 'b' | 'c' | 'd' | 'e' | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!existing || loadedId === existing.id) return;
@@ -148,6 +155,11 @@ export default function FoodEditScreen() {
         dietFlags,
         allergens,
         barcode,
+        novaGroup: scannedProvenance?.novaGroup,
+        nutriScoreGrade: scannedProvenance?.nutriScoreGrade,
+        ecoScoreGrade: scannedProvenance?.ecoScoreGrade,
+        needsReview: scannedProvenance !== null,
+        source: scannedProvenance !== null ? 'off_label' : undefined,
       },
       id || undefined,
     );
@@ -176,6 +188,11 @@ export default function FoodEditScreen() {
       if (product.carbsPer100 !== null) setCarbs(String(product.carbsPer100));
       if (product.fatPer100 !== null) setFat(String(product.fatPer100));
       if (product.fiberPer100 !== null) setFiber(String(product.fiberPer100));
+      setScannedProvenance({
+        novaGroup: product.novaGroup,
+        nutriScoreGrade: product.nutriScoreGrade,
+        ecoScoreGrade: product.ecoScoreGrade,
+      });
     } finally {
       setLookingUpBarcode(false);
     }

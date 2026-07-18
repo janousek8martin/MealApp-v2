@@ -13,6 +13,12 @@ export type OpenFoodFactsProduct = {
   carbsPer100: number | null;
   fatPer100: number | null;
   fiberPer100: number | null;
+  /** NOVA processing group (1-4); null when OFF doesn't report one. */
+  novaGroup: number | null;
+  nutriScoreGrade: 'a' | 'b' | 'c' | 'd' | 'e' | null;
+  ecoScoreGrade: 'a' | 'b' | 'c' | 'd' | 'e' | null;
+  /** OFF's own category tags (e.g. "en:dairies") - the category signal used by the branded->generic micronutrient matcher. */
+  categoriesTags: string[];
 };
 
 type RawNutriments = Record<string, unknown> | undefined;
@@ -39,6 +45,13 @@ export function mapOpenFoodFactsResponse(raw: unknown): OpenFoodFactsProduct | n
     (typeof product.product_name_en === 'string' && product.product_name_en.trim()) ||
     null;
 
+  const novaGroup = typeof product.nova_group === 'number' ? product.nova_group : null;
+  const nutriScoreGrade =
+    typeof product.nutriscore_grade === 'string' ? (product.nutriscore_grade as OpenFoodFactsProduct['nutriScoreGrade']) : null;
+  const ecoScoreGrade =
+    typeof product.ecoscore_grade === 'string' ? (product.ecoscore_grade as OpenFoodFactsProduct['ecoScoreGrade']) : null;
+  const categoriesTags = Array.isArray(product.categories_tags) ? (product.categories_tags as string[]) : [];
+
   return {
     name: name || null,
     kcalPer100: toNumber(nutriments?.['energy-kcal_100g']),
@@ -46,6 +59,10 @@ export function mapOpenFoodFactsResponse(raw: unknown): OpenFoodFactsProduct | n
     carbsPer100: toNumber(nutriments?.carbohydrates_100g),
     fatPer100: toNumber(nutriments?.fat_100g),
     fiberPer100: toNumber(nutriments?.fiber_100g),
+    novaGroup,
+    nutriScoreGrade,
+    ecoScoreGrade,
+    categoriesTags,
   };
 }
 

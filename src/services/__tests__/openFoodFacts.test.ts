@@ -22,7 +22,39 @@ describe('mapOpenFoodFactsResponse', () => {
       carbsPer100: 4,
       fatPer100: 5,
       fiberPer100: 0,
+      novaGroup: null,
+      nutriScoreGrade: null,
+      ecoScoreGrade: null,
+      categoriesTags: [],
     });
+  });
+
+  it('maps NOVA group, Nutri-Score, Eco-Score and categories when present', () => {
+    const raw = {
+      status: 1,
+      product: {
+        product_name: 'Greek Yogurt',
+        nutriments: {},
+        nova_group: 4,
+        nutriscore_grade: 'c',
+        ecoscore_grade: 'b',
+        categories_tags: ['en:dairies', 'en:fermented-foods'],
+      },
+    };
+    const result = mapOpenFoodFactsResponse(raw);
+    expect(result?.novaGroup).toBe(4);
+    expect(result?.nutriScoreGrade).toBe('c');
+    expect(result?.ecoScoreGrade).toBe('b');
+    expect(result?.categoriesTags).toEqual(['en:dairies', 'en:fermented-foods']);
+  });
+
+  it('leaves NOVA/Nutri-Score/Eco-Score null and categories empty when absent, never guessed', () => {
+    const raw = { status: 1, product: { product_name: 'X', nutriments: {} } };
+    const result = mapOpenFoodFactsResponse(raw);
+    expect(result?.novaGroup).toBeNull();
+    expect(result?.nutriScoreGrade).toBeNull();
+    expect(result?.ecoScoreGrade).toBeNull();
+    expect(result?.categoriesTags).toEqual([]);
   });
 
   it('falls back to the English name when the localized name is missing', () => {

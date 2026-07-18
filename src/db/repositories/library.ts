@@ -38,6 +38,14 @@ export type FoodInput = {
   canServeCold?: boolean;
   /** Suitable for batch-cooked boxed meals; defaults to false. */
   mealPrepFriendly?: boolean;
+  /** NOVA processing group (1-4), from an Open Food Facts lookup; null/omitted when unknown. */
+  novaGroup?: number | null;
+  nutriScoreGrade?: 'a' | 'b' | 'c' | 'd' | 'e' | null;
+  ecoScoreGrade?: 'a' | 'b' | 'c' | 'd' | 'e' | null;
+  /** True for a food whose allergen tags haven't been human-confirmed (e.g. straight off a barcode scan) - see src/domain/nutrientProvenance.ts. Only applied on creation; a later edit never silently resets it - see confirmFoodReviewed. */
+  needsReview?: boolean;
+  /** Data provenance, e.g. 'user' (default) or 'off_label' for a barcode-scanned product. Only applied on creation. */
+  source?: string;
 };
 
 /** Serializes only the micronutrients the user actually filled in – an omitted field stays unknown, never becomes 0. */
@@ -83,7 +91,16 @@ export async function upsertFood(db: AppDb, input: FoodInput, foodId?: string): 
       .set({ deletedAt: now, updatedAt: now })
       .where(and(eq(foodRestrictions.foodId, foodId), isNull(foodRestrictions.deletedAt)));
   } else {
-    await db.insert(foods).values({ id, createdAt: now, source: 'user', ...values });
+    await db.insert(foods).values({
+      id,
+      createdAt: now,
+      source: input.source ?? 'user',
+      novaGroup: input.novaGroup ?? null,
+      nutriScoreGrade: input.nutriScoreGrade ?? null,
+      ecoScoreGrade: input.ecoScoreGrade ?? null,
+      needsReview: input.needsReview ?? false,
+      ...values,
+    });
   }
 
   if (input.allergens.length > 0) {
