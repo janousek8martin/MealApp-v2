@@ -22,6 +22,8 @@ export const ALLERGEN_KEYS = [
   'molluscs',
 ] as const;
 
+export type AllergenKey = (typeof ALLERGEN_KEYS)[number];
+
 /**
  * Diet keys a food/recipe can be manually tagged with when editing it. Most
  * of these (balanced/keto/paleo/low_fat/halal/kosher/whole30/fodmap) can't be
