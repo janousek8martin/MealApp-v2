@@ -116,6 +116,14 @@ export function PlanDayList({
   const withinTolerance =
     dailyTargets && profilePortions.length > 0 ? isWithinDailyTolerance(plannedTotals, dailyTargets) : null;
 
+  // Undefined/null enabledSlotKeysJson means "every household slot" (the
+  // default) - a profile only restricts its own visible slots by explicitly
+  // narrowing this list in the wizard's meals card.
+  const enabledSlotKeys = activeProfile.enabledSlotKeysJson
+    ? (JSON.parse(activeProfile.enabledSlotKeysJson) as string[])
+    : null;
+  const visibleSlots = enabledSlotKeys ? slots.filter((slot) => enabledSlotKeys.includes(slot.slotKey)) : slots;
+
   return (
     <ScrollView
       ref={isActive ? scrollRef : undefined}
@@ -135,7 +143,7 @@ export function PlanDayList({
         </View>
       ) : null}
 
-      {slots.map((slot) => {
+      {visibleSlots.map((slot) => {
         const meal = findMealForProfileInSlot(meals, slot, activeProfile);
         const trackProfileId = meal?.profileId ?? targetProfileIdForSlot(slot, activeProfile);
         return (

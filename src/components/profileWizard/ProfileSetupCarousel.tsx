@@ -107,8 +107,8 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
   const [tempoPreset, setTempoPreset] = useState<'slow' | 'recommended' | 'fast' | null>('recommended');
   const [customRate, setCustomRate] = useState<number | null>(null);
 
-  const [activityLevel, setActivityLevel] = useState<string | null>('moderate');
-  const [activityMultiplier, setActivityMultiplier] = useState<number | null>(ACTIVITY_MULTIPLIERS.moderate);
+  const [activityLevel, setActivityLevel] = useState<string | null>('light');
+  const [activityMultiplier, setActivityMultiplier] = useState<number | null>(ACTIVITY_MULTIPLIERS.light);
   const [customTdeeKcal, setCustomTdeeKcal] = useState('');
 
   const [fitnessExperience, setFitnessExperience] = useState<string | null>('intermediate');
