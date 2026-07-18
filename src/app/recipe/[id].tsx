@@ -26,6 +26,7 @@ import {
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedInstructions, localizedName } from '@/utils/localized';
+import { printRecipe } from '@/utils/printRecipe';
 
 export default function RecipeDetailScreen() {
   const { t } = useTranslation();
@@ -48,6 +49,21 @@ export default function RecipeDetailScreen() {
   const allergens = recipeTagsMap.get(recipe.id)?.allergens ?? [];
   const nutrition = recipeNutritionOf(ingredientRows, recipe.servingsBase);
   const instructions = localizedInstructions(recipe);
+
+  const onPrint = async () => {
+    try {
+      await printRecipe({
+        recipe,
+        ingredientRows,
+        nutrition,
+        allergenLabels: allergens.map((allergen) => t(`allergens.${allergen}`)),
+        photoUri: photo?.uri,
+        t,
+      });
+    } catch {
+      Alert.alert(t('recipeDetail.printFailed'));
+    }
+  };
 
   const rate = async (next: 'like' | 'dislike') => {
     if (!activeProfile) return;
@@ -77,15 +93,20 @@ export default function RecipeDetailScreen() {
       <HintedScrollView contentContainerStyle={styles.content}>
         <ScreenHeader
           right={
-            <EditActions
-              onEdit={() => router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })}
-              onDelete={async () => {
-                await softDeleteRecipe(db, recipe.id);
-                router.back();
-              }}
-              deleteConfirmTitle={t('recipeDetail.deleteTitle')}
-              deleteConfirmMessage={t('recipeDetail.deleteMessage')}
-            />
+            <View style={styles.headerActions}>
+              <Pressable accessibilityRole="button" style={styles.printButton} onPress={onPrint}>
+                <Ionicons name="print-outline" size={16} color={colors.primary} />
+              </Pressable>
+              <EditActions
+                onEdit={() => router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })}
+                onDelete={async () => {
+                  await softDeleteRecipe(db, recipe.id);
+                  router.back();
+                }}
+                deleteConfirmTitle={t('recipeDetail.deleteTitle')}
+                deleteConfirmMessage={t('recipeDetail.deleteMessage')}
+              />
+            </View>
           }
         />
 
@@ -201,6 +222,21 @@ function createStyles(colors: ColorTokens) {
     content: {
       padding: spacing.md,
       paddingBottom: spacing.xl,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    printButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     photo: {
       width: '100%',
