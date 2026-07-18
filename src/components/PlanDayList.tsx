@@ -192,20 +192,20 @@ function createStyles(colors: ColorTokens) {
       marginBottom: spacing.md,
     },
     fitBadgeOk: {
-      backgroundColor: colors.primaryLight,
+      backgroundColor: colors.toleranceOk + '22',
     },
     fitBadgeOff: {
-      backgroundColor: colors.danger + '22',
+      backgroundColor: colors.toleranceOff + '22',
     },
     fitBadgeText: {
       fontSize: typography.small,
       fontWeight: '600',
     },
     fitBadgeTextOk: {
-      color: colors.onPrimary,
+      color: colors.toleranceOk,
     },
     fitBadgeTextOff: {
-      color: colors.danger,
+      color: colors.toleranceOff,
     },
   });
 }
