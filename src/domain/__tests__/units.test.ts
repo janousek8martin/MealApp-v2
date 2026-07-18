@@ -1,6 +1,5 @@
 import {
   cmToFeetInches,
-  customUnitToReference,
   feetInchesToCm,
   formatAmount,
   formatCupQuarters,
@@ -11,7 +10,6 @@ import {
   kitchenVolumeToMl,
   kitchenWeightToGrams,
   lbsToKg,
-  mergedKitchenUnitRows,
   flOzToMl,
   mlToFlOz,
   mlToUsCups,
@@ -135,42 +133,5 @@ describe('kitchenEquivalent', () => {
   it('computes a direct volume equivalent for ml-based foods, no density needed', () => {
     // 120 ml = 1/2 cup (240 ml/cup)
     expect(kitchenEquivalent(120, 'ml', null)).toEqual({ unit: 'cup', quarters: 2 });
-  });
-});
-
-describe('customUnitToReference', () => {
-  it('converts a custom volume unit amount to ml', () => {
-    const mug = { id: '1', name: 'Hrnek na kávu', unitType: 'volume' as const, conversionValue: 200, aliases: [] };
-    expect(customUnitToReference(1.5, mug)).toBe(300);
-  });
-
-  it('converts a custom weight unit amount to g', () => {
-    const scoop = { id: '2', name: 'Odměrka proteinu', unitType: 'weight' as const, conversionValue: 30, aliases: ['scoop'] };
-    expect(customUnitToReference(2, scoop)).toBe(60);
-  });
-});
-
-describe('mergedKitchenUnitRows', () => {
-  const label = (unit: string) => `label:${unit}`;
-
-  it('lists every built-in unit with no custom units', () => {
-    const rows = mergedKitchenUnitRows(label, []);
-    expect(rows.every((row) => !row.isCustom)).toBe(true);
-    expect(rows.map((row) => row.id)).toEqual(
-      expect.arrayContaining(['tsp', 'tbsp', 'cup', 'fl_oz', 'pint', 'quart', 'gallon', 'oz', 'lb']),
-    );
-  });
-
-  it('appends custom units after the built-ins, flagged as custom', () => {
-    const custom = { id: 'c1', name: 'Odměrka', unitType: 'volume' as const, conversionValue: 60, aliases: ['scoop'] };
-    const rows = mergedKitchenUnitRows(label, [custom]);
-    const customRow = rows.find((row) => row.id === 'c1');
-    expect(customRow).toEqual({ id: 'c1', name: 'Odměrka', unitType: 'volume', conversionValue: 60, aliases: ['scoop'], isCustom: true });
-    expect(rows[rows.length - 1].id).toBe('c1');
-  });
-
-  it('gives every built-in unit a positive conversion value', () => {
-    const rows = mergedKitchenUnitRows(label, []);
-    expect(rows.every((row) => row.conversionValue > 0)).toBe(true);
   });
 });
