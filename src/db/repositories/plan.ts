@@ -325,6 +325,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
         foodId: row.food.id,
         allergens: allergensByFood.get(row.food.id) ?? [],
         dietFlags: row.food.dietFlagsJson ? (JSON.parse(row.food.dietFlagsJson) as string[]) : [],
+        needsReview: row.food.needsReview,
       })),
       maxRepetitionsPerWeek: recipe.maxRepetitionsPerWeek,
       allowConsecutiveDays: recipe.allowConsecutiveDays,
@@ -370,6 +371,7 @@ async function loadGeneratorContext(db: AppDb, householdId: string, date: string
           foodId: food.id,
           allergens: allergensByFood.get(food.id) ?? [],
           dietFlags: food.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : [],
+          needsReview: food.needsReview,
         },
       ],
       maxRepetitionsPerWeek: null,
@@ -1160,6 +1162,7 @@ async function loadItemTags(db: AppDb, itemType: 'recipe' | 'food', itemId: stri
     return {
       allergens: [...new Set(restrictionRows.map((r) => r.allergen))],
       dietFlags: food?.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : [],
+      needsReview: food?.needsReview ?? false,
     };
   }
 
@@ -1168,7 +1171,7 @@ async function loadItemTags(db: AppDb, itemType: 'recipe' | 'food', itemId: stri
     .from(recipeIngredients)
     .where(and(eq(recipeIngredients.recipeId, itemId), isNull(recipeIngredients.deletedAt)));
   const foodIds = ingredientRows.map((row) => row.foodId);
-  if (foodIds.length === 0) return { allergens: [], dietFlags: [] };
+  if (foodIds.length === 0) return { allergens: [], dietFlags: [], needsReview: false };
 
   const [foodRows, restrictionRows] = await Promise.all([
     db.select().from(foods).where(inArray(foods.id, foodIds)),
@@ -1189,6 +1192,7 @@ async function loadItemTags(db: AppDb, itemType: 'recipe' | 'food', itemId: stri
       foodId: food.id,
       allergens: allergensByFood.get(food.id) ?? [],
       dietFlags: food.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : [],
+      needsReview: food.needsReview,
     });
   }
   return deriveRecipeTags(ingredientTags);

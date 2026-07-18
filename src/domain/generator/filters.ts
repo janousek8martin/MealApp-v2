@@ -30,14 +30,16 @@ function effectiveIngredientDietFlags(ingredient: IngredientFoodTags): string[] 
 function computeRecipeTags(ingredients: IngredientFoodTags[]): DerivedRecipeTags {
   const allergens = new Set<string>();
   let diets: string[] | null = null;
+  let needsReview = false;
 
   for (const ingredient of ingredients) {
     for (const allergen of ingredient.allergens) allergens.add(allergen);
     const ingredientDiets = effectiveIngredientDietFlags(ingredient);
     diets = diets === null ? ingredientDiets : diets.filter((d) => ingredientDiets.includes(d));
+    if (ingredient.needsReview) needsReview = true;
   }
 
-  return { allergens: [...allergens], dietFlags: diets ?? [] };
+  return { allergens: [...allergens], dietFlags: diets ?? [], needsReview };
 }
 
 /**
@@ -88,6 +90,11 @@ export function isRecipeAllowedForProfiles(
   const lowCarb = isLowCarbRecipe(candidate.nutritionPerPortion);
 
   return profiles.every((profile) => {
+    // Safety carve-out: unreviewed bulk-imported/scanned data can't be
+    // trusted for allergen exclusion, so treat it as excluded outright for
+    // any profile with an active allergy - the one deliberate exception to
+    // "missing data != 0" in this codebase. See src/domain/nutrientProvenance.ts.
+    if (tags.needsReview && profile.allergens.length > 0) return false;
     if (tags.allergens.some((a) => profile.allergens.includes(a))) return false;
     for (const diet of profile.diets) {
       if (diet === LOW_CARB) {

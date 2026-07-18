@@ -76,21 +76,21 @@ describe('scoreCandidate', () => {
   });
 
   it('rewards recipes using soon-to-expire pantry ingredients', () => {
-    const withExpiring = candidate({ ingredients: [{ foodId: 'spinach', allergens: [], dietFlags: [] }] });
+    const withExpiring = candidate({ ingredients: [{ foodId: 'spinach', allergens: [], dietFlags: [], needsReview: false }] });
     const base = scoreCandidate(withExpiring, ctx());
     const boosted = scoreCandidate(withExpiring, ctx({ expiringFoodIds: new Set(['spinach']) }));
     expect(boosted).toBeGreaterThan(base);
   });
 
   it('rewards recipes using ingredients already in pantry stock', () => {
-    const withStock = candidate({ ingredients: [{ foodId: 'flour', allergens: [], dietFlags: [] }] });
+    const withStock = candidate({ ingredients: [{ foodId: 'flour', allergens: [], dietFlags: [], needsReview: false }] });
     const base = scoreCandidate(withStock, ctx());
     const boosted = scoreCandidate(withStock, ctx({ inStockFoodIds: new Set(['flour']) }));
     expect(boosted).toBeGreaterThan(base);
   });
 
   it('rewards a soon-to-expire ingredient more than a merely in-stock one', () => {
-    const withIngredient = candidate({ ingredients: [{ foodId: 'spinach', allergens: [], dietFlags: [] }] });
+    const withIngredient = candidate({ ingredients: [{ foodId: 'spinach', allergens: [], dietFlags: [], needsReview: false }] });
     const inStock = scoreCandidate(withIngredient, ctx({ inStockFoodIds: new Set(['spinach']) }));
     const expiring = scoreCandidate(withIngredient, ctx({ expiringFoodIds: new Set(['spinach']) }));
     expect(expiring).toBeGreaterThan(inStock);
@@ -123,7 +123,7 @@ describe('scoreCandidate', () => {
   });
 
   it('zeroes out pantry expiry/stock bonuses when preferPantryItems is off', () => {
-    const withIngredient = candidate({ ingredients: [{ foodId: 'spinach', allergens: [], dietFlags: [] }] });
+    const withIngredient = candidate({ ingredients: [{ foodId: 'spinach', allergens: [], dietFlags: [], needsReview: false }] });
     const on = scoreCandidate(withIngredient, ctx({ expiringFoodIds: new Set(['spinach']), preferPantryItems: true }));
     const off = scoreCandidate(withIngredient, ctx({ expiringFoodIds: new Set(['spinach']), preferPantryItems: false }));
     const neither = scoreCandidate(withIngredient, ctx({ preferPantryItems: false }));

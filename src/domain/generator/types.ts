@@ -17,6 +17,8 @@ export type IngredientFoodTags = {
   allergens: string[];
   /** Diet keys this single food is compatible with, e.g. ['vegetarian','vegan']. */
   dietFlags: string[];
+  /** True when this food's data (allergens especially) hasn't been human-reviewed - see src/domain/nutrientProvenance.ts. */
+  needsReview: boolean;
 };
 
 /** A candidate recipe as assembled by the repository layer for the generator. */
@@ -50,6 +52,8 @@ export type DerivedRecipeTags = {
   allergens: string[];
   /** Diets the recipe satisfies – only diets every ingredient supports. */
   dietFlags: string[];
+  /** True if ANY ingredient needsReview - a recipe is only as trustworthy as its least-reviewed ingredient. */
+  needsReview: boolean;
 };
 
 /** How a household resolved a like/dislike conflict on a recipe (see householdRecipeOverrides). */

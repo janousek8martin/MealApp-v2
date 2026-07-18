@@ -46,7 +46,7 @@ const baseScoringExtras = {
 describe('pickMealForSlot', () => {
   it('returns null when every candidate is filtered out', () => {
     const glutenItem = item('bread', {
-      ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [] }],
+      ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [], needsReview: false }],
     });
     const result = pickMealForSlot(
       [glutenItem],
@@ -60,7 +60,7 @@ describe('pickMealForSlot', () => {
 
   it('never returns a candidate that violates a hard filter', () => {
     const candidates = [
-      item('a', { ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [] }] }),
+      item('a', { ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [], needsReview: false }] }),
       item('b'),
       item('c'),
     ];
@@ -233,7 +233,7 @@ describe('pickSnackForSlot', () => {
     const candidates = [
       item('gluten_closest', {
         nutritionPerPortion: { kcal: 200, proteinG: 20, carbsG: 20, fatG: 6, fiberG: 0 },
-        ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [] }],
+        ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [], needsReview: false }],
       }),
       item('safe_further', { nutritionPerPortion: { kcal: 400, proteinG: 10, carbsG: 10, fatG: 20, fiberG: 2 } }),
     ];
@@ -261,7 +261,7 @@ describe('pickSnackForSlot', () => {
   });
 
   it('returns null when everything is filtered out', () => {
-    const candidates = [item('gluten', { ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [] }] })];
+    const candidates = [item('gluten', { ingredients: [{ foodId: 'wheat', allergens: ['gluten'], dietFlags: [], needsReview: false }] })];
     const result = pickSnackForSlot(
       candidates,
       { ...noRestrictions, allergens: ['gluten'] },

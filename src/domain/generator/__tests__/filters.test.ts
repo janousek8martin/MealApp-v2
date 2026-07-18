@@ -22,8 +22,8 @@ function candidate(overrides: Partial<RecipeCandidate> = {}): RecipeCandidate {
     budget: 'average',
     nutritionPerPortion: { kcal: 600, proteinG: 40, carbsG: 60, fatG: 20, fiberG: 8 },
     ingredients: [
-      { foodId: 'chicken', allergens: [], dietFlags: [] },
-      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] },
+      { foodId: 'chicken', allergens: [], dietFlags: [], needsReview: false },
+      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'], needsReview: false },
     ],
     maxRepetitionsPerWeek: null,
     allowConsecutiveDays: null,
@@ -36,16 +36,16 @@ function candidate(overrides: Partial<RecipeCandidate> = {}): RecipeCandidate {
 describe('deriveRecipeTags', () => {
   it('unions allergens across ingredients', () => {
     const tags = deriveRecipeTags([
-      { foodId: 'a', allergens: ['gluten'], dietFlags: [] },
-      { foodId: 'b', allergens: ['lactose'], dietFlags: [] },
+      { foodId: 'a', allergens: ['gluten'], dietFlags: [], needsReview: false },
+      { foodId: 'b', allergens: ['lactose'], dietFlags: [], needsReview: false },
     ]);
     expect(tags.allergens.sort()).toEqual(['gluten', 'lactose']);
   });
 
   it('only keeps a diet flag every ingredient supports', () => {
     const tags = deriveRecipeTags([
-      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] },
-      { foodId: 'egg', allergens: ['eggs'], dietFlags: ['vegetarian'] },
+      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'], needsReview: false },
+      { foodId: 'egg', allergens: ['eggs'], dietFlags: ['vegetarian'], needsReview: false },
     ]);
     expect(tags.dietFlags).toEqual(expect.arrayContaining(['vegetarian']));
     expect(tags.dietFlags).not.toContain('vegan');
@@ -53,8 +53,8 @@ describe('deriveRecipeTags', () => {
 
   it('a recipe with a non-flagged ingredient (e.g. meat) supports no curated diets', () => {
     const tags = deriveRecipeTags([
-      { foodId: 'chicken', allergens: [], dietFlags: [] },
-      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] },
+      { foodId: 'chicken', allergens: [], dietFlags: [], needsReview: false },
+      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'], needsReview: false },
     ]);
     expect(tags.dietFlags).not.toContain('vegetarian');
     expect(tags.dietFlags).not.toContain('vegan');
@@ -62,19 +62,35 @@ describe('deriveRecipeTags', () => {
 
   it('derives gluten_free/dairy_free from allergens rather than requiring curated flags', () => {
     const tags = deriveRecipeTags([
-      { foodId: 'chicken', allergens: [], dietFlags: [] },
-      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] },
+      { foodId: 'chicken', allergens: [], dietFlags: [], needsReview: false },
+      { foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'], needsReview: false },
     ]);
     expect(tags.dietFlags).toEqual(expect.arrayContaining(['gluten_free', 'dairy_free']));
   });
 
   it('drops gluten_free/dairy_free once any ingredient carries that allergen', () => {
     const tags = deriveRecipeTags([
-      { foodId: 'bread', allergens: ['gluten'], dietFlags: ['vegetarian'] },
-      { foodId: 'milk', allergens: ['lactose'], dietFlags: ['vegetarian'] },
+      { foodId: 'bread', allergens: ['gluten'], dietFlags: ['vegetarian'], needsReview: false },
+      { foodId: 'milk', allergens: ['lactose'], dietFlags: ['vegetarian'], needsReview: false },
     ]);
     expect(tags.dietFlags).not.toContain('gluten_free');
     expect(tags.dietFlags).not.toContain('dairy_free');
+  });
+
+  it('needsReview is true if ANY ingredient needsReview (OR, not AND)', () => {
+    const tags = deriveRecipeTags([
+      { foodId: 'a', allergens: [], dietFlags: [], needsReview: false },
+      { foodId: 'b', allergens: [], dietFlags: [], needsReview: true },
+    ]);
+    expect(tags.needsReview).toBe(true);
+  });
+
+  it('needsReview is false only when every ingredient is reviewed', () => {
+    const tags = deriveRecipeTags([
+      { foodId: 'a', allergens: [], dietFlags: [], needsReview: false },
+      { foodId: 'b', allergens: [], dietFlags: [], needsReview: false },
+    ]);
+    expect(tags.needsReview).toBe(false);
   });
 });
 
@@ -92,7 +108,7 @@ describe('isRecipeAllowedForProfiles', () => {
 
   it('rejects a recipe touching an allergen any sharing profile must avoid', () => {
     const withGluten = candidate({
-      ingredients: [{ foodId: 'bread', allergens: ['gluten'], dietFlags: ['vegetarian'] }],
+      ingredients: [{ foodId: 'bread', allergens: ['gluten'], dietFlags: ['vegetarian'], needsReview: false }],
     });
     expect(
       isRecipeAllowedForProfiles(withGluten, [{ ...noRestrictions, allergens: ['gluten'] }]),
@@ -108,7 +124,7 @@ describe('isRecipeAllowedForProfiles', () => {
 
   it('must satisfy every sharing profile simultaneously', () => {
     const meatFree = candidate({
-      ingredients: [{ foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'] }],
+      ingredients: [{ foodId: 'rice', allergens: [], dietFlags: ['vegetarian', 'vegan'], needsReview: false }],
     });
     expect(
       isRecipeAllowedForProfiles(meatFree, [
@@ -150,6 +166,45 @@ describe('isRecipeAllowedForProfiles', () => {
     expect(
       isRecipeAllowedForProfiles(grilledChicken, [{ ...noRestrictions, diets: ['low_carb'] }]),
     ).toBe(true);
+  });
+
+  describe('needsReview allergen safety carve-out', () => {
+    it('excludes an unreviewed candidate for a profile with any active allergy, even if no keyword-derived allergen matches that profile', () => {
+      const unreviewed = candidate({
+        ingredients: [{ foodId: 'mystery', allergens: [], dietFlags: [], needsReview: true }],
+      });
+      expect(
+        isRecipeAllowedForProfiles(unreviewed, [{ ...noRestrictions, allergens: ['peanuts'] }]),
+      ).toBe(false);
+    });
+
+    it('does not exclude a reviewed candidate the same way', () => {
+      const reviewed = candidate({
+        ingredients: [{ foodId: 'mystery', allergens: [], dietFlags: [], needsReview: false }],
+      });
+      expect(
+        isRecipeAllowedForProfiles(reviewed, [{ ...noRestrictions, allergens: ['peanuts'] }]),
+      ).toBe(true);
+    });
+
+    it('does not exclude an unreviewed candidate for a profile with zero allergies', () => {
+      const unreviewed = candidate({
+        ingredients: [{ foodId: 'mystery', allergens: [], dietFlags: [], needsReview: true }],
+      });
+      expect(isRecipeAllowedForProfiles(unreviewed, [noRestrictions])).toBe(true);
+    });
+
+    it('excludes if ANY ingredient needsReview, even when the rest are reviewed', () => {
+      const mixed = candidate({
+        ingredients: [
+          { foodId: 'reviewed', allergens: [], dietFlags: [], needsReview: false },
+          { foodId: 'unreviewed', allergens: [], dietFlags: [], needsReview: true },
+        ],
+      });
+      expect(
+        isRecipeAllowedForProfiles(mixed, [{ ...noRestrictions, allergens: ['peanuts'] }]),
+      ).toBe(false);
+    });
   });
 });
 

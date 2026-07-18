@@ -131,6 +131,7 @@ export function useRecipeTagsMap(): Map<string, DerivedRecipeTags> {
         foodId: food.id,
         allergens: allergensByFood.get(food.id) ?? [],
         dietFlags: food.dietFlagsJson ? (JSON.parse(food.dietFlagsJson) as string[]) : [],
+        needsReview: food.needsReview,
       });
       ingredientsByRecipe.set(ingredient.recipeId, list);
     }
