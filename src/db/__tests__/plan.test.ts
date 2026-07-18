@@ -25,7 +25,17 @@ import {
 } from '../repositories/plan';
 import { createProfile, updateProfileMacroOverrides, upsertProfileSlotPortion } from '../repositories/profiles';
 import { setRecipeResolution } from '../repositories/ratings';
-import { foods, mealSlotSettings, plannedMealExtras, plannedMealPortions, plannedMeals, profiles, recipeIngredients, recipes } from '../schema';
+import {
+  foods,
+  householdSettings,
+  mealSlotSettings,
+  plannedMealExtras,
+  plannedMealPortions,
+  plannedMeals,
+  profiles,
+  recipeIngredients,
+  recipes,
+} from '../schema';
 import { seedIfEmpty } from '../seed';
 import { createTestDb } from '../testing/testDb';
 
@@ -1150,5 +1160,135 @@ describe('plan generator (repository)', () => {
 
     const lunchVeggieAfter = toMealsAfter.find((m) => m.slotKey === 'lunch' && m.profileId === veggieId);
     expect(lunchVeggieAfter!.itemId).toBe(lunchVeggieRecipeId);
+  });
+
+  it('never picks a recipe that exceeds the household cooking-time limit, across a whole month', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await createAdult(db, householdId);
+    const foodId = await upsertFood(db, {
+      nameCs: 'Test food',
+      nameEn: 'Test food',
+      category: 'other',
+      baseUnit: 'g',
+      kcalPer100: 150,
+      proteinPer100: 10,
+      carbsPer100: 15,
+      fatPer100: 5,
+      budget: 'average',
+      snackSuitable: true,
+      dietFlags: [],
+      allergens: [],
+    });
+    // Enough distinct fast recipes that the 2x/week default repetition limit
+    // never starves the compliant pool and forces a fallback to the slow one
+    // (that fallback-when-starved behavior is real and intentional - see the
+    // meal-prep-mode equivalent in filters.ts - but it would confound this
+    // test, which is specifically about the filter itself, not the fallback).
+    const fastRecipeIds: string[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      fastRecipeIds.push(
+        await upsertRecipe(db, {
+          nameCs: `Rychlé jídlo ${i}`,
+          nameEn: `Fast meal ${i}`,
+          category: 'lunch_dinner',
+          isSide: false,
+          budget: 'average',
+          servingsBase: 1,
+          prepTimeMinutes: 10,
+          maxRepetitionsPerWeek: 7,
+          allowConsecutiveDays: true,
+          ingredients: [{ foodId, amount: 500 }],
+        }),
+      );
+    }
+    const slowRecipeId = await upsertRecipe(db, {
+      nameCs: 'Pomalé jídlo',
+      nameEn: 'Slow meal',
+      category: 'lunch_dinner',
+      isSide: false,
+      budget: 'average',
+      servingsBase: 1,
+      prepTimeMinutes: 90,
+      ingredients: [{ foodId, amount: 500 }],
+    });
+
+    await updateHouseholdSettings(db, householdId, { cookingTimeLimitMinutes: 20 });
+    await generateMonth(db, householdId, '2031-05-15', 4242);
+
+    const rows = await db.select().from(plannedMeals).where(eq(plannedMeals.householdId, householdId));
+    const usedRecipeIds = new Set(rows.filter((r) => r.itemType === 'recipe').map((r) => r.itemId));
+    expect(usedRecipeIds.has(slowRecipeId)).toBe(false);
+    expect(fastRecipeIds.some((id) => usedRecipeIds.has(id))).toBe(true); // sanity: it did pick something, not an empty plan
+  });
+
+  it('picks the household favorite cuisine noticeably more often than a non-favorite one', async () => {
+    const db = createTestDb();
+    const householdId = await createHouseholdWithDefaults(db, 'Test');
+    await createAdult(db, householdId);
+    const foodId = await upsertFood(db, {
+      nameCs: 'Test food',
+      nameEn: 'Test food',
+      category: 'other',
+      baseUnit: 'g',
+      kcalPer100: 150,
+      proteinPer100: 10,
+      carbsPer100: 15,
+      fatPer100: 5,
+      budget: 'average',
+      snackSuitable: true,
+      dietFlags: [],
+      allergens: [],
+    });
+    // Several equally-plausible recipes per cuisine, so repetition limits don't force the
+    // non-favorite cuisine into rotation just because the favorite one ran out of candidates.
+    const favoriteRecipeIds: string[] = [];
+    const otherRecipeIds: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      favoriteRecipeIds.push(
+        await upsertRecipe(db, {
+          nameCs: `Italské jídlo ${i}`,
+          nameEn: `Italian meal ${i}`,
+          category: 'lunch_dinner',
+          isSide: false,
+          cuisine: 'italian',
+          budget: 'average',
+          servingsBase: 1,
+          prepTimeMinutes: 20,
+          maxRepetitionsPerWeek: 7,
+          allowConsecutiveDays: true,
+          ingredients: [{ foodId, amount: 500 }],
+        }),
+      );
+      otherRecipeIds.push(
+        await upsertRecipe(db, {
+          nameCs: `Francouzské jídlo ${i}`,
+          nameEn: `French meal ${i}`,
+          category: 'lunch_dinner',
+          isSide: false,
+          cuisine: 'french',
+          budget: 'average',
+          servingsBase: 1,
+          prepTimeMinutes: 20,
+          maxRepetitionsPerWeek: 7,
+          allowConsecutiveDays: true,
+          ingredients: [{ foodId, amount: 500 }],
+        }),
+      );
+    }
+
+    await db.update(householdSettings).set({ favoriteCuisinesJson: JSON.stringify(['italian']) }).where(eq(householdSettings.householdId, householdId));
+
+    // Generate several months (different seeds) for a large-enough sample that the soft
+    // scoring bonus's effect is distinguishable from noise.
+    for (let m = 1; m <= 6; m += 1) {
+      await generateMonth(db, householdId, `2032-0${m}-10`, 1000 + m);
+    }
+
+    const rows = await db.select().from(plannedMeals).where(eq(plannedMeals.householdId, householdId));
+    const favoriteCount = rows.filter((r) => r.itemType === 'recipe' && favoriteRecipeIds.includes(r.itemId)).length;
+    const otherCount = rows.filter((r) => r.itemType === 'recipe' && otherRecipeIds.includes(r.itemId)).length;
+    expect(favoriteCount + otherCount).toBeGreaterThan(0);
+    expect(favoriteCount).toBeGreaterThan(otherCount);
   });
 });
