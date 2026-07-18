@@ -7,6 +7,7 @@ import { BodyFatCarousel } from '@/components/BodyFatCarousel';
 import { BodyFatChartModal } from '@/components/BodyFatChartModal';
 import { DateOfBirthPicker } from '@/components/DateOfBirthPicker';
 import { DietRadioList } from '@/components/DietRadioList';
+import { GoalPicker } from '@/components/GoalPicker';
 import { GoalReviewCard } from '@/components/GoalReviewCard';
 import { LifestylePicker } from '@/components/LifestylePicker';
 import { MealSlotsPicker } from '@/components/MealSlotsPicker';
@@ -373,16 +374,7 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
         {currentKey === 'goal' ? (
           <View>
             <Text style={styles.cardTitle}>{t('carousel.cardGoal')}</Text>
-            <ChipSelect
-              label={t('form.goal')}
-              options={[
-                { value: 'lose', label: t('goal.lose') },
-                { value: 'maintain', label: t('goal.maintain') },
-                { value: 'gain', label: t('goal.gain') },
-              ]}
-              value={goal}
-              onChange={(v) => setGoal(v as 'lose' | 'maintain' | 'gain')}
-            />
+            <GoalPicker value={goal} onChange={setGoal} />
             {goal !== 'maintain' ? (
               <>
                 <TextField label={t('form.goalWeight')} value={goalWeight} onChangeText={setGoalWeight} keyboardType="decimal-pad" suffix="kg" />

@@ -294,6 +294,11 @@
     "maintain": "Udržovat",
     "gain": "Nabrat svaly"
   },
+  "goalDescriptions": {
+    "lose": "Snížit tělesný tuk pomocí kalorického deficitu",
+    "maintain": "Udržet aktuální váhu a tělesné složení",
+    "gain": "Nabrat svaly v kalorickém přebytku (nebo na udržovacích kaloriích při rekompozici)"
+  },
   "fitness": {
     "beginner": "Začátečník",
     "intermediate": "Pokročilý",

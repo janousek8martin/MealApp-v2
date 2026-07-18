@@ -294,6 +294,11 @@
     "maintain": "Maintain",
     "gain": "Build muscle"
   },
+  "goalDescriptions": {
+    "lose": "Reduce body fat through a calorie deficit",
+    "maintain": "Keep your current weight and body composition",
+    "gain": "Build muscle in a calorie surplus (or at maintenance if also leaning out)"
+  },
   "fitness": {
     "beginner": "Beginner",
     "intermediate": "Intermediate",
