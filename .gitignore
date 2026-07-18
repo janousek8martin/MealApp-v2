@@ -45,3 +45,7 @@ Thumbs.db
 # typescript
 *.tsbuildinfo
 *.log
+
+# Raw USDA CSV downloads (source input for scripts/import-usda-foods.ts) -
+# only the generated src/db/seed/usdaFoods.generated.ts output is committed.
+/usda-data/

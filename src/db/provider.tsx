@@ -6,7 +6,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { db } from './client';
 import migrations from './migrations/migrations';
-import { seedIfEmpty } from './seed';
+import { seedIfEmpty, seedUsdaFoodsIfEmpty } from './seed';
 
 type Props = { children: ReactNode };
 
@@ -23,7 +23,12 @@ export function DbGate({ children }: Props) {
   useEffect(() => {
     if (!success) return;
     seedIfEmpty(db)
-      .then(() => setSeedState('done'))
+      .then(() => {
+        setSeedState('done');
+        // Bulk USDA library (~8000 rows) seeds in the background, after the
+        // UI is already usable - it must not add to first-launch blocking time.
+        seedUsdaFoodsIfEmpty(db).catch((seedError) => console.error('USDA seeding failed', seedError));
+      })
       .catch((seedError) => {
         console.error('Seeding failed', seedError);
         setSeedState('failed');

@@ -1,5 +1,6 @@
 import { seedFoods } from '../seed/foods';
 import { seedRecipes } from '../seed/recipes';
+import { usdaSeedFoods } from '../seed/usdaFoods.generated';
 
 describe('seed content integrity', () => {
   const foodKeys = new Set(seedFoods.map((f) => f.key));
@@ -52,5 +53,46 @@ describe('seed content integrity', () => {
         expect(food.gramsPerPiece).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('USDA bulk-imported seed foods', () => {
+  it('has a substantial library (Foundation + SR Legacy)', () => {
+    expect(usdaSeedFoods.length).toBeGreaterThan(1000);
+  });
+
+  it('every bulk-imported food is flagged needsReview - curated foods are not', () => {
+    for (const food of usdaSeedFoods) {
+      expect(food.needsReview).toBe(true);
+    }
+    for (const food of seedFoods) {
+      expect(food.needsReview).toBeFalsy();
+    }
+  });
+
+  it('has no key collisions with the curated seed or within itself', () => {
+    const curatedKeys = new Set(seedFoods.map((f) => f.key));
+    const usdaKeys = new Set(usdaSeedFoods.map((f) => f.key));
+    expect(usdaKeys.size).toBe(usdaSeedFoods.length);
+    for (const key of usdaKeys) {
+      expect(curatedKeys.has(key)).toBe(false);
+    }
+  });
+
+  it('macro energy roughly matches stated kcal for a random sample (Atwater sanity check)', () => {
+    // Full population check would be slow across ~8000 rows; a fixed-stride
+    // sample is enough to catch a systematic unit/parsing bug.
+    const sample = usdaSeedFoods.filter((_, i) => i % 50 === 0);
+    let offenders = 0;
+    for (const food of sample) {
+      const macroKcal = food.proteinPer100 * 4 + food.carbsPer100 * 4 + food.fatPer100 * 9;
+      const diff = Math.abs(macroKcal - food.kcalPer100);
+      const tolerance = Math.max(60, food.kcalPer100 * 0.3);
+      if (diff > tolerance) offenders += 1;
+    }
+    // A handful of genuine label/rounding outliers is expected at USDA's
+    // scale; only fail if a large fraction are off, which would indicate a
+    // systematic parsing bug rather than per-item label noise.
+    expect(offenders / sample.length).toBeLessThan(0.1);
   });
 });

@@ -25,6 +25,8 @@ export type FoodSeed = {
   snackSuitable?: boolean;
   /** Data provenance, e.g. 'usda' or 'nutridatabaze'. */
   source?: string;
+  /** True for bulk-imported foods whose allergen tags are only heuristically derived - see src/domain/nutrientProvenance.ts. Defaults to false (curated/hand-entered foods are trusted). */
+  needsReview?: boolean;
 };
 
 export type RecipeSeed = {
