@@ -386,6 +386,14 @@ export const foods = sqliteTable('foods', {
   source: text('source').notNull().default('user'),
   /** Stable key from the seed data (e.g. 'mushrooms') – lets "avoid this food" preferences and curated avoid-lists reference a food across reinstalls, since the runtime id is a random UUID; null for user-added foods. */
   seedKey: text('seed_key'),
+  /** True until a human confirms this food's data (allergens especially) - see src/domain/nutrientProvenance.ts. Bulk-imported foods start true; hand-curated seed and user-entered foods are false. */
+  needsReview: integer('needs_review', { mode: 'boolean' }).notNull().default(false),
+  /** NOVA processing group (1-4), from Open Food Facts - null when unknown/not applicable (e.g. generic USDA foods). */
+  novaGroup: integer('nova_group'),
+  /** Nutri-Score letter grade (a-e), from Open Food Facts. */
+  nutriScoreGrade: text('nutri_score_grade', { enum: ['a', 'b', 'c', 'd', 'e'] }),
+  /** Eco-Score letter grade (a-e), from Open Food Facts. */
+  ecoScoreGrade: text('eco_score_grade', { enum: ['a', 'b', 'c', 'd', 'e'] }),
 });
 
 export const foodRestrictions = sqliteTable(
