@@ -1,6 +1,9 @@
 # dependencies
 node_modules/
 
+# graphify knowledge graph (generated, regenerate with `graphify update .`)
+graphify-out/
+
 # Expo
 .expo/
 dist/
@@ -49,3 +52,6 @@ Thumbs.db
 # Raw USDA CSV downloads (source input for scripts/import-usda-foods.ts) -
 # only the generated src/db/seed/usdaFoods.generated.ts output is committed.
 /usda-data/
+
+# local git worktrees (subagent-driven-development isolation)
+/.worktrees/

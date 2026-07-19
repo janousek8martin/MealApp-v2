@@ -203,3 +203,13 @@ Plán je udělat plánovací fázi s Claude Code na silném modelu (např. Fable
 2. Nutriční pravidla popsaná výše zabuduj jako doménovou logiku/výpočty.
 3. Navrhni rozumný rozsah V1 (MVP) vs. co odložit na později, a tento návrh projdi s uživatelem k odsouhlasení, než začneš implementovat.
 4. Dodržuj barevnou paletu a pravidla pro fotky/ilustrace přesně tak, jak jsou uvedená výše (jsou to konkrétní hex kódy a konkrétní zdroje assetů, ne jen inspirace).
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
