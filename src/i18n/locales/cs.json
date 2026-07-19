@@ -293,11 +293,12 @@
     "female": "Ženy",
     "age": "Věk",
     "band": {
-      "ideal": "Ideální",
-      "average": "Průměrné",
-      "overweight": "Nadprůměrné"
+      "low": "Nižší rozsah",
+      "mid": "Střední rozsah",
+      "high": "Vyšší rozsah"
     },
-    "hint": "Orientační rozmezí (klasifikace ACE). Přesnější hodnotu získáte kaliperem nebo DEXA měřením."
+    "hint": "Orientační rozmezí (klasifikace ACE). Přesnější hodnotu získáte kaliperem nebo DEXA měřením.",
+    "currentValue": "• Tvoje aktuální hodnota"
   },
   "goal": {
     "lose": "Zhubnout",

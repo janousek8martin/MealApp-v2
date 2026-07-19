@@ -81,17 +81,24 @@ export const darkColors: ColorTokens = {
   heroGradientEnd: '#011A0F',
 };
 
-/** Body-fat chart severity bands (Profile overview), per theme mode. No red — see the tolerance-color rule above; "overweight" uses the same amber as toleranceOff, not danger. */
+/**
+ * Body-fat reference chart columns (Profile overview), per theme mode.
+ * These are POSITIONAL (lower/mid/upper range), not a good→bad judgment
+ * ramp – deliberately a single hue family (derived from `accentSoft`) with
+ * only 2–3 lightness/saturation steps and no hue shift, so the table never
+ * reads as a red/yellow/green semaphore. See the no-color-coded-judgment
+ * rule on `ColorTokens` above.
+ */
 export const bodyFatBandLight = {
-  ideal: '#E3ECD6',
-  average: '#F1EBD8',
-  overweight: '#F0E2C9',
+  low: '#DCE7D2',
+  mid: '#CBDBBC',
+  high: '#B9CFA6',
 } as const;
 
 export const bodyFatBandDark = {
-  ideal: '#1B2E1D',
-  average: '#2B2718',
-  overweight: '#33291A',
+  low: '#25352A',
+  mid: '#2E4234',
+  high: '#3A5040',
 } as const;
 
 export const radius = {

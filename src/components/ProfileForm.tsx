@@ -14,6 +14,7 @@ import { TextField } from '@/components/ui/TextField';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
 import type { CreateProfileInput } from '@/db/repositories/profiles';
+import { ageYears } from '@/domain/age';
 import type { ActivityLevel } from '@/domain/constants';
 import { validateGoals } from '@/domain/goals';
 import { cmToFeetInches, feetInchesToCm, kgToLbs, lbsToKg } from '@/domain/units';
@@ -503,6 +504,8 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
         visible={bodyFatChartVisible}
         sex={sex ?? 'male'}
         onClose={() => setBodyFatChartVisible(false)}
+        currentValuePct={bodyFatPct ?? undefined}
+        currentAge={BIRTH_DATE_RE.test(birthDate) ? ageYears(birthDate) : undefined}
       />
     </View>
   );

@@ -11,7 +11,7 @@ import {
 
 export type ThemeMode = 'light' | 'dark';
 
-export type BodyFatBandColors = Record<'ideal' | 'average' | 'overweight', string>;
+export type BodyFatBandColors = Record<'low' | 'mid' | 'high', string>;
 
 type ThemeContextValue = {
   mode: ThemeMode;

@@ -293,11 +293,12 @@
     "female": "Women",
     "age": "Age",
     "band": {
-      "ideal": "Ideal",
-      "average": "Average",
-      "overweight": "Above average"
+      "low": "Lower range",
+      "mid": "Mid range",
+      "high": "Upper range"
     },
-    "hint": "Approximate ranges (ACE classification). For a more precise value, use calipers or a DEXA scan."
+    "hint": "Approximate ranges (ACE classification). For a more precise value, use calipers or a DEXA scan.",
+    "currentValue": "• Your current value"
   },
   "goal": {
     "lose": "Lose fat",
