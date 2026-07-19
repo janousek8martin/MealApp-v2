@@ -223,7 +223,7 @@ function createStyles(colors: ColorTokens) {
       backgroundColor: colors.attention,
     },
     reviewBannerButtonLabel: {
-      color: colors.onPrimary,
+      color: colors.onAttention,
       fontSize: typography.small,
       fontWeight: '700',
     },

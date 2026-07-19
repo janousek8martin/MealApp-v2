@@ -229,7 +229,7 @@ export function MealSlotCard({
                 style={[styles.statusButton, isEaten && styles.statusButtonActiveEaten]}
                 onPress={() => onSetStatus(myPortion.id, isEaten ? 'planned' : 'eaten')}>
                 <Ionicons name="checkmark" size={16} color={isEaten ? colors.onPrimary : colors.interactive} />
-                <Text style={[styles.statusLabel, isEaten && styles.statusLabelActive]}>
+                <Text style={[styles.statusLabel, isEaten && styles.statusLabelActiveEaten]}>
                   {t('todayMeal.eaten')}
                 </Text>
               </Pressable>
@@ -237,8 +237,8 @@ export function MealSlotCard({
                 accessibilityRole="button"
                 style={[styles.statusButton, isSkipped && styles.statusButtonActiveSkipped]}
                 onPress={() => onSetStatus(myPortion.id, isSkipped ? 'planned' : 'skipped')}>
-                <Ionicons name="close" size={16} color={isSkipped ? colors.onPrimary : colors.attention} />
-                <Text style={[styles.statusLabel, isSkipped && styles.statusLabelActive]}>
+                <Ionicons name="close" size={16} color={isSkipped ? colors.onAttention : colors.attention} />
+                <Text style={[styles.statusLabel, isSkipped && styles.statusLabelActiveSkipped]}>
                   {t('todayMeal.notEaten')}
                 </Text>
               </Pressable>
@@ -444,8 +444,16 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small,
       fontWeight: '600',
     },
-    statusLabelActive: {
+    // `interactive` (eaten) flips dark-on-light <-> light-on-dark with the
+    // theme, same as `primary`, so `onPrimary` contrasts fine against it in
+    // both modes. `attention` (skipped) is light-ish amber in BOTH modes, so
+    // it needs its own always-dark-ink pair, `onAttention` — never
+    // `onPrimary`/white here, see tokens.ts.
+    statusLabelActiveEaten: {
       color: colors.onPrimary,
+    },
+    statusLabelActiveSkipped: {
+      color: colors.onAttention,
     },
     deleteButton: {
       marginLeft: 'auto',

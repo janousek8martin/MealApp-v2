@@ -33,6 +33,8 @@ export type ColorTokens = {
   water: string;
   /** The only color for a nutrition/goal/food-freshness state that needs to stand out (expiring pantry item, skipped meal, needs-review data, aggressive goal pace). Warm amber, never red. */
   attention: string;
+  /** Text/icon color for content rendered on a solid `attention` fill. Unlike `onPrimary`/`onInteractive`, this is the SAME dark-ink value in both light and dark mode — `attention` is a light-ish amber in both palettes (it never flips light-on-dark like primary/interactive do), so it always needs dark ink, never white. Verified ≥4.5:1 (WCAG AA) against both palettes' `attention`. */
+  onAttention: string;
   /** Real system errors only (network, form validation, delete confirmation) – never a nutrition or body-metric state. */
   danger: string;
   heroGradientStart: string;
@@ -53,6 +55,7 @@ export const lightColors: ColorTokens = {
   accentSoft: '#DCE7D2',
   water: '#0EA5E9',
   attention: '#B08D57',
+  onAttention: '#16241A',
   danger: '#B3453D',
   heroGradientStart: '#28502E',
   heroGradientEnd: '#152A18',
@@ -72,6 +75,7 @@ export const darkColors: ColorTokens = {
   accentSoft: '#25352A',
   water: '#38BDF8',
   attention: '#C9A876',
+  onAttention: '#16241A',
   danger: '#E08079',
   heroGradientStart: '#28502E',
   heroGradientEnd: '#011A0F',
