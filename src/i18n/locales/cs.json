@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "MealApp",
+    "back": "Zpět",
     "continue": "Pokračovat",
     "cancel": "Zrušit",
     "save": "Uložit",

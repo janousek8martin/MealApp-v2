@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "MealApp",
+    "back": "Back",
     "continue": "Continue",
     "cancel": "Cancel",
     "save": "Save",
