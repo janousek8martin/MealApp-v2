@@ -82,7 +82,7 @@ export default function FoodDetailScreen() {
 
         {food.needsReview ? (
           <View style={styles.reviewBanner}>
-            <Ionicons name="alert-circle-outline" size={20} color={colors.danger} />
+            <Ionicons name="alert-circle-outline" size={20} color={colors.attention} />
             <Text style={styles.reviewBannerText}>{t('foodDetail.needsReviewBanner')}</Text>
             <Pressable
               accessibilityRole="button"
@@ -106,14 +106,14 @@ export default function FoodDetailScreen() {
               <Ionicons
                 name={rating === 'like' ? 'thumbs-up' : 'thumbs-up-outline'}
                 size={24}
-                color={rating === 'like' ? colors.success : colors.textSecondary}
+                color={rating === 'like' ? colors.interactive : colors.textSecondary}
               />
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => rate('dislike')} hitSlop={8}>
               <Ionicons
                 name={rating === 'dislike' ? 'thumbs-down' : 'thumbs-down-outline'}
                 size={24}
-                color={rating === 'dislike' ? colors.danger : colors.textSecondary}
+                color={rating === 'dislike' ? colors.attention : colors.textSecondary}
               />
             </Pressable>
           </View>
@@ -204,7 +204,7 @@ function createStyles(colors: ColorTokens) {
       gap: spacing.sm,
       backgroundColor: colors.surface,
       borderWidth: 1,
-      borderColor: colors.danger,
+      borderColor: colors.attention,
       borderRadius: radius.input,
       padding: spacing.sm + 2,
       marginBottom: spacing.sm,
@@ -220,7 +220,7 @@ function createStyles(colors: ColorTokens) {
       paddingVertical: spacing.xs,
       paddingHorizontal: spacing.sm + 2,
       borderRadius: radius.chip,
-      backgroundColor: colors.danger,
+      backgroundColor: colors.attention,
     },
     reviewBannerButtonLabel: {
       color: colors.onPrimary,
@@ -233,7 +233,7 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.card,
     },
     photoPlaceholder: {
-      backgroundColor: colors.mint,
+      backgroundColor: colors.accentSoft,
     },
     titleRow: {
       flexDirection: 'row',
@@ -305,13 +305,13 @@ function createStyles(colors: ColorTokens) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      backgroundColor: colors.mint,
+      backgroundColor: colors.accentSoft,
       borderRadius: radius.chip,
       paddingVertical: spacing.xs + 2,
       paddingHorizontal: spacing.md,
     },
     allergenChip: {
-      backgroundColor: colors.lime,
+      backgroundColor: colors.accentSoft,
     },
     chipIcon: {
       width: 16,

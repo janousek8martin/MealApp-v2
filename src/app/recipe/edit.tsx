@@ -240,7 +240,7 @@ export default function RecipeEditScreen() {
           <Switch
             value={isSide}
             onValueChange={setIsSide}
-            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            trackColor={{ true: colors.interactive, false: colors.border }}
             thumbColor={colors.surface}
           />
         </View>
@@ -250,7 +250,7 @@ export default function RecipeEditScreen() {
           <Switch
             value={canServeCold}
             onValueChange={setCanServeCold}
-            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            trackColor={{ true: colors.interactive, false: colors.border }}
             thumbColor={colors.surface}
           />
         </View>
@@ -260,7 +260,7 @@ export default function RecipeEditScreen() {
           <Switch
             value={mealPrepFriendly}
             onValueChange={setMealPrepFriendly}
-            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            trackColor={{ true: colors.interactive, false: colors.border }}
             thumbColor={colors.surface}
           />
         </View>
@@ -503,7 +503,7 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.card - 12,
     },
     ingredientThumbPlaceholder: {
-      backgroundColor: colors.mint,
+      backgroundColor: colors.accentSoft,
     },
     ingredientName: {
       flex: 1,

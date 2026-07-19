@@ -235,7 +235,7 @@ function createStyles(colors: ColorTokens) {
       marginTop: 2,
     },
     rowMetaWarning: {
-      color: colors.danger,
+      color: colors.attention,
       fontWeight: '600',
     },
     emptyWrap: {

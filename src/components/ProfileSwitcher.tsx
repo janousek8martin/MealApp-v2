@@ -81,7 +81,7 @@ function createStyles(colors: ColorTokens) {
       width: 24,
       height: 24,
       borderRadius: 12,
-      backgroundColor: colors.mint,
+      backgroundColor: colors.accentSoft,
       color: colors.text,
       textAlign: 'center',
       textAlignVertical: 'center',
@@ -90,8 +90,8 @@ function createStyles(colors: ColorTokens) {
       overflow: 'hidden',
     },
     initialSelected: {
-      backgroundColor: colors.primaryLight,
-      color: colors.onPrimary,
+      backgroundColor: colors.interactive,
+      color: colors.onInteractive,
     },
     name: {
       color: colors.text,

@@ -201,7 +201,7 @@ export default function RecipeImportScreen() {
                       <Ionicons
                         name={row.food ? 'checkmark-circle' : 'help-circle-outline'}
                         size={15}
-                        color={row.food ? colors.success : colors.danger}
+                        color={row.food ? colors.interactive : colors.danger}
                       />
                       <Text style={styles.matchChipLabel} numberOfLines={1}>
                         {row.food ? row.food.nameCs : t('recipeImport.pickFood')}

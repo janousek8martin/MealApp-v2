@@ -105,7 +105,7 @@ export function WeightProjectionChart({ projection, actualPoints, height = 160, 
           />
         ))}
         {(actualPoints ?? []).map((p, i) => (
-          <Circle key={i} cx={xForWeek(p.week)} cy={yForWeight(p.weightKg)} r={4} fill={colors.secondary} />
+          <Circle key={i} cx={xForWeek(p.week)} cy={yForWeight(p.weightKg)} r={4} fill={colors.interactive} />
         ))}
       </Svg>
 

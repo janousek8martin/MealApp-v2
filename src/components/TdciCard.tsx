@@ -77,7 +77,7 @@ function createStyles(colors: ColorTokens) {
       opacity: 0.16,
     },
     name: {
-      color: colors.mint,
+      color: colors.accentSoft,
       fontSize: typography.small,
       fontWeight: '600',
       textTransform: 'uppercase',
@@ -96,7 +96,7 @@ function createStyles(colors: ColorTokens) {
       lineHeight: typography.hero + 4,
     },
     kcalUnit: {
-      color: colors.mint,
+      color: colors.accentSoft,
       fontSize: typography.subtitle,
       fontWeight: '600',
       marginBottom: 4,
@@ -125,7 +125,7 @@ function createStyles(colors: ColorTokens) {
       fontWeight: '700',
     },
     macroLabel: {
-      color: colors.mint,
+      color: colors.accentSoft,
       fontSize: typography.small,
       marginTop: 2,
     },

@@ -50,15 +50,15 @@ export function LibraryCard({
       {photoUri ? (
         <Image source={{ uri: photoUri }} style={styles.thumb} contentFit="cover" />
       ) : (
-        <View style={[styles.thumb, { backgroundColor: accent ?? colors.mint }]} />
+        <View style={[styles.thumb, { backgroundColor: accent ?? colors.accentSoft }]} />
       )}
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>
             {title}
           </Text>
-          {rating === 'like' ? <Ionicons name="thumbs-up" size={15} color={colors.success} /> : null}
-          {rating === 'dislike' ? <Ionicons name="thumbs-down" size={15} color={colors.danger} /> : null}
+          {rating === 'like' ? <Ionicons name="thumbs-up" size={15} color={colors.interactive} /> : null}
+          {rating === 'dislike' ? <Ionicons name="thumbs-down" size={15} color={colors.attention} /> : null}
         </View>
         <Text style={styles.subtitle} numberOfLines={1}>
           {subtitle}
@@ -146,14 +146,14 @@ function createStyles(colors: ColorTokens) {
     tag: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.tealTint,
+      backgroundColor: colors.accentSoft,
       borderRadius: radius.chip,
       paddingVertical: 1,
       paddingHorizontal: spacing.xs + 2,
       gap: 3,
     },
     allergenTag: {
-      backgroundColor: colors.lime,
+      backgroundColor: colors.accentSoft,
     },
     tagIcon: {
       width: 12,

@@ -482,7 +482,7 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
         <Switch
           value={sharesMainMeals}
           onValueChange={setSharesMainMeals}
-          trackColor={{ true: colors.primaryLight, false: colors.border }}
+          trackColor={{ true: colors.interactive, false: colors.border }}
           thumbColor={colors.surface}
         />
       </View>

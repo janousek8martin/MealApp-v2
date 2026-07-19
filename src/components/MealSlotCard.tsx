@@ -152,8 +152,8 @@ export function MealSlotCard({
             <Text style={styles.name} numberOfLines={1}>
               {name}
             </Text>
-            {rating === 'like' ? <Ionicons name="thumbs-up" size={13} color={colors.success} /> : null}
-            {rating === 'dislike' ? <Ionicons name="thumbs-down" size={13} color={colors.danger} /> : null}
+            {rating === 'like' ? <Ionicons name="thumbs-up" size={13} color={colors.interactive} /> : null}
+            {rating === 'dislike' ? <Ionicons name="thumbs-down" size={13} color={colors.attention} /> : null}
           </View>
           {scaled ? (
             <Text style={styles.kcal}>
@@ -228,7 +228,7 @@ export function MealSlotCard({
                 accessibilityRole="button"
                 style={[styles.statusButton, isEaten && styles.statusButtonActiveEaten]}
                 onPress={() => onSetStatus(myPortion.id, isEaten ? 'planned' : 'eaten')}>
-                <Ionicons name="checkmark" size={16} color={isEaten ? colors.onPrimary : colors.success} />
+                <Ionicons name="checkmark" size={16} color={isEaten ? colors.onPrimary : colors.interactive} />
                 <Text style={[styles.statusLabel, isEaten && styles.statusLabelActive]}>
                   {t('todayMeal.eaten')}
                 </Text>
@@ -237,7 +237,7 @@ export function MealSlotCard({
                 accessibilityRole="button"
                 style={[styles.statusButton, isSkipped && styles.statusButtonActiveSkipped]}
                 onPress={() => onSetStatus(myPortion.id, isSkipped ? 'planned' : 'skipped')}>
-                <Ionicons name="close" size={16} color={isSkipped ? colors.onPrimary : colors.danger} />
+                <Ionicons name="close" size={16} color={isSkipped ? colors.onPrimary : colors.attention} />
                 <Text style={[styles.statusLabel, isSkipped && styles.statusLabelActive]}>
                   {t('todayMeal.notEaten')}
                 </Text>
@@ -274,7 +274,7 @@ function createStyles(colors: ColorTokens) {
       borderWidth: 1,
       borderColor: colors.border,
       borderLeftWidth: 4,
-      borderLeftColor: colors.success,
+      borderLeftColor: colors.primary,
       marginBottom: spacing.sm,
       overflow: 'hidden',
     },
@@ -294,7 +294,7 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.card - 8,
     },
     thumbPlaceholder: {
-      backgroundColor: colors.mint,
+      backgroundColor: colors.accentSoft,
     },
     headerText: {
       flex: 1,
@@ -432,12 +432,12 @@ function createStyles(colors: ColorTokens) {
       paddingHorizontal: spacing.sm + 2,
     },
     statusButtonActiveEaten: {
-      backgroundColor: colors.success,
-      borderColor: colors.success,
+      backgroundColor: colors.interactive,
+      borderColor: colors.interactive,
     },
     statusButtonActiveSkipped: {
-      backgroundColor: colors.danger,
-      borderColor: colors.danger,
+      backgroundColor: colors.attention,
+      borderColor: colors.attention,
     },
     statusLabel: {
       color: colors.text,

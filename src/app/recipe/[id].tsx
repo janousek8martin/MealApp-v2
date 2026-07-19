@@ -123,14 +123,14 @@ export default function RecipeDetailScreen() {
               <Ionicons
                 name={rating === 'like' ? 'thumbs-up' : 'thumbs-up-outline'}
                 size={24}
-                color={rating === 'like' ? colors.success : colors.textSecondary}
+                color={rating === 'like' ? colors.interactive : colors.textSecondary}
               />
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => rate('dislike')} hitSlop={8}>
               <Ionicons
                 name={rating === 'dislike' ? 'thumbs-down' : 'thumbs-down-outline'}
                 size={24}
-                color={rating === 'dislike' ? colors.danger : colors.textSecondary}
+                color={rating === 'dislike' ? colors.attention : colors.textSecondary}
               />
             </Pressable>
           </View>
@@ -244,7 +244,7 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.card,
     },
     photoPlaceholder: {
-      backgroundColor: colors.lime,
+      backgroundColor: colors.accentSoft,
     },
     titleRow: {
       flexDirection: 'row',
@@ -320,7 +320,7 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.card - 12,
     },
     ingredientThumbPlaceholder: {
-      backgroundColor: colors.mint,
+      backgroundColor: colors.accentSoft,
     },
     ingredientName: {
       flex: 1,
@@ -348,7 +348,7 @@ function createStyles(colors: ColorTokens) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      backgroundColor: colors.lime,
+      backgroundColor: colors.accentSoft,
       borderRadius: radius.chip,
       paddingVertical: spacing.xs + 2,
       paddingHorizontal: spacing.md,

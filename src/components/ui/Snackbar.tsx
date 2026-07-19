@@ -70,7 +70,7 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small,
     },
     action: {
-      color: colors.mint,
+      color: colors.accentSoft,
       fontSize: typography.small,
       fontWeight: '700',
     },

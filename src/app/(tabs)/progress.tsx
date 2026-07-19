@@ -297,7 +297,7 @@ function createStyles(colors: ColorTokens) {
       marginBottom: spacing.sm,
     },
     banner: {
-      backgroundColor: colors.lime,
+      backgroundColor: colors.accentSoft,
       borderRadius: radius.card,
       padding: spacing.md,
       marginTop: spacing.md,

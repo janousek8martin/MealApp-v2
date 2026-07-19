@@ -212,7 +212,7 @@ export default function FoodEditScreen() {
 
         {existing?.needsReview ? (
           <View style={styles.reviewBanner}>
-            <Ionicons name="alert-circle-outline" size={20} color={colors.danger} />
+            <Ionicons name="alert-circle-outline" size={20} color={colors.attention} />
             <Text style={styles.reviewBannerText}>{t('foodDetail.needsReviewBannerEdit')}</Text>
           </View>
         ) : null}
@@ -308,7 +308,7 @@ export default function FoodEditScreen() {
           <Switch
             value={snackSuitable}
             onValueChange={setSnackSuitable}
-            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            trackColor={{ true: colors.interactive, false: colors.border }}
             thumbColor={colors.surface}
           />
         </View>
@@ -318,7 +318,7 @@ export default function FoodEditScreen() {
           <Switch
             value={canServeCold}
             onValueChange={setCanServeCold}
-            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            trackColor={{ true: colors.interactive, false: colors.border }}
             thumbColor={colors.surface}
           />
         </View>
@@ -328,7 +328,7 @@ export default function FoodEditScreen() {
           <Switch
             value={mealPrepFriendly}
             onValueChange={setMealPrepFriendly}
-            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            trackColor={{ true: colors.interactive, false: colors.border }}
             thumbColor={colors.surface}
           />
         </View>
@@ -402,7 +402,7 @@ function createStyles(colors: ColorTokens) {
       gap: spacing.sm,
       backgroundColor: colors.surface,
       borderWidth: 1,
-      borderColor: colors.danger,
+      borderColor: colors.attention,
       borderRadius: radius.input,
       padding: spacing.sm + 2,
       marginBottom: spacing.md,

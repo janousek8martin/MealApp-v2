@@ -184,7 +184,7 @@ function createStyles(colors: ColorTokens) {
       fontWeight: '700',
     },
     amountReached: {
-      color: colors.success,
+      color: colors.interactive,
       fontWeight: '700',
     },
     contentRow: {

@@ -72,7 +72,7 @@ function NextMealRow({
           {slotLabel} · {name}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.mint} />
+      <Ionicons name="chevron-forward" size={18} color={colors.accentSoft} />
     </Pressable>
   );
 }
@@ -148,7 +148,7 @@ export function HomeHeroCard({
           strokeWidth={7}
           progress={ringProgress}
           trackColor="rgba(244, 241, 232, 0.2)"
-          progressColor={colors.primaryLight}>
+          progressColor={colors.interactive}>
           <Text style={styles.ringPercent}>{ringPercent}%</Text>
           <Text style={styles.ringLabel}>{t('today.eaten')}</Text>
         </ProgressRing>
@@ -165,12 +165,12 @@ export function HomeHeroCard({
 
       <View style={styles.streaksRow}>
         <Pressable accessibilityRole="button" style={styles.streak} onPress={() => setOpenStreak('meal')}>
-          <Ionicons name="flame" size={16} color={colors.mint} />
+          <Ionicons name="flame" size={16} color={colors.accentSoft} />
           <Text style={styles.streakValue}>{mealStreak}</Text>
           <Text style={styles.streakLabel}>{t('today.mealStreak')}</Text>
         </Pressable>
         <Pressable accessibilityRole="button" style={styles.streak} onPress={() => setOpenStreak('water')}>
-          <Ionicons name="water" size={16} color={colors.mint} />
+          <Ionicons name="water" size={16} color={colors.accentSoft} />
           <Text style={styles.streakValue}>{waterStreak}</Text>
           <Text style={styles.streakLabel}>{t('today.waterStreak')}</Text>
         </Pressable>
@@ -251,7 +251,7 @@ function createStyles(colors: ColorTokens) {
       lineHeight: typography.hero + 4,
     },
     kcalUnit: {
-      color: colors.mint,
+      color: colors.accentSoft,
       fontSize: typography.subtitle,
       fontWeight: '600',
       marginBottom: 4,
@@ -268,7 +268,7 @@ function createStyles(colors: ColorTokens) {
       fontWeight: '800',
     },
     ringLabel: {
-      color: colors.mint,
+      color: colors.accentSoft,
       fontSize: 10,
       marginTop: 1,
     },
@@ -290,7 +290,7 @@ function createStyles(colors: ColorTokens) {
       fontWeight: '700',
     },
     macroLabel: {
-      color: colors.mint,
+      color: colors.accentSoft,
       fontSize: typography.small,
       marginTop: 2,
     },
@@ -315,7 +315,7 @@ function createStyles(colors: ColorTokens) {
       fontWeight: '800',
     },
     streakLabel: {
-      color: colors.mint,
+      color: colors.accentSoft,
       fontSize: typography.small,
       flexShrink: 1,
     },
@@ -340,7 +340,7 @@ function createStyles(colors: ColorTokens) {
       flex: 1,
     },
     nextMealTitle: {
-      color: colors.mint,
+      color: colors.accentSoft,
       fontSize: 10,
       fontWeight: '700',
       textTransform: 'uppercase',
