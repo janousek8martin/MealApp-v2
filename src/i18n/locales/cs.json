@@ -52,6 +52,18 @@
     "mealsLoggedToday": "{{count}} z {{total}} jídel dnes zaznamenáno",
     "addMeal": "Přidat jídlo"
   },
+  "home": {
+    "today": {
+      "mealsLabel": "snědených jídel",
+      "statusNonePlanned": "Zatím pro dnešek nic naplánováno - klidně v klidu",
+      "statusOnTrack": "Dneska to jde podle plánu",
+      "statusAllDone": "Všechna dnešní jídla jsou zaznamenaná"
+    },
+    "weeklyRecap": {
+      "summary": "{{planned}} z {{total}} dní tento týden naplánováno - pěkná práce",
+      "summaryZero": "Tento týden zatím nic naplánováno - je pořád otevřený"
+    }
+  },
   "planScreen": {
     "generate": "Generovat",
     "generateWeek": "Vygenerovat týden",

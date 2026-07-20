@@ -6,12 +6,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HomeHeroCard } from '@/components/HomeHeroCard';
+import { PantryUseSoonCard } from '@/components/PantryUseSoonCard';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
+import { TodayCard } from '@/components/TodayCard';
 import { WaterCard } from '@/components/WaterCard';
+import { WeeklyRecapCard } from '@/components/WeeklyRecapCard';
 import { Button } from '@/components/ui/Button';
 import { todayIsoDate } from '@/db/time';
+import { groupPantryItems } from '@/domain/pantryGrouping';
 import { countConsecutiveDays } from '@/domain/streak';
-import { addDays } from '@/domain/week';
+import { addDays, startOfWeek, weekDates as weekDatesOf } from '@/domain/week';
+import { countPlannedDays } from '@/domain/weeklyRecap';
 import {
   useActiveProfile,
   useDailyProfileTargets,
@@ -27,6 +32,7 @@ import {
   useMealCompletionDates,
   useMealSlots,
   useMealsForDate,
+  useMealsForWeek,
   usePortionsForDate,
   useRecipeNutritionMap,
 } from '@/hooks/plan';
@@ -56,6 +62,8 @@ export default function TodayScreen() {
   const activeProfile = useActiveProfile(household?.id);
   const activeProfileId = useAppStore((s) => s.activeProfileId);
   const setActiveProfileId = useAppStore((s) => s.setActiveProfileId);
+  const hideWeeklyRecap = useAppStore((s) => s.hideWeeklyRecap);
+  const setHideWeeklyRecap = useAppStore((s) => s.setHideWeeklyRecap);
   const targets = useProfileTargets(activeProfile);
   const today = todayIsoDate();
   const dailyTargets = useDailyProfileTargets(activeProfile, today);
@@ -70,7 +78,19 @@ export default function TodayScreen() {
   const shoppingItems = useShoppingItems(household?.id);
   const shoppingRemaining = shoppingItems.filter((item) => !item.checked).length;
   const pantryItems = usePantryItems(household?.id);
-  const pantryExpiringSoon = pantryItems.filter((item) => item.expiresAt !== null && item.expiresAt <= today).length;
+  const pantryGrouped = useMemo(
+    () => groupPantryItems(pantryItems, foodById, today),
+    [pantryItems, foodById, today],
+  );
+  const pantryExpiringSoon = pantryGrouped.expiringSoon.length;
+
+  const weekMonday = useMemo(() => startOfWeek(today), [today]);
+  const weekDatesList = useMemo(() => weekDatesOf(weekMonday), [weekMonday]);
+  const mealsForWeek = useMealsForWeek(household?.id, weekMonday);
+  const plannedDaysThisWeek = useMemo(
+    () => countPlannedDays(mealsForWeek, weekDatesList),
+    [mealsForWeek, weekDatesList],
+  );
 
   const streakSinceDate = useMemo(() => addDays(today, -180), [today]);
   const mealCompletionDates = useMealCompletionDates(household?.id, activeProfile?.id, streakSinceDate);
@@ -160,6 +180,8 @@ export default function TodayScreen() {
           />
         ) : null}
 
+        <TodayCard eatenCount={todayMealCount} plannedTotal={todayMealTotal} />
+
         <View style={styles.quickRow}>
           <Pressable
             accessibilityRole="button"
@@ -171,16 +193,7 @@ export default function TodayScreen() {
             </View>
             <Text style={styles.quickLabel}>{t('today.shoppingRemaining')}</Text>
           </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            style={styles.quickCard}
-            onPress={() => router.push('/pantry')}>
-            <View style={styles.quickTopRow}>
-              <Ionicons name="file-tray-stacked-outline" size={16} color={colors.primary} />
-              <Text style={styles.quickValue}>{pantryExpiringSoon}</Text>
-            </View>
-            <Text style={styles.quickLabel}>{t('today.pantryExpiring')}</Text>
-          </Pressable>
+          <PantryUseSoonCard count={pantryExpiringSoon} onPress={() => router.push('/pantry')} />
           <Pressable
             accessibilityRole="button"
             style={styles.quickCard}
@@ -191,6 +204,14 @@ export default function TodayScreen() {
             <Text style={styles.quickLabel}>{t('today.logWeight')}</Text>
           </Pressable>
         </View>
+
+        {!hideWeeklyRecap ? (
+          <WeeklyRecapCard
+            plannedDays={plannedDaysThisWeek}
+            totalDays={weekDatesList.length}
+            onDismiss={() => setHideWeeklyRecap(true)}
+          />
+        ) : null}
 
         {activeProfile?.trackWater && latestMetric && settings ? (
           <WaterCard

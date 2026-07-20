@@ -38,6 +38,9 @@ type AppState = {
   /** Set only once the user has seen the one-time "more nav items" coach-mark. */
   hasSeenMoreHint: boolean;
   setHasSeenMoreHint: (seen: boolean) => void;
+  /** Set once the user dismisses the Home screen's WeeklyRecapCard; the card is calm/positive-only copy so this is a simple permanent hide, not a per-week reset. */
+  hideWeeklyRecap: boolean;
+  setHideWeeklyRecap: (hide: boolean) => void;
   /** Light/dark theme; defaults to light so existing installs don't flip unexpectedly. */
   themeMode: 'light' | 'dark';
   setThemeMode: (mode: 'light' | 'dark') => void;
@@ -63,6 +66,8 @@ export const useAppStore = create<AppState>()(
       setWalkthroughSeen: (seen) => set({ walkthroughSeen: seen }),
       hasSeenMoreHint: false,
       setHasSeenMoreHint: (seen) => set({ hasSeenMoreHint: seen }),
+      hideWeeklyRecap: false,
+      setHideWeeklyRecap: (hide) => set({ hideWeeklyRecap: hide }),
       themeMode: 'light',
       setThemeMode: (mode) => set({ themeMode: mode }),
       restoreScrollEnabled: false,
@@ -73,7 +78,7 @@ export const useAppStore = create<AppState>()(
     {
       name: 'mealapp-app-state',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 5,
+      version: 6,
       migrate: (persistedState, version) => {
         const state = persistedState as { mainNavKeys?: NavKey[] } & Record<string, unknown>;
         if (version < 2) {
@@ -87,6 +92,9 @@ export const useAppStore = create<AppState>()(
         if (version < 4) {
           state.restoreScrollEnabled = false;
           state.restoreScrollTimeoutSec = 1;
+        }
+        if (version < 6) {
+          state.hideWeeklyRecap = false;
         }
         return state as AppState;
       },

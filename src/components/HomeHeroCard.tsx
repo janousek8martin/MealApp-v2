@@ -198,6 +198,7 @@ export function HomeHeroCard({
         kind={openStreak ?? 'meal'}
         current={openStreak === 'water' ? waterStreak : mealStreak}
         best={longestConsecutiveRun(openStreak === 'water' ? waterGoalDates : mealCompletionDates)}
+        historyDates={openStreak === 'water' ? waterGoalDates : mealCompletionDates}
         todayCount={openStreak === 'meal' ? todayMealCount : undefined}
         todayTotal={openStreak === 'meal' ? todayMealTotal : undefined}
         onAddMeal={openStreak === 'meal' ? onAddMeal : undefined}

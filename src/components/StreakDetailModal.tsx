@@ -4,8 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { todayIsoDate } from '@/db/time';
+import { addDays } from '@/domain/week';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+
+/** How many trailing days the day-history strip shows - 2 weeks fits cleanly across the sheet width without cramping the dots. */
+const HISTORY_DAYS = 14;
 
 type Props = {
   visible: boolean;
@@ -13,17 +18,37 @@ type Props = {
   kind: 'meal' | 'water';
   current: number;
   best: number;
+  /** ISO date strings ('YYYY-MM-DD') on which this streak's goal was hit - the same `mealCompletionDates`/`waterGoalDates` set already flowing through HomeHeroCard. Used to render the day-history strip. */
+  historyDates: Set<string>;
   /** For kind: 'meal' only - e.g. "3 of 5 meals logged today"; ignored for 'water'. */
   todayCount?: number;
   todayTotal?: number;
   onAddMeal?: () => void;
 };
 
-/** Tap-to-open detail behind the Home hero card's streak pills - shows current vs. best streak, and (meal streak only) today's logged-meal count. */
-export function StreakDetailModal({ visible, onClose, kind, current, best, todayCount, todayTotal, onAddMeal }: Props) {
+/** Tap-to-open detail behind the Home hero card's streak pills - shows current vs. best streak, a day-by-day history strip, and (meal streak only) today's logged-meal count. */
+export function StreakDetailModal({
+  visible,
+  onClose,
+  kind,
+  current,
+  best,
+  historyDates,
+  todayCount,
+  todayTotal,
+  onAddMeal,
+}: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const historyDays = useMemo(() => {
+    const today = todayIsoDate();
+    return Array.from({ length: HISTORY_DAYS }, (_, i) => {
+      const date = addDays(today, i - (HISTORY_DAYS - 1));
+      return { date, hit: historyDates.has(date) };
+    });
+  }, [historyDates]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -43,6 +68,12 @@ export function StreakDetailModal({ visible, onClose, kind, current, best, today
               <Text style={styles.statValue}>{best}</Text>
               <Text style={styles.statLabel}>{t('streakDetail.best')}</Text>
             </View>
+          </View>
+
+          <View style={styles.historyStrip}>
+            {historyDays.map(({ date, hit }) => (
+              <View key={date} style={[styles.historyDot, hit ? styles.historyDotHit : styles.historyDotMissed]} />
+            ))}
           </View>
 
           {kind === 'meal' && todayCount !== undefined && todayTotal !== undefined ? (
@@ -107,6 +138,25 @@ function createStyles(colors: ColorTokens) {
       color: colors.textSecondary,
       fontSize: typography.small,
       marginTop: 2,
+    },
+    historyStrip: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: spacing.md,
+    },
+    historyDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+    },
+    historyDotHit: {
+      backgroundColor: colors.interactive,
+    },
+    historyDotMissed: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     todayText: {
       color: colors.textSecondary,
