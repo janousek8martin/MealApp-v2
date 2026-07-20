@@ -73,35 +73,43 @@ export function AppTabBar({ state, navigation }: Props) {
   const mainNavKeys = navOrder.slice(0, MAX_MAIN_NAV_ITEMS);
   const moreNavKeys = navOrder.slice(MAX_MAIN_NAV_ITEMS);
   const [expanded, setExpanded] = useState(false);
-  const [showHintNow, setShowHintNow] = useState(false);
   const hasSeenMoreHint = useAppStore((s) => s.hasSeenMoreHint);
   const setHasSeenMoreHint = useAppStore((s) => s.setHasSeenMoreHint);
 
   const activeName = state.routes[state.index]?.name;
-  const showMoreHint = showHintNow && expanded && moreNavKeys.length > 0;
+  // Derived directly from the persisted flag — no local "is it currently
+  // showing" boolean to drift out of sync with it.
+  const showMoreHint = expanded && !hasSeenMoreHint && moreNavKeys.length > 0;
+
+  // Consume the coach-mark (mark it permanently seen) whenever it was visible
+  // and the panel is about to close, whether via an explicit dismiss tap or
+  // via collapsing/navigating away without tapping it. Setting the flag at
+  // the *start* of the first expand instead would flip it true in the same
+  // render pass that decides visibility (React/zustand batch the two updates
+  // together), so the bubble would never actually paint — consuming it at
+  // close time is what lets it be seen at all while still guaranteeing it
+  // never reappears afterward.
+  const consumeMoreHint = () => {
+    if (showMoreHint) {
+      setHasSeenMoreHint(true);
+    }
+  };
 
   const dismissMoreHint = () => {
-    setShowHintNow(false);
     setHasSeenMoreHint(true);
   };
 
   const go = (key: NavKey) => {
     navigation.navigate(key);
+    consumeMoreHint();
     setExpanded(false);
   };
 
   const toggleExpanded = () => {
-    setExpanded((prev) => {
-      const next = !prev;
-      if (next && !hasSeenMoreHint) {
-        // Mark seen the moment the coach-mark first becomes visible, not only
-        // when the user notices and taps to dismiss it — avoids re-showing on
-        // every subsequent panel expand if the user never taps the chip.
-        setShowHintNow(true);
-        setHasSeenMoreHint(true);
-      }
-      return next;
-    });
+    if (expanded) {
+      consumeMoreHint();
+    }
+    setExpanded((prev) => !prev);
   };
 
   return (
