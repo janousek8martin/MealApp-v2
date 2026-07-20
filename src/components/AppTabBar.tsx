@@ -73,17 +73,35 @@ export function AppTabBar({ state, navigation }: Props) {
   const mainNavKeys = navOrder.slice(0, MAX_MAIN_NAV_ITEMS);
   const moreNavKeys = navOrder.slice(MAX_MAIN_NAV_ITEMS);
   const [expanded, setExpanded] = useState(false);
+  const [showHintNow, setShowHintNow] = useState(false);
   const hasSeenMoreHint = useAppStore((s) => s.hasSeenMoreHint);
   const setHasSeenMoreHint = useAppStore((s) => s.setHasSeenMoreHint);
 
   const activeName = state.routes[state.index]?.name;
-  const showMoreHint = expanded && !hasSeenMoreHint && moreNavKeys.length > 0;
+  const showMoreHint = showHintNow && expanded && moreNavKeys.length > 0;
 
-  const dismissMoreHint = () => setHasSeenMoreHint(true);
+  const dismissMoreHint = () => {
+    setShowHintNow(false);
+    setHasSeenMoreHint(true);
+  };
 
   const go = (key: NavKey) => {
     navigation.navigate(key);
     setExpanded(false);
+  };
+
+  const toggleExpanded = () => {
+    setExpanded((prev) => {
+      const next = !prev;
+      if (next && !hasSeenMoreHint) {
+        // Mark seen the moment the coach-mark first becomes visible, not only
+        // when the user notices and taps to dismiss it — avoids re-showing on
+        // every subsequent panel expand if the user never taps the chip.
+        setShowHintNow(true);
+        setHasSeenMoreHint(true);
+      }
+      return next;
+    });
   };
 
   return (
@@ -109,7 +127,7 @@ export function AppTabBar({ state, navigation }: Props) {
           <Pressable
             accessibilityRole="button"
             style={styles.navButton}
-            onPress={() => setExpanded((prev) => !prev)}>
+            onPress={toggleExpanded}>
             <Ionicons
               name={expanded ? 'chevron-down' : 'chevron-up'}
               size={22}
