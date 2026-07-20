@@ -22,6 +22,9 @@
     "progress": "Pokrok",
     "settings": "Nastavení"
   },
+  "nav": {
+    "moreHint": "Tip: pořadí položek si můžeš upravit v Nastavení → Navigace."
+  },
   "today": {
     "title": "Dnes",
     "mealsComingTitle": "Jídla dneška",

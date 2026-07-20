@@ -22,6 +22,9 @@
     "progress": "Progress",
     "settings": "Settings"
   },
+  "nav": {
+    "moreHint": "Tip: you can reorder items in Settings → Navigation."
+  },
   "today": {
     "title": "Today",
     "mealsComingTitle": "Today's meals",

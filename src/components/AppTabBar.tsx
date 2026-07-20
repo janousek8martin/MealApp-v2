@@ -10,14 +10,20 @@ import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const NAV_META: Record<NavKey, { icon: IconName; labelKey: string }> = {
-  index: { icon: 'home', labelKey: 'tabs.home' },
-  plan: { icon: 'calendar', labelKey: 'tabs.plan' },
-  library: { icon: 'restaurant', labelKey: 'tabs.library' },
-  shopping: { icon: 'cart', labelKey: 'tabs.shopping' },
-  pantry: { icon: 'file-tray-stacked-outline', labelKey: 'tabs.pantry' },
-  progress: { icon: 'trending-up', labelKey: 'tabs.progress' },
-  settings: { icon: 'settings-outline', labelKey: 'tabs.settings' },
+/**
+ * `icon` = outline glyph shown when inactive, `activeIcon` = filled glyph
+ * shown when active. All pairs verified against the installed Ionicons
+ * glyph map (node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/glyphmaps/Ionicons.json)
+ * before use.
+ */
+const NAV_META: Record<NavKey, { icon: IconName; activeIcon: IconName; labelKey: string }> = {
+  index: { icon: 'home-outline', activeIcon: 'home', labelKey: 'tabs.home' },
+  plan: { icon: 'calendar-outline', activeIcon: 'calendar', labelKey: 'tabs.plan' },
+  library: { icon: 'restaurant-outline', activeIcon: 'restaurant', labelKey: 'tabs.library' },
+  shopping: { icon: 'cart-outline', activeIcon: 'cart', labelKey: 'tabs.shopping' },
+  pantry: { icon: 'file-tray-stacked-outline', activeIcon: 'file-tray-stacked', labelKey: 'tabs.pantry' },
+  progress: { icon: 'trending-up-outline', activeIcon: 'trending-up', labelKey: 'tabs.progress' },
+  settings: { icon: 'settings-outline', activeIcon: 'settings', labelKey: 'tabs.settings' },
 };
 
 /** Minimal structural shape of expo-router's BottomTabBarProps – avoids a fragile deep import. */
@@ -41,7 +47,11 @@ function NavButton({
   const meta = NAV_META[navKey];
   return (
     <Pressable accessibilityRole="button" style={styles.navButton} onPress={onPress}>
-      <Ionicons name={meta.icon} size={22} color={active ? colors.primary : colors.textSecondary} />
+      <Ionicons
+        name={active ? meta.activeIcon : meta.icon}
+        size={22}
+        color={active ? colors.primary : colors.textSecondary}
+      />
       <Text style={[styles.navLabel, active && styles.navLabelActive]} numberOfLines={1}>
         {t(meta.labelKey)}
       </Text>
@@ -55,6 +65,7 @@ function NavButton({
  * remaining routes (default Recipes/Pantry/Progress) in a panel above it.
  */
 export function AppTabBar({ state, navigation }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -62,8 +73,13 @@ export function AppTabBar({ state, navigation }: Props) {
   const mainNavKeys = navOrder.slice(0, MAX_MAIN_NAV_ITEMS);
   const moreNavKeys = navOrder.slice(MAX_MAIN_NAV_ITEMS);
   const [expanded, setExpanded] = useState(false);
+  const hasSeenMoreHint = useAppStore((s) => s.hasSeenMoreHint);
+  const setHasSeenMoreHint = useAppStore((s) => s.setHasSeenMoreHint);
 
   const activeName = state.routes[state.index]?.name;
+  const showMoreHint = expanded && !hasSeenMoreHint && moreNavKeys.length > 0;
+
+  const dismissMoreHint = () => setHasSeenMoreHint(true);
 
   const go = (key: NavKey) => {
     navigation.navigate(key);
@@ -72,6 +88,12 @@ export function AppTabBar({ state, navigation }: Props) {
 
   return (
     <View style={[styles.wrapper, { paddingBottom: insets.bottom }]}>
+      {showMoreHint ? (
+        <Pressable style={styles.hintBubble} onPress={dismissMoreHint} accessibilityRole="button">
+          <Text style={styles.hintText}>{t('nav.moreHint')}</Text>
+          <Ionicons name="close" size={14} color={colors.textSecondary} />
+        </Pressable>
+      ) : null}
       {expanded && moreNavKeys.length > 0 ? (
         <View style={styles.moreRow}>
           {moreNavKeys.map((key) => (
@@ -133,6 +155,24 @@ function createStyles(colors: ColorTokens) {
     },
     navLabelActive: {
       color: colors.primary,
+      fontWeight: '700',
+    },
+    hintBubble: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      backgroundColor: colors.accentSoft,
+      borderRadius: radius.card,
+      marginHorizontal: spacing.sm,
+      marginTop: spacing.sm,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm,
+    },
+    hintText: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      flexShrink: 1,
     },
   });
 }
