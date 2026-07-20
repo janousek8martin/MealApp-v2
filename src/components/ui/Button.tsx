@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -16,6 +16,7 @@ type Props = {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'ghost';
+  /** 'compact' shrinks padding and font size for dense rows (e.g. Plan screen's footer). Defaults to 'default'. */
   size?: 'default' | 'compact';
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -28,12 +29,14 @@ export function Button({ label, onPress, variant = 'primary', size = 'default', 
   const styles = useMemo(() => createStyles(colors), [colors]);
   const reducedMotion = useReducedMotion();
   const scale = useSharedValue(1);
+  const [isPressed, setIsPressed] = useState(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   const handlePressIn = () => {
+    setIsPressed(true);
     if (!disabled) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
@@ -43,6 +46,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'default', 
   };
 
   const handlePressOut = () => {
+    setIsPressed(false);
     if (!reducedMotion) {
       scale.value = withSpring(1);
     }
@@ -56,16 +60,14 @@ export function Button({ label, onPress, variant = 'primary', size = 'default', 
       onPressOut={handlePressOut}
       disabled={disabled}
       style={[
-        ({ pressed }: { pressed: boolean }) => [
-          styles.base,
-          size === 'compact' && styles.compact,
-          variant === 'primary' && styles.primary,
-          variant === 'secondary' && styles.secondary,
-          variant === 'ghost' && styles.ghost,
-          disabled && styles.disabled,
-          pressed && !disabled && styles.pressed,
-          style,
-        ],
+        styles.base,
+        size === 'compact' && styles.compact,
+        variant === 'primary' && styles.primary,
+        variant === 'secondary' && styles.secondary,
+        variant === 'ghost' && styles.ghost,
+        disabled && styles.disabled,
+        isPressed && !disabled && styles.pressed,
+        style,
         animatedStyle,
       ]}>
       <Text
