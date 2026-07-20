@@ -11,6 +11,7 @@ import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { LibraryFilterModal, type FilterSection } from '@/components/LibraryFilterModal';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
+import { getFoodCategoryIcon } from '@/constants/pantryCategoryIcons';
 import { db } from '@/db/client';
 import { softDeleteFood, softDeleteRecipe } from '@/db/repositories/library';
 import type { foods, recipes } from '@/db/schema';
@@ -48,6 +49,10 @@ function isLowCarbFood(food: { kcalPer100: number; carbsPer100: number }): boole
 function toggleValue(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 }
+
+/** Recipes have no `foods.category` value to key off of, so their photo-less
+ * placeholder gets one generic plate icon rather than per-category ones. */
+const RECIPE_PLACEHOLDER_ICON = require('../../assets/icons/library/kitchen-misc/072-plate.png');
 
 export default function LibraryScreen() {
   const { t } = useTranslation();
@@ -473,6 +478,7 @@ export default function LibraryScreen() {
                 subtitle={nutrition ? `${categoryLabel} · ${Math.round(nutrition.kcal)} kcal` : categoryLabel}
                 photoUri={photoMap.get(`recipe:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
+                categoryIcon={RECIPE_PLACEHOLDER_ICON}
                 rating={recipeRatings.get(item.id) ?? null}
                 tags={[
                   { label: t(`budget.${item.budget}`) },
@@ -520,6 +526,7 @@ export default function LibraryScreen() {
                 subtitle={`${Math.round(item.kcalPer100)} kcal / 100 ${item.baseUnit === 'piece' ? 'g' : item.baseUnit}`}
                 photoUri={photoMap.get(`food:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
+                categoryIcon={getFoodCategoryIcon(item.category)}
                 rating={foodRatings.get(item.id) ?? null}
                 tags={[
                   { label: t(`budget.${item.budget}`) },

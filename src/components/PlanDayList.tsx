@@ -29,7 +29,6 @@ import {
   type MealRow,
   type SlotRow,
 } from '@/hooks/plan';
-import { confirmDeleteMeal } from '@/utils/mealActions';
 import { slotDisplayLabel } from '@/utils/mealSlots';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -160,10 +159,6 @@ export function PlanDayList({
             onToggleExpand={() => onToggleExpand(slot.id)}
             onSwap={() => void regenerateSlot(db, householdId, date, slot.slotKey, trackProfileId)}
             onAddMeal={() => onPickMeal(slot)}
-            onDeleteMeal={() => {
-              if (!meal) return;
-              void confirmDeleteMeal(t, householdId, meal);
-            }}
             onAddExtra={() => meal && onAddExtra(meal.id)}
             onRemoveExtra={(extraId) => void removeMealExtra(db, extraId)}
             onOpenMenu={!isPast ? () => meal && onOpenMenu(meal, slot) : undefined}
