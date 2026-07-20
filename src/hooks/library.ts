@@ -143,6 +143,26 @@ export function useRecipeTagsMap(): Map<string, DerivedRecipeTags> {
   }, [ingredientRows, foodRows, restrictionRows]);
 }
 
+/**
+ * Map of recipeId -> ingredient foodIds (bulk, no nutrition/tag derivation) –
+ * used by the Library screen's "Uvař z toho, co mám" pantry-overlap filter
+ * (see src/domain/pantryRecipeMatch.ts). Kept separate from
+ * `useRecipeTagsMap`/`useRecipeNutritionMap` since those do more work this
+ * filter doesn't need.
+ */
+export function useRecipeIngredientFoodIdsMap(): Map<string, string[]> {
+  const { data } = useLiveQuery(db.select().from(recipeIngredients).where(isNull(recipeIngredients.deletedAt)));
+  return useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const row of data ?? []) {
+      const list = map.get(row.recipeId) ?? [];
+      list.push(row.foodId);
+      map.set(row.recipeId, list);
+    }
+    return map;
+  }, [data]);
+}
+
 /** Every food's allergen list, keyed by food id – for library filtering. */
 export function useFoodAllergensMap(): Map<string, string[]> {
   const { data } = useLiveQuery(db.select().from(foodRestrictions).where(isNull(foodRestrictions.deletedAt)));

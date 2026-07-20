@@ -8,13 +8,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
+import { AccordionCard } from '@/components/ui/AccordionCard';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
+import { getFoodCategoryIcon } from '@/constants/pantryCategoryIcons';
 import { db } from '@/db/client';
 import { addPantryItem, prefillStaplesToShoppingList, removePantryItem } from '@/db/repositories/shopping';
 import { todayIsoDate } from '@/db/time';
+import { groupPantryItems, type PantryBucket } from '@/domain/pantryGrouping';
 import { useHousehold } from '@/hooks/data';
-import { useFood } from '@/hooks/library';
+import { useFood, useFoods } from '@/hooks/library';
 import { usePantryItems, type PantryItemRow } from '@/hooks/shopping';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
@@ -22,22 +25,41 @@ import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { localizedName } from '@/utils/localized';
 
-function PantryRow({ item, onRemove }: { item: PantryItemRow; onRemove: () => void }) {
+const SECTION_ORDER: PantryBucket[] = ['expiringSoon', 'fresh', 'freezer', 'staples', 'other'];
+const SECTION_TITLE_KEYS: Record<PantryBucket, string> = {
+  expiringSoon: 'shopping.sectionExpiringSoon',
+  fresh: 'shopping.sectionFresh',
+  freezer: 'shopping.sectionFreezer',
+  staples: 'shopping.sectionStaples',
+  other: 'shopping.sectionOther',
+};
+
+type PantrySection = { key: PantryBucket; items: PantryItemRow[] };
+
+function PantryRow({
+  item,
+  attention,
+  onRemove,
+}: {
+  item: PantryItemRow;
+  attention?: boolean;
+  onRemove: () => void;
+}) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const food = useFood(item.foodId);
   const name = food ? localizedName(food) : '';
-  const today = todayIsoDate();
-  const expiringSoon = item.expiresAt !== null && item.expiresAt <= today;
+  const icon = getFoodCategoryIcon(food?.category);
 
   return (
     <View style={styles.row}>
+      <Image source={icon} style={styles.rowIcon} contentFit="contain" />
       <View style={styles.rowText}>
         <Text style={styles.rowName} numberOfLines={1}>
           {name}
         </Text>
-        <Text style={[styles.rowMeta, expiringSoon && styles.rowMetaWarning]}>
+        <Text style={[styles.rowMeta, attention && styles.rowMetaWarning]}>
           {Math.round(item.quantity * 10) / 10} {food?.baseUnit === 'piece' ? t('units.pcs') : food?.baseUnit}
           {item.expiresAt ? ` · ${t('shopping.expiresOn', { date: item.expiresAt })}` : ''}
         </Text>
@@ -62,6 +84,19 @@ export default function PantryScreen() {
   const [quantity, setQuantity] = useState('');
 
   const pantryItems = usePantryItems(household?.id);
+  const foodRows = useFoods();
+
+  const foodsById = useMemo(
+    () => new Map(foodRows.map((food) => [food.id, { storage: food.storage, category: food.category }])),
+    [foodRows],
+  );
+  const today = todayIsoDate();
+  const grouped = useMemo(() => groupPantryItems(pantryItems, foodsById, today), [pantryItems, foodsById, today]);
+  const sections = useMemo<PantrySection[]>(
+    () =>
+      SECTION_ORDER.map((key) => ({ key, items: grouped[key] })).filter((section) => section.items.length > 0),
+    [grouped],
+  );
 
   const closeAddFlow = () => {
     setPickerVisible(false);
@@ -103,6 +138,15 @@ export default function PantryScreen() {
         <Ionicons name="chevron-forward" size={16} color={colors.primary} />
       </Pressable>
 
+      <Pressable
+        accessibilityRole="button"
+        style={styles.cookLink}
+        onPress={() => router.push({ pathname: '/(tabs)/library', params: { pantryOnly: '1' } })}>
+        <Ionicons name="restaurant-outline" size={16} color={colors.primary} />
+        <Text style={styles.shoppingLinkLabel}>{t('shopping.cookWithPantry')}</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+      </Pressable>
+
       <FlatList
         ref={listRef}
         onScroll={(e) => {
@@ -113,9 +157,24 @@ export default function PantryScreen() {
         onLayout={scrollHint.onLayout}
         scrollEventThrottle={scrollEventThrottle}
         contentContainerStyle={styles.list}
-        data={pantryItems}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PantryRow item={item} onRemove={() => void removePantryItem(db, item.id)} />}
+        data={sections}
+        keyExtractor={(section) => section.key}
+        renderItem={({ item: section }: { item: PantrySection }) =>
+          section.key === 'expiringSoon' ? (
+            <View style={styles.pinnedSection}>
+              <Text style={styles.pinnedTitle}>{t(SECTION_TITLE_KEYS.expiringSoon)}</Text>
+              {section.items.map((row) => (
+                <PantryRow key={row.id} item={row} attention onRemove={() => void removePantryItem(db, row.id)} />
+              ))}
+            </View>
+          ) : (
+            <AccordionCard title={t(SECTION_TITLE_KEYS[section.key])}>
+              {section.items.map((row) => (
+                <PantryRow key={row.id} item={row} onRemove={() => void removePantryItem(db, row.id)} />
+              ))}
+            </AccordionCard>
+          )
+        }
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <Image
@@ -200,6 +259,14 @@ function createStyles(colors: ColorTokens) {
       paddingHorizontal: spacing.md,
       marginTop: spacing.sm,
     },
+    cookLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.xs,
+    },
     shoppingLinkLabel: {
       color: colors.primary,
       fontSize: typography.body,
@@ -208,6 +275,20 @@ function createStyles(colors: ColorTokens) {
     list: {
       padding: spacing.md,
       paddingBottom: spacing.xl,
+    },
+    pinnedSection: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: colors.attention,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    pinnedTitle: {
+      color: colors.attention,
+      fontSize: typography.subtitle,
+      fontWeight: '700',
+      marginBottom: spacing.sm,
     },
     row: {
       flexDirection: 'row',
@@ -220,6 +301,10 @@ function createStyles(colors: ColorTokens) {
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
       marginBottom: spacing.xs + 2,
+    },
+    rowIcon: {
+      width: 26,
+      height: 26,
     },
     rowText: {
       flex: 1,

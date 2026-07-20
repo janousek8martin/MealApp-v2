@@ -103,7 +103,8 @@
       "reset": "Reset filters",
       "apply": "Show results"
     },
-    "noResults": "Nothing found. Try adjusting your search or filters."
+    "noResults": "Nothing found. Try adjusting your search or filters.",
+    "pantryOnlyFilter": "Recipes from what's in my pantry"
   },
   "shopping": {
     "list": "List",
@@ -121,7 +122,13 @@
     "prefillStapleResult": "Added {{added}} staples to the shopping list ({{skipped}} already stocked or listed)",
     "purchasedTitle": "How much did you buy?",
     "purchasedConfirm": "Add to pantry",
-    "purchasedJustNeeded": "Just the needed amount"
+    "purchasedJustNeeded": "Just the needed amount",
+    "sectionExpiringSoon": "Use up soon",
+    "sectionFresh": "Fresh / fridge",
+    "sectionFreezer": "Freezer",
+    "sectionStaples": "Shelf-stable (pantry)",
+    "sectionOther": "Other",
+    "cookWithPantry": "Cook with what I have"
   },
   "progress": {
     "logWeight": "Log weight",

@@ -103,7 +103,8 @@
       "reset": "Zrušit filtry",
       "apply": "Zobrazit výsledky"
     },
-    "noResults": "Nic jsme nenašli. Zkus upravit hledání nebo filtry."
+    "noResults": "Nic jsme nenašli. Zkus upravit hledání nebo filtry.",
+    "pantryOnlyFilter": "Recepty z toho, co mám ve spíži"
   },
   "shopping": {
     "list": "Seznam",
@@ -121,7 +122,13 @@
     "prefillStapleResult": "Přidáno {{added}} základních položek na nákupní seznam ({{skipped}} už bylo ve spíži nebo seznamu)",
     "purchasedTitle": "Kolik jsi toho koupil?",
     "purchasedConfirm": "Přidat do spíže",
-    "purchasedJustNeeded": "Jen potřebné množství"
+    "purchasedJustNeeded": "Jen potřebné množství",
+    "sectionExpiringSoon": "Brzy spotřebovat",
+    "sectionFresh": "Čerstvé / lednice",
+    "sectionFreezer": "Mrazák",
+    "sectionStaples": "Trvanlivé (spíž)",
+    "sectionOther": "Ostatní",
+    "cookWithPantry": "Uvař z toho, co mám"
   },
   "progress": {
     "logWeight": "Zapsat váhu",
