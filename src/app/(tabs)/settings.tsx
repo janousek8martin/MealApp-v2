@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useTheme } from '@/theme/ThemeContext';
@@ -17,12 +18,14 @@ type CategoryRow = {
   route: '/settings-app' | '/settings-household' | '/settings-profile' | '/settings-about';
   titleKey: string;
   hintKey: string;
+  /** Only set where the existing one-line hint doesn't already cover what a tooltip would add (see task-11-report.md). */
+  tooltipKey?: string;
 };
 
 const CATEGORIES: CategoryRow[] = [
   { key: 'app', icon: 'phone-portrait-outline', route: '/settings-app', titleKey: 'settings.category.app.title', hintKey: 'settings.category.app.hint' },
   { key: 'household', icon: 'home-outline', route: '/settings-household', titleKey: 'settings.category.household.title', hintKey: 'settings.category.household.hint' },
-  { key: 'profile', icon: 'person-outline', route: '/settings-profile', titleKey: 'settings.category.profile.title', hintKey: 'settings.category.profile.hint' },
+  { key: 'profile', icon: 'person-outline', route: '/settings-profile', titleKey: 'settings.category.profile.title', hintKey: 'settings.category.profile.hint', tooltipKey: 'tooltip.settingsProfile' },
   { key: 'about', icon: 'information-circle-outline', route: '/settings-about', titleKey: 'settings.category.about.title', hintKey: 'settings.category.about.hint' },
 ];
 
@@ -50,20 +53,24 @@ export default function SettingsScreen() {
         <Text style={styles.heading}>{t('settings.title')}</Text>
 
         {CATEGORIES.map((category) => (
-          <Pressable
-            key={category.key}
-            accessibilityRole="button"
-            style={styles.categoryRow}
-            onPress={() => router.push(category.route)}>
-            <View style={styles.categoryIcon}>
-              <Ionicons name={category.icon} size={22} color={colors.primary} />
-            </View>
-            <View style={styles.categoryText}>
-              <Text style={styles.categoryTitle}>{t(category.titleKey)}</Text>
-              <Text style={styles.categoryHint}>{t(category.hintKey)}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </Pressable>
+          <View key={category.key} style={styles.categoryRow}>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.categoryPress}
+              onPress={() => router.push(category.route)}>
+              <View style={styles.categoryIcon}>
+                <Ionicons name={category.icon} size={22} color={colors.primary} />
+              </View>
+              <View style={styles.categoryText}>
+                <Text style={styles.categoryTitle}>{t(category.titleKey)}</Text>
+                <Text style={styles.categoryHint}>{t(category.hintKey)}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            </Pressable>
+            {category.tooltipKey ? (
+              <InfoTooltip titleKey={`${category.tooltipKey}.title`} bodyKey={`${category.tooltipKey}.body`} />
+            ) : null}
+          </View>
         ))}
       </ScrollView>
 
@@ -102,6 +109,12 @@ function createStyles(colors: ColorTokens) {
       borderColor: colors.border,
       padding: spacing.md,
       marginTop: spacing.sm,
+    },
+    categoryPress: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
     },
     categoryIcon: {
       width: 40,

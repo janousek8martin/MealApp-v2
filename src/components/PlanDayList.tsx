@@ -141,11 +141,7 @@ export function PlanDayList({
           <Text style={[styles.fitBadgeText, withinTolerance ? styles.fitBadgeTextOk : styles.fitBadgeTextOff]}>
             {withinTolerance ? t('planScreen.fitWithinTolerance') : t('planScreen.fitOutsideTolerance')}
           </Text>
-          <InfoTooltip
-            titleKey="tooltip.toleranceStatus.title"
-            bodyKey="tooltip.toleranceStatus.body"
-            color={withinTolerance ? colors.interactive : colors.attention}
-          />
+          <InfoTooltip titleKey="tooltip.toleranceStatus.title" bodyKey="tooltip.toleranceStatus.body" />
         </View>
       ) : null}
 
