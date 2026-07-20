@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ProfileDropdownMenu } from '@/components/ProfileDropdownMenu';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { useProfiles } from '@/hooks/data';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -36,11 +37,14 @@ export function ProfileChip({ householdId, selectedProfileId, onSelect }: Props)
 
   return (
     <>
-      <Pressable accessibilityRole="button" style={styles.chip} onPress={() => setVisible(true)}>
-        <Text style={styles.initial}>{selected.name.slice(0, 1).toUpperCase()}</Text>
-        <Text style={styles.name}>{selected.name}</Text>
-        <Ionicons name="chevron-down" size={16} color={colors.text} />
-      </Pressable>
+      <View style={styles.row}>
+        <Pressable accessibilityRole="button" style={styles.chip} onPress={() => setVisible(true)}>
+          <Text style={styles.initial}>{selected.name.slice(0, 1).toUpperCase()}</Text>
+          <Text style={styles.name}>{selected.name}</Text>
+          <Ionicons name="chevron-down" size={16} color={colors.text} />
+        </Pressable>
+        <InfoTooltip titleKey="tooltip.profileChip.title" bodyKey="tooltip.profileChip.body" />
+      </View>
 
       <ProfileDropdownMenu
         visible={visible}
@@ -56,6 +60,12 @@ export function ProfileChip({ householdId, selectedProfileId, onSelect }: Props)
 
 function createStyles(colors: ColorTokens) {
   return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      alignSelf: 'flex-start',
+    },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',

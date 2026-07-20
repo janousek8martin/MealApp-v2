@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from 'react-native-svg';
 
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { WaterSettingsCard } from '@/components/WaterSettingsCard';
 import { db } from '@/db/client';
 import { logWater } from '@/db/repositories/water';
@@ -280,6 +281,7 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
             style={styles.settingsButton}>
             <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
           </Pressable>
+          <InfoTooltip titleKey="tooltip.waterGoal.title" bodyKey="tooltip.waterGoal.body" />
         </View>
       </View>
 
@@ -448,6 +450,8 @@ function createStyles(colors: ColorTokens) {
     },
     sideCol: {
       alignSelf: 'flex-start',
+      alignItems: 'center',
+      gap: spacing.sm,
       paddingTop: spacing.xxs,
     },
     settingsButton: {

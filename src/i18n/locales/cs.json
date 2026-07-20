@@ -896,5 +896,55 @@
     "legendActive": "Aktivní fáze",
     "legendMaintenance": "Udržovací týden",
     "timelineSummary": "~{{weeks}} týdnů · kolem {{date}}"
+  },
+  "tooltip": {
+    "pantry": {
+      "title": "Co je spíž?",
+      "body": "Spíž sleduje, co doma už máte, takže se to zohledňuje při plánování jídel i tvorbě nákupního seznamu."
+    },
+    "pantryExpiring": {
+      "title": "Brzy spotřebovat",
+      "body": "Těmto položkám se blíží datum spotřeby – jde jen o jemné připomenutí použít je dřív, ne o varování."
+    },
+    "prefillStaples": {
+      "title": "Doplnit základy",
+      "body": "Přidá trvanlivé základní suroviny (rýže, olej, konzervy…) na nákupní seznam pro jeden větší nákup, podle toho, co doma ještě nemáte."
+    },
+    "settingsApp": {
+      "title": "Nastavení appky a zařízení",
+      "body": "Jednotky, jazyk, vzhled, notifikace, uspořádání navigace a paměť scrollování – všechno kolem chování samotné appky."
+    },
+    "settingsHousehold": {
+      "title": "Nastavení domácnosti",
+      "body": "Sdílené preference pro celou domácnost: strava, kuchyně, nechtěné suroviny, členové a pravidla plánování jídel."
+    },
+    "settingsProfile": {
+      "title": "Nastavení profilu",
+      "body": "Osobní údaje tohoto profilu – cíle, kalorie a makra, porce po slotech a pitný režim."
+    },
+    "profileChip": {
+      "title": "Přepnout profil",
+      "body": "Klepnutím na destičku přepnete, čí kalorie, makra a plán se zobrazují – jídelníček, spíž i nákupní seznam zůstávají pro celou domácnost společné."
+    },
+    "macros": {
+      "title": "Váš denní cíl",
+      "body": "Toto je váš denní cíl kalorií a makroživin, spočítaný z vašeho profilu – automaticky se přepočítá při jakékoli změně údajů."
+    },
+    "toleranceStatus": {
+      "title": "Jak blízko cíli",
+      "body": "Ukazuje, jak dobře se dnešní naplánovaná jídla trefují do vašeho cíle kalorií a maker. Denní výkyvy jsou normální – nejde o žádné hodnocení uspěl/neuspěl."
+    },
+    "streak": {
+      "title": "Vaše šňůra",
+      "body": "Počítá dny v řadě, kdy jste si tohle zaznamenali. Vynechaný den šňůru jen pozastaví, nesmaže váš pokrok – není třeba začínat od nuly."
+    },
+    "bodyFat": {
+      "title": "Referenční rozmezí",
+      "body": "Tato pásma ukazují typické rozmezí pro daný věk a pohlaví na základě populačních dat – nejde o „ideál“ ani cíl, kterého musíte dosáhnout."
+    },
+    "waterGoal": {
+      "title": "Jak se počítá cíl",
+      "body": "Denní cíl pro pitný režim se odhaduje z vaší váhy. Vlastní číslo si můžete kdykoli nastavit v Nastavení → Profil."
+    }
   }
 }

@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import type { TargetsResult } from '@/domain/targets';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -40,7 +41,10 @@ export function TdciCard({ name, targets }: Props) {
         style={styles.heroTexture}
         contentFit="cover"
       />
-      <Text style={styles.name}>{name}</Text>
+      <View style={styles.nameRow}>
+        <Text style={styles.name}>{name}</Text>
+        <InfoTooltip titleKey="tooltip.macros.title" bodyKey="tooltip.macros.body" color={colors.accentSoft} />
+      </View>
       <View style={styles.heroRow}>
         <Text style={styles.kcal}>{Math.round(targets.adjustedTdciKcal)}</Text>
         <Text style={styles.kcalUnit}>kcal</Text>
@@ -75,6 +79,11 @@ function createStyles(colors: ColorTokens) {
       right: 0,
       bottom: 0,
       opacity: 0.16,
+    },
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
     },
     name: {
       color: colors.accentSoft,

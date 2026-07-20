@@ -10,6 +10,7 @@ import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { AccordionCard } from '@/components/ui/AccordionCard';
 import { Button } from '@/components/ui/Button';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { TextField } from '@/components/ui/TextField';
 import { getFoodCategoryIcon } from '@/constants/pantryCategoryIcons';
 import { db } from '@/db/client';
@@ -126,7 +127,10 @@ export default function PantryScreen() {
 
       <View style={styles.actionsRow}>
         <Button label={t('shopping.addItem')} onPress={() => setPickerVisible(true)} style={styles.actionButton} />
-        <Button label={t('shopping.prefillStaples')} variant="secondary" onPress={prefillStaples} style={styles.actionButton} />
+        <View style={styles.actionButtonWithInfo}>
+          <Button label={t('shopping.prefillStaples')} variant="secondary" onPress={prefillStaples} style={styles.actionButton} />
+          <InfoTooltip titleKey="tooltip.prefillStaples.title" bodyKey="tooltip.prefillStaples.body" />
+        </View>
       </View>
 
       <Pressable
@@ -162,7 +166,10 @@ export default function PantryScreen() {
         renderItem={({ item: section }: { item: PantrySection }) =>
           section.key === 'expiringSoon' ? (
             <View style={styles.pinnedSection}>
-              <Text style={styles.pinnedTitle}>{t(SECTION_TITLE_KEYS.expiringSoon)}</Text>
+              <View style={styles.pinnedTitleRow}>
+                <Text style={styles.pinnedTitle}>{t(SECTION_TITLE_KEYS.expiringSoon)}</Text>
+                <InfoTooltip titleKey="tooltip.pantryExpiring.title" bodyKey="tooltip.pantryExpiring.body" color={colors.attention} />
+              </View>
               {section.items.map((row) => (
                 <PantryRow key={row.id} item={row} attention onRemove={() => void removePantryItem(db, row.id)} />
               ))}
@@ -251,6 +258,12 @@ function createStyles(colors: ColorTokens) {
     actionButton: {
       flex: 1,
     },
+    actionButtonWithInfo: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
     shoppingLink: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -284,11 +297,16 @@ function createStyles(colors: ColorTokens) {
       padding: spacing.md,
       marginBottom: spacing.sm,
     },
+    pinnedTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      marginBottom: spacing.sm,
+    },
     pinnedTitle: {
       color: colors.attention,
       fontSize: typography.subtitle,
       fontWeight: '700',
-      marginBottom: spacing.sm,
     },
     row: {
       flexDirection: 'row',

@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
@@ -104,7 +105,10 @@ export function BodyFatChartModal({ visible, sex, onClose, currentValuePct, curr
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.title}>{t('bodyFatChart.title')}</Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>{t('bodyFatChart.title')}</Text>
+              <InfoTooltip titleKey="tooltip.bodyFat.title" bodyKey="tooltip.bodyFat.body" />
+            </View>
             <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
               <Ionicons name="close" size={22} color={colors.text} />
             </Pressable>
@@ -178,6 +182,13 @@ function createStyles(colors: ColorTokens) {
       alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: spacing.xs,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      flex: 1,
+      marginRight: spacing.sm,
     },
     title: {
       color: colors.text,

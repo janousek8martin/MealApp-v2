@@ -9,6 +9,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ProfileChip } from '@/components/ProfileChip';
 import { ProgressRing } from '@/components/ProgressRing';
 import { StreakDetailModal } from '@/components/StreakDetailModal';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { todayIsoDate } from '@/db/time';
 import { longestConsecutiveRun } from '@/domain/streak';
 import type { TargetsResult } from '@/domain/targets';
@@ -178,6 +179,7 @@ export function HomeHeroCard({
           <Text style={styles.streakValue}>{waterStreak}</Text>
           <Text style={styles.streakLabel}>{t('today.waterStreak')}</Text>
         </Pressable>
+        <InfoTooltip titleKey="tooltip.streak.title" bodyKey="tooltip.streak.body" color={colors.accentSoft} />
       </View>
 
       {nextMeal ? (
@@ -300,6 +302,7 @@ function createStyles(colors: ColorTokens) {
     },
     streaksRow: {
       flexDirection: 'row',
+      alignItems: 'center',
       gap: spacing.sm,
       marginTop: spacing.sm,
     },

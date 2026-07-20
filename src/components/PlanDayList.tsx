@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { MealSlotCard } from '@/components/MealSlotCard';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { db } from '@/db/client';
 import { regenerateSlot, removeMealExtra, setPortionStatus } from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
@@ -140,6 +141,11 @@ export function PlanDayList({
           <Text style={[styles.fitBadgeText, withinTolerance ? styles.fitBadgeTextOk : styles.fitBadgeTextOff]}>
             {withinTolerance ? t('planScreen.fitWithinTolerance') : t('planScreen.fitOutsideTolerance')}
           </Text>
+          <InfoTooltip
+            titleKey="tooltip.toleranceStatus.title"
+            bodyKey="tooltip.toleranceStatus.body"
+            color={withinTolerance ? colors.interactive : colors.attention}
+          />
         </View>
       ) : null}
 
@@ -185,6 +191,9 @@ function createStyles(colors: ColorTokens) {
       marginBottom: spacing.md,
     },
     fitBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
       alignSelf: 'flex-start',
       borderRadius: radius.chip,
       paddingVertical: spacing.xs,

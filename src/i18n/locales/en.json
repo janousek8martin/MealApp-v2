@@ -896,5 +896,55 @@
     "legendActive": "Active phase",
     "legendMaintenance": "Maintenance week",
     "timelineSummary": "~{{weeks}} weeks · around {{date}}"
+  },
+  "tooltip": {
+    "pantry": {
+      "title": "What is Pantry?",
+      "body": "Pantry keeps track of what your household already has at home, so meal planning and the shopping list take it into account."
+    },
+    "pantryExpiring": {
+      "title": "Use up soon",
+      "body": "These items are getting close to their use-by date - a gentle nudge to use them before anything else, not a warning."
+    },
+    "prefillStaples": {
+      "title": "Stock up on staples",
+      "body": "Adds long-lasting basics (rice, oil, canned goods…) to your shopping list for a batch purchase, based on what you don't already have."
+    },
+    "settingsApp": {
+      "title": "App & device settings",
+      "body": "Units, language, appearance, notifications, navigation layout and scroll memory - anything about how the app itself behaves."
+    },
+    "settingsHousehold": {
+      "title": "Household settings",
+      "body": "Shared preferences for everyone in the household: diet, cuisines, foods to avoid, members and meal-planning rules."
+    },
+    "settingsProfile": {
+      "title": "Profile settings",
+      "body": "Personal details for this profile - goals, calories and macros, slot portions and water intake."
+    },
+    "profileChip": {
+      "title": "Switch profile",
+      "body": "Tap the pill to switch whose calories, macros and plan you're viewing - everyone still shares the same meal plan, pantry and shopping list."
+    },
+    "macros": {
+      "title": "Your daily target",
+      "body": "This is your daily calorie and macronutrient target, computed from your profile - it updates automatically whenever your details change."
+    },
+    "toleranceStatus": {
+      "title": "How close to target",
+      "body": "Shows how closely today's planned meals match your calorie and macro target. Some day-to-day variation is normal - this isn't a pass or fail grade."
+    },
+    "streak": {
+      "title": "Your streak",
+      "body": "Counts consecutive days you logged this. A missed day just pauses the streak - it doesn't erase your progress, so there's no need to start over."
+    },
+    "bodyFat": {
+      "title": "Reference ranges",
+      "body": "These bands show a typical range for a given age and sex, based on population data - not an \"ideal\" or a goal to hit."
+    },
+    "waterGoal": {
+      "title": "How the goal is set",
+      "body": "Your daily water goal is estimated from your weight. You can set your own number anytime in Settings → Profile."
+    }
   }
 }
