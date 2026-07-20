@@ -9,8 +9,8 @@ import { HintedScrollView } from '@/components/HintedScrollView';
 import { HouseholdPreferencesCarousel, type HouseholdPreferencesValue } from '@/components/householdWizard/HouseholdPreferencesCarousel';
 import type { ProfileFormValue } from '@/components/ProfileForm';
 import { ProfileSetupCarousel } from '@/components/profileWizard/ProfileSetupCarousel';
-import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
+import { StepFooter, useStepFooterPadding } from '@/components/ui/StepFooter';
 import { AVOID_FOOD_GROUPS } from '@/constants/options';
 import { db } from '@/db/client';
 import { createHouseholdWithDefaults, saveHouseholdPreferences, updateHouseholdSettings } from '@/db/repositories/households';
@@ -30,6 +30,7 @@ export default function WizardScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const setActiveProfileId = useAppStore((state) => state.setActiveProfileId);
+  const footerPadding = useStepFooterPadding();
   const foodRows = useFoods();
   const foodIdBySeedKey = useMemo(() => {
     const map = new Map<string, string>();
@@ -170,7 +171,12 @@ export default function WizardScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <HintedScrollView
           ref={scrollRef}
-          contentContainerStyle={[styles.content, step === 'done' && styles.contentCentered]}
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.content,
+            step === 'done' && styles.contentCentered,
+            { paddingBottom: footerPadding },
+          ]}
           keyboardShouldPersistTaps="handled">
           {stepLabel ? <Text style={styles.stepLabel}>{stepLabel}</Text> : null}
 
@@ -188,12 +194,6 @@ export default function WizardScreen() {
                 <Text style={styles.subtitle}>{t('wizard.compositionSubtitle')}</Text>
                 <Stepper label={t('wizard.adults')} value={adults} onChange={setAdults} min={0} max={8} />
                 <Stepper label={t('wizard.children')} value={children} onChange={setChildren} min={0} max={8} />
-                <Button
-                  label={t('common.continue')}
-                  onPress={goComposition}
-                  disabled={totalMembers < 1}
-                  style={styles.cta}
-                />
               </View>
             ) : null}
 
@@ -228,11 +228,25 @@ export default function WizardScreen() {
               <View style={styles.centered}>
                 <Text style={styles.title}>{t('wizard.doneTitle')}</Text>
                 <Text style={styles.subtitle}>{t('wizard.doneSubtitle')}</Text>
-                <Button label={t('wizard.enterApp')} onPress={() => router.replace('/(tabs)')} style={styles.cta} />
               </View>
             ) : null}
           </Animated.View>
         </HintedScrollView>
+        {step === 'composition' ? (
+          <StepFooter
+            onNext={goComposition}
+            nextLabel={t('common.continue')}
+            nextDisabled={totalMembers < 1}
+            hideBack
+          />
+        ) : null}
+        {step === 'done' ? (
+          <StepFooter
+            onNext={() => router.replace('/(tabs)')}
+            nextLabel={t('wizard.enterApp')}
+            hideBack
+          />
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

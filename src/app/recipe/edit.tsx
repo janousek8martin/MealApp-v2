@@ -10,8 +10,8 @@ import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
 import { HintedScrollView } from '@/components/HintedScrollView';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
+import { StepFooter, useStepFooterPadding } from '@/components/ui/StepFooter';
 import { TextField } from '@/components/ui/TextField';
 import { COOKING_EXPERIENCE_LEVELS, CUISINE_KEYS, RECIPE_TAG_KEYS } from '@/constants/options';
 import { db } from '@/db/client';
@@ -43,6 +43,7 @@ export default function RecipeEditScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const footerPadding = useStepFooterPadding();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const existing = useRecipe(id);
   const existingIngredients = useRecipeIngredients(id);
@@ -219,7 +220,11 @@ export default function RecipeEditScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <HintedScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <View style={styles.flex}>
+      <HintedScrollView
+        style={styles.flex}
+        contentContainerStyle={[styles.content, { paddingBottom: footerPadding }]}
+        keyboardShouldPersistTaps="handled">
         <ScreenHeader />
         <Text style={styles.title}>{id ? t('recipeEdit.editTitle') : t('recipeEdit.newTitle')}</Text>
 
@@ -406,11 +411,15 @@ export default function RecipeEditScreen() {
           multiline
         />
 
-        <View style={styles.actions}>
-          <Button label={t('common.cancel')} variant="secondary" onPress={() => router.back()} style={styles.action} />
-          <Button label={t('common.save')} onPress={save} disabled={!canSave} style={styles.action} />
-        </View>
       </HintedScrollView>
+      <StepFooter
+        onBack={() => router.back()}
+        backLabel={t('common.back')}
+        onNext={save}
+        nextLabel={t('common.save')}
+        nextDisabled={!canSave}
+      />
+      </View>
 
       <FoodPickerModal
         visible={pickerVisible}
@@ -427,9 +436,11 @@ function createStyles(colors: ColorTokens) {
       flex: 1,
       backgroundColor: colors.background,
     },
+    flex: {
+      flex: 1,
+    },
     content: {
       padding: spacing.md,
-      paddingBottom: spacing.xl,
     },
     title: {
       color: colors.text,
@@ -557,14 +568,6 @@ function createStyles(colors: ColorTokens) {
     nutritionLabel: {
       color: colors.textSecondary,
       fontSize: typography.small,
-    },
-    actions: {
-      flexDirection: 'row',
-      gap: spacing.sm,
-      marginTop: spacing.md,
-    },
-    action: {
-      flex: 1,
     },
   });
 }

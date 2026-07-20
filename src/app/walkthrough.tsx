@@ -277,7 +277,12 @@ function createStyles(colors: ColorTokens) {
       borderRadius: 4,
     },
     footer: {
-      padding: spacing.lg,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.md,
+      backgroundColor: colors.background,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
     },
     footerLayer: {
       position: 'absolute',
