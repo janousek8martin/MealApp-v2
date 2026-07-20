@@ -718,7 +718,30 @@
     "carbsComputed": "Carbs (computed)",
     "snackPresets": "Quick presets",
     "useDefault": "Use default",
-    "savePortions": "Save portions"
+    "savePortions": "Save portions",
+    "category": {
+      "app": {
+        "title": "App & device",
+        "hint": "Units, language, appearance, notifications, navigation and scroll memory."
+      },
+      "household": {
+        "title": "Household",
+        "hint": "Household name, diet, cuisines, foods to avoid, members and planning rules."
+      },
+      "profile": {
+        "title": "Profile",
+        "hint": "Personal details, goals, calories & macros, slot portions and water intake."
+      },
+      "about": {
+        "title": "About",
+        "hint": "App version, onboarding replay and licence information."
+      }
+    }
+  },
+  "settingsAbout": {
+    "version": "App version",
+    "replayOnboarding": "Show onboarding again",
+    "licencePlaceholder": "Licence to be finalized."
   },
   "carousel": {
     "back": "Back",

@@ -718,7 +718,30 @@
     "carbsComputed": "Sacharidy (dopočet)",
     "snackPresets": "Rychlé předvolby",
     "useDefault": "Použít výchozí",
-    "savePortions": "Uložit porce"
+    "savePortions": "Uložit porce",
+    "category": {
+      "app": {
+        "title": "App a zařízení",
+        "hint": "Jednotky, jazyk, vzhled, notifikace, navigace a paměť scrollování."
+      },
+      "household": {
+        "title": "Domácnost",
+        "hint": "Název domácnosti, strava, kuchyně, nechtěné suroviny, členové a pravidla plánování."
+      },
+      "profile": {
+        "title": "Profil",
+        "hint": "Osobní údaje, cíle, kalorie a makra, porce po slotech a pitný režim."
+      },
+      "about": {
+        "title": "O aplikaci",
+        "hint": "Verze appky, úvodní obrazovka a informace o licenci."
+      }
+    }
+  },
+  "settingsAbout": {
+    "version": "Verze appky",
+    "replayOnboarding": "Zobrazit úvod znovu",
+    "licencePlaceholder": "Licence bude upřesněna."
   },
   "carousel": {
     "back": "Zpět",
