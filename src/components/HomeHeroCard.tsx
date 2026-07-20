@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ProfileDropdownChip } from '@/components/ProfileDropdownChip';
+import { ProfileChip } from '@/components/ProfileChip';
 import { ProgressRing } from '@/components/ProgressRing';
 import { StreakDetailModal } from '@/components/StreakDetailModal';
 import { todayIsoDate } from '@/db/time';
@@ -20,6 +20,8 @@ import { localizedName } from '@/utils/localized';
 
 type Props = {
   householdId: string;
+  selectedProfileId: string | undefined;
+  onSelectProfile: (profileId: string) => void;
   targets: TargetsResult;
   eatenKcal: number;
   targetKcal: number;
@@ -85,6 +87,8 @@ function NextMealRow({
  */
 export function HomeHeroCard({
   householdId,
+  selectedProfileId,
+  onSelectProfile,
   targets,
   eatenKcal,
   targetKcal,
@@ -127,7 +131,7 @@ export function HomeHeroCard({
       />
 
       <View style={styles.headerRow}>
-        <ProfileDropdownChip householdId={householdId} />
+        <ProfileChip householdId={householdId} selectedProfileId={selectedProfileId} onSelect={onSelectProfile} />
         <Pressable accessibilityRole="button" style={styles.editProfileLink} onPress={onEditProfile}>
           <Ionicons name="settings-outline" size={14} color={colors.onPrimary} />
           <Text style={styles.editProfileLabel}>{t('today.editProfile')}</Text>

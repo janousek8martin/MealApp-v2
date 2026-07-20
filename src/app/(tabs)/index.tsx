@@ -34,6 +34,7 @@ import { usePantryItems, useShoppingItems } from '@/hooks/shopping';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useWaterGoalDates } from '@/hooks/water';
+import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 import { slotDisplayLabel } from '@/utils/mealSlots';
@@ -53,6 +54,8 @@ export default function TodayScreen() {
   const { household } = useHousehold();
   const settings = useHouseholdSettings(household?.id);
   const activeProfile = useActiveProfile(household?.id);
+  const activeProfileId = useAppStore((s) => s.activeProfileId);
+  const setActiveProfileId = useAppStore((s) => s.setActiveProfileId);
   const targets = useProfileTargets(activeProfile);
   const today = todayIsoDate();
   const dailyTargets = useDailyProfileTargets(activeProfile, today);
@@ -132,6 +135,8 @@ export default function TodayScreen() {
         {household && activeProfile && targets ? (
           <HomeHeroCard
             householdId={household.id}
+            selectedProfileId={activeProfileId ?? undefined}
+            onSelectProfile={setActiveProfileId}
             targets={targets}
             eatenKcal={eaten?.kcal ?? 0}
             targetKcal={dailyTargets?.kcal ?? 0}

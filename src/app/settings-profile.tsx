@@ -5,7 +5,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HintedScrollView } from '@/components/HintedScrollView';
-import { ProfileDropdownMenu } from '@/components/ProfileDropdownMenu';
+import { ProfileChip } from '@/components/ProfileChip';
 import { ManualAdjustmentCard, MacroDayOverridesEditor, MacroOverridesCard } from '@/components/ProfileNutritionCards';
 import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
 import { ProfilePortionsCard } from '@/components/ProfilePortionsCard';
@@ -30,48 +30,6 @@ import type { ProfileRow } from '@/hooks/dataMapping';
 import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
-
-/** Header pill showing the selected profile; tapping opens a dropdown of all profiles + "add profile". */
-function ProfileSwitcherHeader({
-  householdId,
-  selectedProfileId,
-  onSelect,
-}: {
-  householdId: string;
-  selectedProfileId: string | undefined;
-  onSelect: (profileId: string) => void;
-}) {
-  const { t } = useTranslation();
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  const members = useProfiles(householdId);
-  const [visible, setVisible] = useState(false);
-  const selected = members.find((m) => m.id === selectedProfileId) ?? members[0];
-
-  return (
-    <>
-      <Pressable accessibilityRole="button" style={styles.profileHeader} onPress={() => setVisible(true)}>
-        <View style={styles.profileHeaderIcon}>
-          <Text style={styles.profileHeaderInitial}>{selected?.name.slice(0, 1).toUpperCase() ?? '?'}</Text>
-        </View>
-        <View style={styles.profileHeaderText}>
-          <Text style={styles.profileHeaderLabel}>{t('settings.selectProfile')}</Text>
-          <Text style={styles.profileHeaderName}>{selected?.name ?? '—'}</Text>
-        </View>
-        <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-      </Pressable>
-
-      <ProfileDropdownMenu
-        visible={visible}
-        onClose={() => setVisible(false)}
-        householdId={householdId}
-        members={members}
-        selectedId={selected?.id}
-        onSelect={onSelect}
-      />
-    </>
-  );
-}
 
 function profileFormValueFor(profile: ProfileRow, weightKg: number, bodyFatPct: number | null | undefined, restrictions: { allergens: string[]; diets: string[] }): ProfileFormValue {
   return {
@@ -254,11 +212,13 @@ export default function SettingsProfileScreen() {
         <ScreenHeader />
         <Text style={styles.heading}>{t('settings.category.profile.title')}</Text>
 
-        <ProfileSwitcherHeader
-          householdId={household.id}
-          selectedProfileId={effectiveProfileId}
-          onSelect={setSelectedProfileId}
-        />
+        <View style={styles.profileHeader}>
+          <ProfileChip
+            householdId={household.id}
+            selectedProfileId={effectiveProfileId}
+            onSelect={setSelectedProfileId}
+          />
+        </View>
 
         {selectedProfile ? (
           <ProfileSections
@@ -313,39 +273,7 @@ function createStyles(colors: ColorTokens) {
       fontWeight: '600',
     },
     profileHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      backgroundColor: colors.surface,
-      borderRadius: radius.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing.md,
       marginBottom: spacing.md,
-    },
-    profileHeaderIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    profileHeaderInitial: {
-      color: colors.onPrimary,
-      fontWeight: '700',
-    },
-    profileHeaderText: {
-      flex: 1,
-    },
-    profileHeaderLabel: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
-    },
-    profileHeaderName: {
-      color: colors.text,
-      fontSize: typography.body,
-      fontWeight: '700',
     },
     tdciSummary: {
       color: colors.text,

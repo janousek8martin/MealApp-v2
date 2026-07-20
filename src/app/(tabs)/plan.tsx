@@ -23,7 +23,7 @@ import { MealActionsMenu } from '@/components/MealActionsMenu';
 import { MealPickerModal } from '@/components/MealPickerModal';
 import { PlanDayList } from '@/components/PlanDayList';
 import { PlanMonthPickerModal } from '@/components/PlanMonthPickerModal';
-import { ProfileDropdownChip } from '@/components/ProfileDropdownChip';
+import { ProfileChip } from '@/components/ProfileChip';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
 import { db } from '@/db/client';
@@ -52,6 +52,7 @@ import {
 } from '@/hooks/plan';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
+import { useAppStore } from '@/stores/appStore';
 import { confirmDeleteMeal } from '@/utils/mealActions';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -92,6 +93,8 @@ export default function PlanScreen() {
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
   const profiles = useProfiles(household?.id);
+  const activeProfileId = useAppStore((s) => s.activeProfileId);
+  const setActiveProfileId = useAppStore((s) => s.setActiveProfileId);
   const householdRestrictions = useHouseholdRestrictions(household?.id);
   const today = todayIsoDate();
   const { width } = useWindowDimensions();
@@ -359,7 +362,11 @@ export default function PlanScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       {household ? (
         <View style={styles.profileRow}>
-          <ProfileDropdownChip householdId={household.id} />
+          <ProfileChip
+            householdId={household.id}
+            selectedProfileId={activeProfileId ?? undefined}
+            onSelect={setActiveProfileId}
+          />
         </View>
       ) : null}
 

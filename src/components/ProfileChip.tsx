@@ -4,28 +4,34 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { ProfileDropdownMenu } from '@/components/ProfileDropdownMenu';
 import { useProfiles } from '@/hooks/data';
-import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 type Props = {
   householdId: string;
+  /** Which profile this pill shows as selected. Undefined falls back to the first household member. */
+  selectedProfileId: string | undefined;
+  /** Called with the tapped profile's id when the caller picks one from the dropdown. */
+  onSelect: (profileId: string) => void;
 };
 
 /**
- * A single compact avatar+name pill – tapping it opens a dropdown listing
- * every household profile plus "Add profile", instead of showing every
- * profile as its own chip inline (the previous ProfileSwitcher behavior).
+ * The single, shared profile-picker pill used on Plan, Progress, Home, and
+ * Settings -> Profil: avatar/initial circle + name + chevron, opening the
+ * shared `ProfileDropdownMenu` on tap. Deliberately a controlled component –
+ * it never reads/writes the global active-profile store itself. Each screen
+ * supplies its own `selectedProfileId`/`onSelect`, so Settings can track a
+ * profile being viewed/edited locally without changing which profile is
+ * "active" app-wide, while Plan/Progress/Home wire it straight to the global
+ * `useAppStore` active-profile state.
  */
-export function ProfileDropdownChip({ householdId }: Props) {
+export function ProfileChip({ householdId, selectedProfileId, onSelect }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const memberList = useProfiles(householdId);
-  const activeProfileId = useAppStore((state) => state.activeProfileId);
-  const setActiveProfileId = useAppStore((state) => state.setActiveProfileId);
+  const members = useProfiles(householdId);
   const [visible, setVisible] = useState(false);
 
-  const selected = memberList.find((p) => p.id === activeProfileId) ?? memberList[0];
+  const selected = members.find((m) => m.id === selectedProfileId) ?? members[0];
   if (!selected) return null;
 
   return (
@@ -33,16 +39,16 @@ export function ProfileDropdownChip({ householdId }: Props) {
       <Pressable accessibilityRole="button" style={styles.chip} onPress={() => setVisible(true)}>
         <Text style={styles.initial}>{selected.name.slice(0, 1).toUpperCase()}</Text>
         <Text style={styles.name}>{selected.name}</Text>
-        <Ionicons name="chevron-down" size={16} color={colors.onPrimary} />
+        <Ionicons name="chevron-down" size={16} color={colors.text} />
       </Pressable>
 
       <ProfileDropdownMenu
         visible={visible}
         onClose={() => setVisible(false)}
         householdId={householdId}
-        members={memberList}
+        members={members}
         selectedId={selected.id}
-        onSelect={setActiveProfileId}
+        onSelect={onSelect}
       />
     </>
   );
@@ -54,7 +60,7 @@ function createStyles(colors: ColorTokens) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      backgroundColor: colors.primary,
+      backgroundColor: colors.accentSoft,
       borderRadius: radius.chip,
       paddingVertical: spacing.xs + 2,
       paddingHorizontal: spacing.md,
@@ -73,8 +79,8 @@ function createStyles(colors: ColorTokens) {
       overflow: 'hidden',
     },
     name: {
-      color: colors.onPrimary,
-      fontSize: typography.small,
+      color: colors.text,
+      fontSize: typography.label,
       fontWeight: '700',
     },
   });
