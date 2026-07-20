@@ -6,9 +6,13 @@ import { Alert, Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView,
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HintedScrollView } from '@/components/HintedScrollView';
-import { HouseholdPreferencesCarousel, type HouseholdPreferencesValue } from '@/components/householdWizard/HouseholdPreferencesCarousel';
+import {
+  HouseholdPreferencesCarousel,
+  type HouseholdPreferencesValue,
+  type PreferencesCarouselHandle,
+} from '@/components/householdWizard/HouseholdPreferencesCarousel';
 import type { ProfileFormValue } from '@/components/ProfileForm';
-import { ProfileSetupCarousel } from '@/components/profileWizard/ProfileSetupCarousel';
+import { ProfileSetupCarousel, type ProfileCarouselHandle } from '@/components/profileWizard/ProfileSetupCarousel';
 import { Stepper } from '@/components/ui/Stepper';
 import { StepFooter, useStepFooterPadding } from '@/components/ui/StepFooter';
 import { AVOID_FOOD_GROUPS } from '@/constants/options';
@@ -48,6 +52,17 @@ export default function WizardScreen() {
   const [profileIndex, setProfileIndex] = useState(0);
   const [createdProfileTypes, setCreatedProfileTypes] = useState<Array<'adult' | 'child'>>([]);
   const totalMembers = adults + children;
+
+  // The preferences/profile steps delegate their own Back/Next to a carousel
+  // sub-component; this screen drives them imperatively so their buttons can
+  // render in ITS fixed StepFooter (pinned to the bottom) instead of
+  // scrolling inline inside the carousel's own content.
+  const preferencesRef = useRef<PreferencesCarouselHandle>(null);
+  const profileRef = useRef<ProfileCarouselHandle>(null);
+  const [carouselNav, setCarouselNav] = useState<{ nextLabel: string; showBack: boolean }>({
+    nextLabel: '',
+    showBack: false,
+  });
 
   const scrollRef = useRef<ScrollView>(null);
   useEffect(() => {
@@ -202,9 +217,11 @@ export default function WizardScreen() {
                 <Text style={styles.title}>{t('wizard.preferencesTitle')}</Text>
                 <Text style={styles.subtitle}>{t('wizard.preferencesSubtitle')}</Text>
                 <HouseholdPreferencesCarousel
+                  ref={preferencesRef}
                   submitLabel={t('common.continue')}
                   onSubmit={handlePreferencesSubmit}
                   onBack={backStep}
+                  onNavStateChange={setCarouselNav}
                 />
               </View>
             ) : null}
@@ -215,11 +232,13 @@ export default function WizardScreen() {
                 <Text style={styles.subtitle}>{t('wizard.profileSubtitle')}</Text>
                 <ProfileSetupCarousel
                   key={profileIndex}
+                  ref={profileRef}
                   householdId={householdId}
                   submitLabel={profileIndex + 1 >= totalMembers ? t('wizard.finishProfiles') : t('wizard.nextProfile')}
                   onSubmit={handleCreateProfile}
                   onBack={backStep}
                   initialProfileType={profileIndex < adults ? 'adult' : 'child'}
+                  onNavStateChange={setCarouselNav}
                 />
               </View>
             ) : null}
@@ -238,6 +257,14 @@ export default function WizardScreen() {
             nextLabel={t('common.continue')}
             nextDisabled={totalMembers < 1}
             hideBack
+          />
+        ) : null}
+        {step === 'preferences' || step === 'profile' ? (
+          <StepFooter
+            onNext={() => (step === 'preferences' ? preferencesRef.current?.pressNext() : profileRef.current?.pressNext())}
+            nextLabel={carouselNav.nextLabel}
+            onBack={() => (step === 'preferences' ? preferencesRef.current?.pressBack() : profileRef.current?.pressBack())}
+            hideBack={!carouselNav.showBack}
           />
         ) : null}
         {step === 'done' ? (

@@ -23,7 +23,7 @@ import { createHouseholdWithDefaults } from '@/db/repositories/households';
 import { createProfile } from '@/db/repositories/profiles';
 import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
-import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
+import { fontFamily, radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 const PAGES: { image: ReturnType<typeof require>; titleKey: string; bodyKey: string }[] = [
   {
@@ -255,7 +255,7 @@ function createStyles(colors: ColorTokens) {
     title: {
       color: colors.text,
       fontSize: typography.title,
-      fontWeight: '800',
+      fontFamily: fontFamily.heading,
       textAlign: 'center',
       marginBottom: spacing.sm,
     },
