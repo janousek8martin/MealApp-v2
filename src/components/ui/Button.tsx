@@ -1,5 +1,13 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -8,30 +16,57 @@ type Props = {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'ghost';
-  /** 'compact' shrinks padding and font size for dense rows (e.g. Plan screen's footer). Defaults to 'default'. */
   size?: 'default' | 'compact';
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function Button({ label, onPress, variant = 'primary', size = 'default', disabled, style }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const reducedMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    if (!disabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    if (!reducedMotion) {
+      scale.value = withTiming(0.96, { duration: 100 });
+    }
+  };
+
+  const handlePressOut = () => {
+    if (!reducedMotion) {
+      scale.value = withSpring(1);
+    }
+  };
 
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       disabled={disabled}
-      style={({ pressed }) => [
-        styles.base,
-        size === 'compact' && styles.compact,
-        variant === 'primary' && styles.primary,
-        variant === 'secondary' && styles.secondary,
-        variant === 'ghost' && styles.ghost,
-        disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
-        style,
+      style={[
+        ({ pressed }: { pressed: boolean }) => [
+          styles.base,
+          size === 'compact' && styles.compact,
+          variant === 'primary' && styles.primary,
+          variant === 'secondary' && styles.secondary,
+          variant === 'ghost' && styles.ghost,
+          disabled && styles.disabled,
+          pressed && !disabled && styles.pressed,
+          style,
+        ],
+        animatedStyle,
       ]}>
       <Text
         style={[
@@ -41,7 +76,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'default', 
         ]}>
         {label}
       </Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -59,7 +94,7 @@ function createStyles(colors: ColorTokens) {
       paddingHorizontal: spacing.md,
     },
     primary: {
-      backgroundColor: colors.primary,
+      backgroundColor: colors.interactive,
     },
     secondary: {
       backgroundColor: colors.surface,
@@ -83,7 +118,7 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small,
     },
     labelOnPrimary: {
-      color: colors.onPrimary,
+      color: colors.onInteractive,
     },
     labelOnLight: {
       color: colors.primary,
