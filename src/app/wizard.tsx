@@ -49,6 +49,16 @@ export default function WizardScreen() {
   const [children, setChildren] = useState(0);
   const [householdId, setHouseholdId] = useState<string | null>(null);
 
+  // Once a step has been reached, its content stays mounted (see the
+  // `display: none` render below) so navigating Back never discards
+  // in-progress carousel state - these only ever flip false -> true.
+  const [reachedPreferences, setReachedPreferences] = useState(false);
+  const [reachedProfile, setReachedProfile] = useState(false);
+  useEffect(() => {
+    if (step === 'preferences') setReachedPreferences(true);
+    if (step === 'profile') setReachedProfile(true);
+  }, [step]);
+
   const [profileIndex, setProfileIndex] = useState(0);
   const [createdProfileTypes, setCreatedProfileTypes] = useState<Array<'adult' | 'child'>>([]);
   const totalMembers = adults + children;
@@ -212,12 +222,20 @@ export default function WizardScreen() {
               </View>
             ) : null}
 
-            {step === 'preferences' ? (
-              <View>
+            {/*
+              'preferences'/'profile' stay MOUNTED (via `display: none` instead
+              of unmounting) once first reached, so Back doesn't wipe whatever
+              the user already typed/picked and doesn't reset the carousel
+              back to its first card - both carousels keep their own internal
+              state, which used to get thrown away on every remount.
+            */}
+            {reachedPreferences ? (
+              <View style={step !== 'preferences' ? styles.hiddenStep : undefined}>
                 <Text style={styles.title}>{t('wizard.preferencesTitle')}</Text>
                 <Text style={styles.subtitle}>{t('wizard.preferencesSubtitle')}</Text>
                 <HouseholdPreferencesCarousel
                   ref={preferencesRef}
+                  active={step === 'preferences'}
                   submitLabel={t('common.continue')}
                   onSubmit={handlePreferencesSubmit}
                   onBack={backStep}
@@ -226,13 +244,14 @@ export default function WizardScreen() {
               </View>
             ) : null}
 
-            {step === 'profile' && householdId ? (
-              <View>
+            {reachedProfile && householdId ? (
+              <View style={step !== 'profile' ? styles.hiddenStep : undefined}>
                 <Text style={styles.title}>{t('wizard.profileTitle', { current: profileIndex + 1, total: totalMembers })}</Text>
                 <Text style={styles.subtitle}>{t('wizard.profileSubtitle')}</Text>
                 <ProfileSetupCarousel
                   key={profileIndex}
                   ref={profileRef}
+                  active={step === 'profile'}
                   householdId={householdId}
                   submitLabel={profileIndex + 1 >= totalMembers ? t('wizard.finishProfiles') : t('wizard.nextProfile')}
                   onSubmit={handleCreateProfile}
@@ -298,6 +317,11 @@ function createStyles(colors: ColorTokens) {
     },
     centered: {
       alignItems: 'stretch',
+    },
+    // `display: 'none'` (not conditional unmounting) so the hidden carousel
+    // keeps its React state alive instead of losing it on the next Back/Next.
+    hiddenStep: {
+      display: 'none',
     },
     stepLabel: {
       color: colors.textSecondary,

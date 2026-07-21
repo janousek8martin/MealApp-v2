@@ -371,12 +371,23 @@ export default function PlanScreen() {
       ) : null}
 
       <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.weekNavButton}
-          onPress={() => animateTo(weekJumpTarget(selectedDate, -1))}>
-          <Ionicons name="chevron-back" size={20} color={colors.text} />
-        </Pressable>
+        {/*
+          Equal-width flex:1 side columns (instead of a bare weekNavButton on
+          the left vs. a wider today-pill+button group on the right) so the
+          middle month title is centered on the actual screen, not just
+          centered within its own box next to an asymmetric right side - the
+          today pill always reserves its layout width even while hidden
+          (opacity/pointerEvents only), so the old layout was permanently
+          off-center, not just while the pill was visible.
+        */}
+        <View style={styles.headerSide}>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.weekNavButton}
+            onPress={() => animateTo(weekJumpTarget(selectedDate, -1))}>
+            <Ionicons name="chevron-back" size={20} color={colors.text} />
+          </Pressable>
+        </View>
         <Pressable
           accessibilityRole="button"
           style={styles.monthTitleButton}
@@ -386,7 +397,7 @@ export default function PlanScreen() {
           </Text>
           <Ionicons name="chevron-down" size={16} color={colors.text} />
         </Pressable>
-        <View style={styles.headerRightGroup}>
+        <View style={[styles.headerSide, styles.headerRightGroup]}>
           <Animated.View style={{ opacity: todayAnim, transform: [{ scale: todayAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }] }}>
             <Pressable
               accessibilityRole="button"
@@ -628,9 +639,13 @@ function createStyles(colors: ColorTokens) {
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
       paddingHorizontal: spacing.md,
       marginTop: spacing.sm,
+    },
+    headerSide: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     weekNavButton: {
       width: 36,
@@ -642,8 +657,11 @@ function createStyles(colors: ColorTokens) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    // flex weight 2 vs. the side columns' flex:1 each - centering only needs
+    // the two side columns to match each other, not the middle, so the title
+    // can claim more room without losing center alignment.
     monthTitleButton: {
-      flex: 1,
+      flex: 2,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -656,8 +674,7 @@ function createStyles(colors: ColorTokens) {
       fontWeight: '700',
     },
     headerRightGroup: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      justifyContent: 'flex-end',
       gap: spacing.xs,
     },
     weekStripWrap: {

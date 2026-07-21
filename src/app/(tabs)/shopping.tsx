@@ -9,6 +9,7 @@ import { FoodPickerModal, type FoodRow } from '@/components/FoodPickerModal';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
+import { getFoodCategoryIcon } from '@/constants/pantryCategoryIcons';
 import { db } from '@/db/client';
 import {
   addManualShoppingItem,
@@ -31,14 +32,17 @@ function ShoppingRow({ item, onToggle, onRemove }: { item: ShoppingItemRow; onTo
   const styles = useMemo(() => createStyles(colors), [colors]);
   const food = useFood(item.foodId ?? undefined);
   const name = food ? localizedName(food) : (item.customName ?? '');
+  const icon = getFoodCategoryIcon(food?.category);
 
   return (
-    <Pressable accessibilityRole="button" style={styles.row} onPress={onToggle}>
-      <Ionicons
-        name={item.checked ? 'checkbox' : 'square-outline'}
-        size={22}
-        color={item.checked ? colors.interactive : colors.textSecondary}
-      />
+    <Pressable
+      accessibilityRole="button"
+      style={[styles.row, item.checked && styles.rowChecked]}
+      onPress={onToggle}>
+      <View style={[styles.checkbox, item.checked && styles.checkboxChecked]}>
+        {item.checked ? <Ionicons name="checkmark" size={15} color={colors.onInteractive} /> : null}
+      </View>
+      <Image source={icon} style={[styles.rowIcon, item.checked && styles.rowIconChecked]} contentFit="contain" />
       <View style={styles.rowText}>
         <Text style={[styles.rowName, item.checked && styles.rowNameChecked]} numberOfLines={1}>
           {name}
@@ -133,6 +137,9 @@ export default function ShoppingScreen() {
     () => shoppingItems.filter((i) => i.horizon === 'monthly'),
     [shoppingItems],
   );
+  const checkedCount = useMemo(() => shoppingItems.filter((i) => i.checked).length, [shoppingItems]);
+  const totalCount = shoppingItems.length;
+  const progress = totalCount > 0 ? checkedCount / totalCount : 0;
 
   const scrollToSection = (key: 'weekly' | 'monthly') => {
     listRef.current?.scrollTo({ y: sectionOffsets.current[key], animated: true });
@@ -198,6 +205,16 @@ export default function ShoppingScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.heading}>{t('tabs.shopping')}</Text>
+        {totalCount > 0 ? (
+          <View style={styles.progressRow}>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+            </View>
+            <Text style={styles.progressLabel}>
+              {checkedCount}/{totalCount}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.actionsRow}>
@@ -215,20 +232,22 @@ export default function ShoppingScreen() {
       <View style={styles.sectionLinksRow}>
         <Pressable
           accessibilityRole="button"
-          style={styles.sectionLink}
+          style={[styles.sectionChip, weeklyItems.length === 0 && styles.sectionChipDisabled]}
           disabled={weeklyItems.length === 0}
           onPress={() => scrollToSection('weekly')}>
-          <Text style={[styles.sectionLinkLabel, weeklyItems.length === 0 && styles.sectionLinkLabelDisabled]}>
-            {t('shopping.weekly')}
+          <Ionicons name="cart-outline" size={14} color={weeklyItems.length === 0 ? colors.textSecondary : colors.primary} />
+          <Text style={[styles.sectionChipLabel, weeklyItems.length === 0 && styles.sectionChipLabelDisabled]}>
+            {t('shopping.weekly')} · {weeklyItems.length}
           </Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          style={styles.sectionLink}
+          style={[styles.sectionChip, monthlyItems.length === 0 && styles.sectionChipDisabled]}
           disabled={monthlyItems.length === 0}
           onPress={() => scrollToSection('monthly')}>
-          <Text style={[styles.sectionLinkLabel, monthlyItems.length === 0 && styles.sectionLinkLabelDisabled]}>
-            {t('shopping.monthly')}
+          <Ionicons name="calendar-outline" size={14} color={monthlyItems.length === 0 ? colors.textSecondary : colors.primary} />
+          <Text style={[styles.sectionChipLabel, monthlyItems.length === 0 && styles.sectionChipLabelDisabled]}>
+            {t('shopping.monthly')} · {monthlyItems.length}
           </Text>
         </Pressable>
       </View>
@@ -245,7 +264,11 @@ export default function ShoppingScreen() {
         contentContainerStyle={styles.list}>
         {weeklyItems.length > 0 ? (
           <View onLayout={(e) => { sectionOffsets.current.weekly = e.nativeEvent.layout.y; }}>
-            <Text style={styles.sectionTitle}>{t('shopping.weekly')}</Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="cart-outline" size={16} color={colors.textSecondary} />
+              <Text style={styles.sectionTitle}>{t('shopping.weekly')}</Text>
+              <Text style={styles.sectionCount}>{weeklyItems.length}</Text>
+            </View>
             {weeklyItems.map((item: ShoppingItemRow) => (
               <ShoppingRow
                 key={item.id}
@@ -258,7 +281,11 @@ export default function ShoppingScreen() {
         ) : null}
         {monthlyItems.length > 0 ? (
           <View onLayout={(e) => { sectionOffsets.current.monthly = e.nativeEvent.layout.y; }}>
-            <Text style={styles.sectionTitle}>{t('shopping.monthly')}</Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
+              <Text style={styles.sectionTitle}>{t('shopping.monthly')}</Text>
+              <Text style={styles.sectionCount}>{monthlyItems.length}</Text>
+            </View>
             {monthlyItems.map((item: ShoppingItemRow) => (
               <ShoppingRow
                 key={item.id}
@@ -348,6 +375,28 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.title,
       fontWeight: '800',
     },
+    progressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    progressTrack: {
+      flex: 1,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.accentSoft,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: 6,
+      backgroundColor: colors.interactive,
+    },
+    progressLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
     actionsRow: {
       flexDirection: 'row',
       gap: spacing.sm,
@@ -363,32 +412,57 @@ function createStyles(colors: ColorTokens) {
     sectionLinksRow: {
       flexDirection: 'row',
       justifyContent: 'center',
-      gap: spacing.lg,
-      marginTop: spacing.sm,
+      gap: spacing.sm,
+      marginTop: spacing.md,
+      paddingHorizontal: spacing.md,
     },
-    sectionLink: {
-      paddingVertical: spacing.xs,
+    sectionChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: colors.accentSoft,
+      borderRadius: radius.chip,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.sm + 2,
     },
-    sectionLinkLabel: {
+    sectionChipDisabled: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    sectionChipLabel: {
       color: colors.primary,
-      fontSize: typography.body,
-      fontWeight: '600',
-      textDecorationLine: 'underline',
+      fontSize: typography.small,
+      fontWeight: '700',
     },
-    sectionLinkLabelDisabled: {
+    sectionChipLabelDisabled: {
       color: colors.textSecondary,
-      textDecorationLine: 'none',
     },
     list: {
       padding: spacing.md,
       paddingBottom: spacing.xl,
     },
+    sectionTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+    },
     sectionTitle: {
       color: colors.text,
       fontSize: typography.subtitle,
       fontWeight: '700',
-      marginTop: spacing.md,
-      marginBottom: spacing.sm,
+      flex: 1,
+    },
+    sectionCount: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '700',
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.chip,
+      paddingVertical: 1,
+      paddingHorizontal: spacing.xs + 2,
     },
     row: {
       flexDirection: 'row',
@@ -401,6 +475,30 @@ function createStyles(colors: ColorTokens) {
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
       marginBottom: spacing.xs + 2,
+    },
+    rowChecked: {
+      backgroundColor: colors.background,
+      borderColor: colors.accentSoft,
+    },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: radius.chip - 4,
+      borderWidth: 2,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkboxChecked: {
+      backgroundColor: colors.interactive,
+      borderColor: colors.interactive,
+    },
+    rowIcon: {
+      width: 22,
+      height: 22,
+    },
+    rowIconChecked: {
+      opacity: 0.4,
     },
     rowText: {
       flex: 1,

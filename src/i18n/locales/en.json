@@ -58,10 +58,6 @@
       "statusNonePlanned": "Nothing planned yet today - whenever you're ready",
       "statusOnTrack": "You're on track for today",
       "statusAllDone": "All of today's meals are logged"
-    },
-    "weeklyRecap": {
-      "summary": "{{planned}} of {{total}} days planned this week - nice work",
-      "summaryZero": "No days planned yet this week - the week's still wide open"
     }
   },
   "planScreen": {
@@ -768,6 +764,7 @@
     "cardBasics": "Basics",
     "cardBody": "Body",
     "cardGoal": "Goal",
+    "cardGoalDetails": "Goal weight and composition",
     "cardTempo": "Tempo",
     "cardLifestyle": "Lifestyle",
     "cardTraining": "Training",

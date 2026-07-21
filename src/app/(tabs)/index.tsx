@@ -10,13 +10,11 @@ import { PantryUseSoonCard } from '@/components/PantryUseSoonCard';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { TodayCard } from '@/components/TodayCard';
 import { WaterCard } from '@/components/WaterCard';
-import { WeeklyRecapCard } from '@/components/WeeklyRecapCard';
 import { Button } from '@/components/ui/Button';
 import { todayIsoDate } from '@/db/time';
 import { groupPantryItems } from '@/domain/pantryGrouping';
 import { countConsecutiveDays } from '@/domain/streak';
-import { addDays, startOfWeek, weekDates as weekDatesOf } from '@/domain/week';
-import { countPlannedDays } from '@/domain/weeklyRecap';
+import { addDays } from '@/domain/week';
 import {
   useActiveProfile,
   useDailyProfileTargets,
@@ -32,7 +30,6 @@ import {
   useMealCompletionDates,
   useMealSlots,
   useMealsForDate,
-  useMealsForWeek,
   usePortionsForDate,
   useRecipeNutritionMap,
 } from '@/hooks/plan';
@@ -62,8 +59,6 @@ export default function TodayScreen() {
   const activeProfile = useActiveProfile(household?.id);
   const activeProfileId = useAppStore((s) => s.activeProfileId);
   const setActiveProfileId = useAppStore((s) => s.setActiveProfileId);
-  const hideWeeklyRecap = useAppStore((s) => s.hideWeeklyRecap);
-  const setHideWeeklyRecap = useAppStore((s) => s.setHideWeeklyRecap);
   const targets = useProfileTargets(activeProfile);
   const today = todayIsoDate();
   const dailyTargets = useDailyProfileTargets(activeProfile, today);
@@ -83,14 +78,6 @@ export default function TodayScreen() {
     [pantryItems, foodById, today],
   );
   const pantryExpiringSoon = pantryGrouped.expiringSoon.length;
-
-  const weekMonday = useMemo(() => startOfWeek(today), [today]);
-  const weekDatesList = useMemo(() => weekDatesOf(weekMonday), [weekMonday]);
-  const mealsForWeek = useMealsForWeek(household?.id, weekMonday);
-  const plannedDaysThisWeek = useMemo(
-    () => countPlannedDays(mealsForWeek, weekDatesList),
-    [mealsForWeek, weekDatesList],
-  );
 
   const streakSinceDate = useMemo(() => addDays(today, -180), [today]);
   const mealCompletionDates = useMealCompletionDates(household?.id, activeProfile?.id, streakSinceDate);
@@ -204,14 +191,6 @@ export default function TodayScreen() {
             <Text style={styles.quickLabel}>{t('today.logWeight')}</Text>
           </Pressable>
         </View>
-
-        {!hideWeeklyRecap ? (
-          <WeeklyRecapCard
-            plannedDays={plannedDaysThisWeek}
-            totalDays={weekDatesList.length}
-            onDismiss={() => setHideWeeklyRecap(true)}
-          />
-        ) : null}
 
         {activeProfile?.trackWater && latestMetric && settings ? (
           <WaterCard

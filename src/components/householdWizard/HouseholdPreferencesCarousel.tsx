@@ -67,6 +67,14 @@ type Props = {
   /** Called when Back is pressed on the FIRST card - steps back to the previous wizard step. */
   onBack?: () => void;
   /**
+   * Whether this carousel is the one currently visible in the wizard - the
+   * parent keeps both step carousels mounted (see wizard.tsx) so Back/Next
+   * don't wipe their state, so this tells the hidden one not to report its
+   * footer state over the visible one's, and makes the visible one re-report
+   * its own state the moment it becomes visible again.
+   */
+  active?: boolean;
+  /**
    * Reports the current Next label and whether Back is currently available,
    * so a parent-rendered fixed `StepFooter` can reflect the carousel's state
    * without the footer living inside this component's own scrolling content.
@@ -87,7 +95,7 @@ type Props = {
  * visibility from `onNavStateChange`.
  */
 export const HouseholdPreferencesCarousel = forwardRef<PreferencesCarouselHandle, Props>(
-  function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack, onNavStateChange }, ref) {
+  function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack, active = true, onNavStateChange }, ref) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -188,9 +196,10 @@ export const HouseholdPreferencesCarousel = forwardRef<PreferencesCarouselHandle
   useImperativeHandle(ref, () => ({ pressNext, pressBack }));
 
   useEffect(() => {
+    if (!active) return;
     onNavStateChange?.({ nextLabel: isLastCard ? submitLabel : t('carousel.next'), showBack });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLastCard, submitLabel, showBack, t]);
+  }, [active, isLastCard, submitLabel, showBack, t]);
 
   return (
     <View>
