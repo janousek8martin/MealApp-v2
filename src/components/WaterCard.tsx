@@ -16,7 +16,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { WaterSettingsCard } from '@/components/WaterSettingsCard';
@@ -238,6 +238,22 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                 <ClipPath id="waterTankClip">
                   <Rect x={0} y={0} width={tankWidth} height={TANK_HEIGHT} rx={TANK_RADIUS} ry={TANK_RADIUS} />
                 </ClipPath>
+                {/*
+                  Fades each wave layer's tint out to fully transparent by its
+                  own bottom edge, instead of a flat-opacity fill that just
+                  stops dead at y=height - a flat fill reads as a hard seam
+                  between "tinted water" and "plain water" right at that
+                  boundary (Martin: "vlnění je tak divně uprostřed" - looked
+                  like two stacked blocks, not one body of water).
+                */}
+                <LinearGradient id="frontWaveGradient" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={WAVE_HIGHLIGHT_COLOR} stopOpacity={1} />
+                  <Stop offset="1" stopColor={WAVE_HIGHLIGHT_COLOR} stopOpacity={0} />
+                </LinearGradient>
+                <LinearGradient id="backWaveGradient" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={WAVE_SHADOW_COLOR} stopOpacity={1} />
+                  <Stop offset="1" stopColor={WAVE_SHADOW_COLOR} stopOpacity={0} />
+                </LinearGradient>
               </Defs>
               <G clipPath="url(#waterTankClip)">
                 {reducedMotion ? (
@@ -252,10 +268,10 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                   <AnimatedG animatedProps={levelGroupProps}>
                     <Rect x={0} y={0} width={tankWidth} height={TANK_HEIGHT} fill={colors.water} />
                     <AnimatedG animatedProps={backWaveProps}>
-                      <Path d={backWavePath} fill={WAVE_SHADOW_COLOR} />
+                      <Path d={backWavePath} fill="url(#backWaveGradient)" />
                     </AnimatedG>
                     <AnimatedG animatedProps={frontWaveProps}>
-                      <Path d={frontWavePath} fill={WAVE_HIGHLIGHT_COLOR} />
+                      <Path d={frontWavePath} fill="url(#frontWaveGradient)" />
                     </AnimatedG>
                   </AnimatedG>
                 )}
