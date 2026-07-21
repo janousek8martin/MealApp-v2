@@ -141,29 +141,38 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
       : withTiming(target, { duration: 450, easing: Easing.out(Easing.cubic) });
   }, [progress, reducedMotion, levelY]);
 
-  // Horizontal drift, one shared value per wave layer (transform-only).
-  // One-directional (reverse:false) per Martin's ask - a ping-pong read as
-  // "sloshing back and forth" which he didn't want. The reset from -period
-  // back to 0 is mathematically seamless (the path is exactly periodic,
-  // so that frame is pixel-identical to frame 0), but any single dropped
-  // frame right at that instant is more noticeable the faster the constant-
-  // speed drift is - slowed both layers down considerably so a loop
-  // boundary (much less frequent now) reads as calm water, not a glitch.
-  const frontPhase = useSharedValue(0);
-  const backPhase = useSharedValue(-backWavePeriod * 0.5); // offset start so the two layers never sync up
+  // Horizontal drift. Previously a `withRepeat(withTiming(-period), -1,
+  // false)` loop - mathematically seamless (the path is exactly periodic,
+  // so the frame at -period is pixel-identical to the frame at 0), but
+  // Martin kept seeing a visible jump at the reset regardless of how slow
+  // it ran, meaning something about the discrete reset EVENT itself (not
+  // the math) was the problem - likely a frame landing exactly on the
+  // boundary getting composited oddly on this renderer.
+  //
+  // Removed the reset entirely instead of continuing to chase it: each
+  // driver counts down smoothly and WITHOUT ever resetting (one very long
+  // `withTiming`, well past any real session length), and the actual
+  // on-screen offset is derived every frame via `% period` inside the
+  // animatedProps worklet below. Since the driver itself never jumps, and
+  // JS's `%` of a smoothly-changing negative number is itself smooth
+  // across each wrap (there's no discrete "start over" instant to land a
+  // frame on), there's nothing left to be visible.
+  const LOOP_DURATION_MS = 2 * 60 * 60 * 1000; // 2h - far longer than any real session, so it never actually completes
+  const frontDriver = useSharedValue(0);
+  const backDriver = useSharedValue(-backWavePeriod * 0.5); // offset start so the two layers never sync up
   useEffect(() => {
     if (reducedMotion) return;
-    frontPhase.value = withRepeat(
-      withTiming(-frontWavePeriod, { duration: 7000, easing: Easing.linear }),
-      -1,
-      false,
-    );
-    backPhase.value = withRepeat(
-      withTiming(-backWavePeriod, { duration: 12000, easing: Easing.linear }),
-      -1,
-      false,
-    );
-  }, [reducedMotion, frontPhase, backPhase, frontWavePeriod, backWavePeriod]);
+    const frontSpeed = frontWavePeriod / 7000; // px/ms, matches the previous 7000ms-per-period pace
+    const backSpeed = backWavePeriod / 12000;
+    frontDriver.value = withTiming(frontDriver.value - frontSpeed * LOOP_DURATION_MS, {
+      duration: LOOP_DURATION_MS,
+      easing: Easing.linear,
+    });
+    backDriver.value = withTiming(backDriver.value - backSpeed * LOOP_DURATION_MS, {
+      duration: LOOP_DURATION_MS,
+      easing: Easing.linear,
+    });
+  }, [reducedMotion, frontDriver, backDriver, frontWavePeriod, backWavePeriod]);
 
   // Brief fill-level "pulse" when a glass is logged - a separate micro-
   // interaction from Button's own press-scale (that one's on the buttons).
@@ -185,11 +194,11 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   // nemělo být"). Fully faded by the time levelY is within 10 tank-units
   // of the top; unchanged (opacity 1) everywhere else.
   const frontWaveProps = useAnimatedProps(() => ({
-    transform: [{ translateX: frontPhase.value }],
+    transform: [{ translateX: frontDriver.value % frontWavePeriod }],
     opacity: interpolate(levelY.value, [0, 10], [0, 1], Extrapolation.CLAMP),
   }));
   const backWaveProps = useAnimatedProps(() => ({
-    transform: [{ translateX: backPhase.value }],
+    transform: [{ translateX: backDriver.value % backWavePeriod }],
     opacity: interpolate(levelY.value, [0, 10], [0, 1], Extrapolation.CLAMP),
   }));
   const pulseStyle = useAnimatedStyle(() => ({
