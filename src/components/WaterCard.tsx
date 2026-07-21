@@ -59,11 +59,19 @@ const AnimatedG = Animated.createAnimatedComponent(G);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 /** Builds a seamless tiling wave path: two periods wide, wave crest of `amplitude` above the midline. */
+/**
+ * The oscillation baseline sits at y=amplitude (not height/2) so the wave's
+ * crest touches y=0 - the actual water surface (local y=0 in the level
+ * group, see `levelGroupProps`). Centering the baseline at height/2 instead
+ * left a solid, unrippled gap between the true surface and where the wave
+ * pattern started, which read as "the wave is rippling somewhere inside the
+ * water, not at the surface" (Martin, at 82% fill).
+ */
 function buildWavePath(period: number, height: number, amplitude: number): string {
-  const mid = height / 2;
-  const crest = mid - amplitude;
+  const baseline = amplitude;
+  const crest = 0;
   return (
-    `M0 ${mid} Q${period / 4} ${crest} ${period / 2} ${mid} T${period} ${mid} T${period * 1.5} ${mid} T${period * 2} ${mid} ` +
+    `M0 ${baseline} Q${period / 4} ${crest} ${period / 2} ${baseline} T${period} ${baseline} T${period * 1.5} ${baseline} T${period * 2} ${baseline} ` +
     `V${height} H0 Z`
   );
 }
