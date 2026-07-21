@@ -245,12 +245,32 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                   between "tinted water" and "plain water" right at that
                   boundary (Martin: "vlnění je tak divně uprostřed" - looked
                   like two stacked blocks, not one body of water).
+
+                  userSpaceOnUse with explicit y1/y2 in the path's own local
+                  units (0..height), not the default objectBoundingBox - a
+                  bounding-box-relative gradient on a shape sitting inside an
+                  animated (Reanimated UI-thread) transform rendered wrong on
+                  Android (the fade collapsed into a near-solid line instead
+                  of spreading across the full height), so this pins the
+                  gradient to fixed, transform-independent coordinates.
                 */}
-                <LinearGradient id="frontWaveGradient" x1="0" y1="0" x2="0" y2="1">
+                <LinearGradient
+                  id="frontWaveGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2={FRONT_WAVE_HEIGHT}
+                  gradientUnits="userSpaceOnUse">
                   <Stop offset="0" stopColor={WAVE_HIGHLIGHT_COLOR} stopOpacity={1} />
                   <Stop offset="1" stopColor={WAVE_HIGHLIGHT_COLOR} stopOpacity={0} />
                 </LinearGradient>
-                <LinearGradient id="backWaveGradient" x1="0" y1="0" x2="0" y2="1">
+                <LinearGradient
+                  id="backWaveGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2={BACK_WAVE_HEIGHT}
+                  gradientUnits="userSpaceOnUse">
                   <Stop offset="0" stopColor={WAVE_SHADOW_COLOR} stopOpacity={1} />
                   <Stop offset="1" stopColor={WAVE_SHADOW_COLOR} stopOpacity={0} />
                 </LinearGradient>
@@ -298,6 +318,13 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                 )}
               </View>
               <View style={styles.buttonsRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('water.removeGlass')}
+                  style={[styles.glassButton, styles.glassButtonSecondary]}
+                  onPress={handleRemove}>
+                  <Ionicons name="remove" size={20} color={colors.water} />
+                </Pressable>
                 <View style={styles.glassIconWrap}>
                   <MaterialCommunityIcons name="cup-water" size={22} color={ON_WATER_FILL_COLOR} />
                   <Text style={styles.glassIconLabel}>
@@ -316,16 +343,6 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
               </View>
             </View>
           </View>
-        </View>
-
-        <View style={styles.sideCol}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('water.removeGlass')}
-            style={styles.removeButton}
-            onPress={handleRemove}>
-            <Ionicons name="remove" size={20} color={colors.text} />
-          </Pressable>
         </View>
       </View>
 
@@ -446,8 +463,8 @@ function createStyles(colors: ColorTokens) {
       justifyContent: 'center',
       gap: spacing.sm,
     },
-    // flex:1 (not a fixed width) so the tank fills whatever room contentRow
-    // gives it next to sideCol - see the `tankWidth` onLayout measurement.
+    // flex:1 (not a fixed width) so the tank fills the full contentRow width
+    // - see the `tankWidth` onLayout measurement.
     tank: {
       flex: 1,
       height: TANK_HEIGHT,
@@ -501,6 +518,11 @@ function createStyles(colors: ColorTokens) {
     glassButtonPrimary: {
       backgroundColor: colors.water,
     },
+    // Same circular field as the primary (+) button, just white instead of
+    // water-blue - back inside the tank next to +, per Martin's ask.
+    glassButtonSecondary: {
+      backgroundColor: ON_WATER_FILL_COLOR,
+    },
     glassIconWrap: {
       alignItems: 'center',
       gap: 2,
@@ -509,23 +531,6 @@ function createStyles(colors: ColorTokens) {
       color: ON_WATER_FILL_COLOR,
       fontSize: typography.small - 1,
       fontWeight: '600',
-    },
-    // Now holds only the remove-glass button, on the card's own white/light
-    // background instead of overlaid on the tank - Martin's ask, so it
-    // doesn't compete visually with the in-tank add button.
-    sideCol: {
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    removeButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.background,
-      borderWidth: 1,
-      borderColor: colors.border,
     },
     settingsButton: {
       width: 28,
