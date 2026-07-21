@@ -42,16 +42,17 @@ const TANK_HEIGHT = 148;
 const TANK_RADIUS = radius.card;
 
 // Wave layer "belly" depth - how far below the crest line each layer's fill
-// extends. Deliberately much taller than the crest's own amplitude: at 16px
-// (the original value) only ~11% of the 148px tank was ever tinted, leaving
-// most of the visible water as an untextured flat fill below it (Martin's
-// "nehybná plocha modré" note). 44px covers roughly the top third of the
-// tank, which is the portion of the water that's actually near the surface
-// at most fill levels.
-const FRONT_WAVE_HEIGHT = 44;
-const FRONT_WAVE_AMPLITUDE = 8; // crest swing stays subtle even though the belly got deeper
-const BACK_WAVE_HEIGHT = 44;
-const BACK_WAVE_AMPLITUDE = 5; // flatter/more subtle than the front layer
+// extends. 16px (the original value) left most of the tank an untextured
+// flat fill (Martin's "nehybná plocha modré" note); 44px overcorrected -
+// the tinted zone got so tall it read as a separate block sitting below
+// the true surface rather than a thin ripple on it (Martin's "furt pod"
+// note, confirmed by pixel-sampling a live screenshot: the crest touches
+// y=0 correctly, but a 44px-tall belly is a large fraction of the tank at
+// typical fill levels). 24px is the middle ground.
+const FRONT_WAVE_HEIGHT = 24;
+const FRONT_WAVE_AMPLITUDE = 7;
+const BACK_WAVE_HEIGHT = 24;
+const BACK_WAVE_AMPLITUDE = 4; // flatter/more subtle than the front layer
 
 const BUBBLE_COUNT = 14; // fixed pool, kept within the 10-20 range (task-10 brief point 4/9)
 
@@ -454,8 +455,11 @@ const ON_WATER_FILL_COLOR = '#FFFFFF';
  * invisible. White/black overlays instead of a second theme color, since
  * this needs to read as "lighter/darker water," not a distinct hue.
  */
-const WAVE_HIGHLIGHT_COLOR = 'rgba(255, 255, 255, 0.32)'; // front wave - lighter
-const WAVE_SHADOW_COLOR = 'rgba(0, 0, 0, 0.22)'; // back wave - darker
+// Toned down from 0.32/0.22 - at full gradient-stop opacity (right at each
+// wave's own crest) those read as near-solid white / near-black instead of
+// a subtle tint (Martin: "zadní vlna je černá a přední až moc bílá").
+const WAVE_HIGHLIGHT_COLOR = 'rgba(255, 255, 255, 0.16)'; // front wave - lighter
+const WAVE_SHADOW_COLOR = 'rgba(0, 0, 0, 0.10)'; // back wave - darker
 const BUBBLE_COLOR = 'rgba(255, 255, 255, 0.8)';
 
 function createStyles(colors: ColorTokens) {
