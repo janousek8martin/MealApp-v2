@@ -32,19 +32,17 @@ import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 // Tank sized to comfortably host two 44x44 hit targets (this app's standard
 // touch-target size, see glassButton below) plus the percent readout and the
 // glass-size label, all overlaid on the animated fill - see Martin's layout
-// decision on task-10 ("tank IS the widget, controls live inside it").
-const TANK_WIDTH = 208;
+// decision on task-10 ("tank IS the widget, controls live inside it"). Width
+// is now responsive (measured via onLayout, see `tankWidth` state below)
+// instead of fixed, so the tank fills whatever space the card's flex layout
+// gives it rather than sitting at an arbitrary fixed size - this constant is
+// only the pre-first-layout fallback used for the very first render.
+const TANK_WIDTH_FALLBACK = 208;
 const TANK_HEIGHT = 148;
 const TANK_RADIUS = radius.card;
 
-// One static wave period per layer, each strip built at 2x its own period so
-// the tiling loop (translateX by exactly one period) is seamless. Built once
-// via useMemo below - never rebuild the `d` string per frame, that's a
-// confirmed Android frame-drop source (see task-10 brief point 2).
-const FRONT_WAVE_PERIOD = TANK_WIDTH;
 const FRONT_WAVE_HEIGHT = 16;
 const FRONT_WAVE_AMPLITUDE = FRONT_WAVE_HEIGHT / 2;
-const BACK_WAVE_PERIOD = TANK_WIDTH * 1.3;
 const BACK_WAVE_HEIGHT = 16;
 const BACK_WAVE_AMPLITUDE = BACK_WAVE_HEIGHT / 4; // flatter/more subtle than the front layer
 
@@ -104,6 +102,18 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   const [settingsVisible, setSettingsVisible] = useState(false);
   const reducedMotion = useReducedMotion();
 
+  // Measured on layout so the tank fills whatever width the card's flex
+  // layout actually gives it (Martin's "roztáhni, ale ne na sílu" ask)
+  // instead of a fixed size - same onLayout-measure pattern BodyFatCarousel
+  // already uses elsewhere in this app.
+  const [tankWidth, setTankWidth] = useState(TANK_WIDTH_FALLBACK);
+  const onTankLayout = (event: { nativeEvent: { layout: { width: number } } }) => {
+    const width = event.nativeEvent.layout.width;
+    if (Math.abs(width - tankWidth) > 1) setTankWidth(width);
+  };
+  const frontWavePeriod = tankWidth;
+  const backWavePeriod = tankWidth * 1.3;
+
   // Water level: absolute y (in tank coordinates) of the water surface.
   // 0 = full tank (top), TANK_HEIGHT = empty (fully below the visible area).
   // Driven via a `translateY` transform on the fill group - never `height`,
@@ -118,20 +128,20 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
 
   // Endless horizontal drift, one shared value per wave layer (transform-only).
   const frontPhase = useSharedValue(0);
-  const backPhase = useSharedValue(-BACK_WAVE_PERIOD * 0.5); // offset start so the two layers never sync up
+  const backPhase = useSharedValue(-backWavePeriod * 0.5); // offset start so the two layers never sync up
   useEffect(() => {
     if (reducedMotion) return;
     frontPhase.value = withRepeat(
-      withTiming(-FRONT_WAVE_PERIOD, { duration: 3500, easing: Easing.linear }),
+      withTiming(-frontWavePeriod, { duration: 3500, easing: Easing.linear }),
       -1,
       false,
     );
     backPhase.value = withRepeat(
-      withTiming(-BACK_WAVE_PERIOD * 1.5, { duration: 6000, easing: Easing.linear }),
+      withTiming(-backWavePeriod * 1.5, { duration: 6000, easing: Easing.linear }),
       -1,
       false,
     );
-  }, [reducedMotion, frontPhase, backPhase]);
+  }, [reducedMotion, frontPhase, backPhase, frontWavePeriod, backWavePeriod]);
 
   // Brief fill-level "pulse" when a glass is logged - a separate micro-
   // interaction from Button's own press-scale (that one's on the buttons).
@@ -158,23 +168,27 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   }));
 
   const frontWavePath = useMemo(
-    () => buildWavePath(FRONT_WAVE_PERIOD, FRONT_WAVE_HEIGHT, FRONT_WAVE_AMPLITUDE),
-    [],
+    () => buildWavePath(frontWavePeriod, FRONT_WAVE_HEIGHT, FRONT_WAVE_AMPLITUDE),
+    [frontWavePeriod],
   );
-  const backWavePath = useMemo(() => buildWavePath(BACK_WAVE_PERIOD, BACK_WAVE_HEIGHT, BACK_WAVE_AMPLITUDE), []);
+  const backWavePath = useMemo(
+    () => buildWavePath(backWavePeriod, BACK_WAVE_HEIGHT, BACK_WAVE_AMPLITUDE),
+    [backWavePeriod],
+  );
 
   // Randomize each bubble's look/timing once at mount (plain JS on the JS
-  // thread - never Math.random() inside a worklet).
+  // thread - never Math.random() inside a worklet). Regenerates if the
+  // measured tank width changes (rare - only on rotation/multi-window).
   const bubbles = useMemo<BubbleConfig[]>(
     () =>
       Array.from({ length: BUBBLE_COUNT }, (_, id) => ({
         id,
-        startX: 10 + Math.random() * (TANK_WIDTH - 20),
+        startX: 10 + Math.random() * (tankWidth - 20),
         radius: 1.5 + Math.random() * 2,
         duration: 2200 + Math.random() * 2200,
         delay: Math.random() * 4000,
       })),
-    [],
+    [tankWidth],
   );
 
   const handleRemove = () => {
@@ -194,12 +208,12 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
       </View>
 
       <View style={styles.contentRow}>
-        <View style={styles.tank}>
+        <View style={styles.tank} onLayout={onTankLayout}>
           <Animated.View style={[StyleSheet.absoluteFill, pulseStyle]}>
-            <Svg width={TANK_WIDTH} height={TANK_HEIGHT}>
+            <Svg width={tankWidth} height={TANK_HEIGHT}>
               <Defs>
                 <ClipPath id="waterTankClip">
-                  <Rect x={0} y={0} width={TANK_WIDTH} height={TANK_HEIGHT} rx={TANK_RADIUS} ry={TANK_RADIUS} />
+                  <Rect x={0} y={0} width={tankWidth} height={TANK_HEIGHT} rx={TANK_RADIUS} ry={TANK_RADIUS} />
                 </ClipPath>
               </Defs>
               <G clipPath="url(#waterTankClip)">
@@ -207,13 +221,13 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                   <Rect
                     x={0}
                     y={TANK_HEIGHT * (1 - progress)}
-                    width={TANK_WIDTH}
+                    width={tankWidth}
                     height={TANK_HEIGHT * progress + 2}
                     fill={colors.water}
                   />
                 ) : (
                   <AnimatedG animatedProps={levelGroupProps}>
-                    <Rect x={0} y={0} width={TANK_WIDTH} height={TANK_HEIGHT} fill={colors.water} />
+                    <Rect x={0} y={0} width={tankWidth} height={TANK_HEIGHT} fill={colors.water} />
                     <AnimatedG animatedProps={backWaveProps}>
                       <Path d={backWavePath} fill={colors.water} fillOpacity={0.4} />
                     </AnimatedG>
@@ -265,7 +279,7 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                   accessibilityLabel={t('water.addGlass')}
                   style={[styles.glassButton, styles.glassButtonPrimary]}
                   onPress={handleAdd}>
-                  <Ionicons name="add" size={20} color={colors.onInteractive} />
+                  <Ionicons name="add" size={20} color={ON_WATER_FILL_COLOR} />
                 </Pressable>
               </View>
             </View>
@@ -384,10 +398,13 @@ function createStyles(colors: ColorTokens) {
     contentRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: spacing.sm,
     },
+    // flex:1 (not a fixed width) so the tank fills whatever room contentRow
+    // gives it next to sideCol - see the `tankWidth` onLayout measurement.
     tank: {
-      width: TANK_WIDTH,
+      flex: 1,
       height: TANK_HEIGHT,
       borderRadius: TANK_RADIUS,
       borderWidth: 1.5,
@@ -437,7 +454,7 @@ function createStyles(colors: ColorTokens) {
       justifyContent: 'center',
     },
     glassButtonPrimary: {
-      backgroundColor: colors.interactive,
+      backgroundColor: colors.water,
     },
     glassIconWrap: {
       alignItems: 'center',

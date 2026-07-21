@@ -36,7 +36,6 @@
     "generating": "Generating…",
     "editProfile": "Edit profile",
     "shoppingRemaining": "items to buy",
-    "pantryExpiring": "expiring soon",
     "logWeight": "Log weight",
     "nextMealTitle": "Next meal today",
     "nextMealNone": "Nothing else planned for today",
@@ -51,14 +50,6 @@
     "best": "Best",
     "mealsLoggedToday": "{{count}} of {{total}} meals logged today",
     "addMeal": "Add meal"
-  },
-  "home": {
-    "today": {
-      "mealsLabel": "meals eaten",
-      "statusNonePlanned": "Nothing planned yet today - whenever you're ready",
-      "statusOnTrack": "You're on track for today",
-      "statusAllDone": "All of today's meals are logged"
-    }
   },
   "planScreen": {
     "generate": "Generate",

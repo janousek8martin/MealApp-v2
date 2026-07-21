@@ -36,7 +36,6 @@
     "generating": "Generuji…",
     "editProfile": "Upravit profil",
     "shoppingRemaining": "položek k nákupu",
-    "pantryExpiring": "brzy expiruje",
     "logWeight": "Zapsat váhu",
     "nextMealTitle": "Další jídlo dne",
     "nextMealNone": "Pro dnešek už nic dalšího neplánujete",
@@ -51,14 +50,6 @@
     "best": "Nejlepší",
     "mealsLoggedToday": "{{count}} z {{total}} jídel dnes zaznamenáno",
     "addMeal": "Přidat jídlo"
-  },
-  "home": {
-    "today": {
-      "mealsLabel": "snědených jídel",
-      "statusNonePlanned": "Zatím pro dnešek nic naplánováno - klidně v klidu",
-      "statusOnTrack": "Dneska to jde podle plánu",
-      "statusAllDone": "Všechna dnešní jídla jsou zaznamenaná"
-    }
   },
   "planScreen": {
     "generate": "Generovat",

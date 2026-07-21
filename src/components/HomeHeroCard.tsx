@@ -2,16 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ProfileChip } from '@/components/ProfileChip';
 import { ProgressRing } from '@/components/ProgressRing';
-import { StreakDetailModal } from '@/components/StreakDetailModal';
-import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { todayIsoDate } from '@/db/time';
-import { longestConsecutiveRun } from '@/domain/streak';
 import type { TargetsResult } from '@/domain/targets';
 import { useFood, usePhoto, useRecipe } from '@/hooks/library';
 import type { MealRow } from '@/hooks/plan';
@@ -28,13 +25,6 @@ type Props = {
   targetKcal: number;
   onEditProfile: () => void;
   nextMeal?: { slotLabel: string; slotKey: string; meal: MealRow };
-  mealStreak: number;
-  waterStreak: number;
-  mealCompletionDates: Set<string>;
-  waterGoalDates: Set<string>;
-  todayMealCount: number;
-  todayMealTotal: number;
-  onAddMeal: () => void;
 };
 
 function NextMealRow({
@@ -95,18 +85,10 @@ export function HomeHeroCard({
   targetKcal,
   onEditProfile,
   nextMeal,
-  mealStreak,
-  waterStreak,
-  mealCompletionDates,
-  waterGoalDates,
-  todayMealCount,
-  todayMealTotal,
-  onAddMeal,
 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [openStreak, setOpenStreak] = useState<'meal' | 'water' | null>(null);
   const heroGradient = useMemo(
     () => [colors.heroGradientStart, colors.heroGradientEnd] as const,
     [colors],
@@ -168,20 +150,6 @@ export function HomeHeroCard({
         ))}
       </View>
 
-      <View style={styles.streaksRow}>
-        <Pressable accessibilityRole="button" style={styles.streak} onPress={() => setOpenStreak('meal')}>
-          <Ionicons name="flame" size={16} color={colors.accentSoft} />
-          <Text style={styles.streakValue}>{mealStreak}</Text>
-          <Text style={styles.streakLabel}>{t('today.mealStreak')}</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" style={styles.streak} onPress={() => setOpenStreak('water')}>
-          <Ionicons name="water" size={16} color={colors.accentSoft} />
-          <Text style={styles.streakValue}>{waterStreak}</Text>
-          <Text style={styles.streakLabel}>{t('today.waterStreak')}</Text>
-        </Pressable>
-        <InfoTooltip titleKey="tooltip.streak.title" bodyKey="tooltip.streak.body" color={colors.accentSoft} />
-      </View>
-
       {nextMeal ? (
         <NextMealRow
           slotLabel={nextMeal.slotLabel}
@@ -191,18 +159,6 @@ export function HomeHeroCard({
           styles={styles}
         />
       ) : null}
-
-      <StreakDetailModal
-        visible={openStreak !== null}
-        onClose={() => setOpenStreak(null)}
-        kind={openStreak ?? 'meal'}
-        current={openStreak === 'water' ? waterStreak : mealStreak}
-        best={longestConsecutiveRun(openStreak === 'water' ? waterGoalDates : mealCompletionDates)}
-        historyDates={openStreak === 'water' ? waterGoalDates : mealCompletionDates}
-        todayCount={openStreak === 'meal' ? todayMealCount : undefined}
-        todayTotal={openStreak === 'meal' ? todayMealTotal : undefined}
-        onAddMeal={openStreak === 'meal' ? onAddMeal : undefined}
-      />
     </LinearGradient>
   );
 }
@@ -300,32 +256,6 @@ function createStyles(colors: ColorTokens) {
       color: colors.accentSoft,
       fontSize: typography.small,
       marginTop: 2,
-    },
-    streaksRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      marginTop: spacing.sm,
-    },
-    streak: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-      backgroundColor: 'rgba(244, 241, 232, 0.12)',
-      borderRadius: radius.input,
-      paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.sm + 2,
-    },
-    streakValue: {
-      color: colors.onPrimary,
-      fontSize: typography.body,
-      fontWeight: '800',
-    },
-    streakLabel: {
-      color: colors.accentSoft,
-      fontSize: typography.small,
-      flexShrink: 1,
     },
     nextMealRow: {
       flexDirection: 'row',

@@ -6,13 +6,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HomeHeroCard } from '@/components/HomeHeroCard';
-import { PantryUseSoonCard } from '@/components/PantryUseSoonCard';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
-import { TodayCard } from '@/components/TodayCard';
+import { StreakRow } from '@/components/StreakRow';
 import { WaterCard } from '@/components/WaterCard';
 import { Button } from '@/components/ui/Button';
 import { todayIsoDate } from '@/db/time';
-import { groupPantryItems } from '@/domain/pantryGrouping';
 import { countConsecutiveDays } from '@/domain/streak';
 import { addDays } from '@/domain/week';
 import {
@@ -33,7 +31,7 @@ import {
   usePortionsForDate,
   useRecipeNutritionMap,
 } from '@/hooks/plan';
-import { usePantryItems, useShoppingItems } from '@/hooks/shopping';
+import { useShoppingItems } from '@/hooks/shopping';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useWaterGoalDates } from '@/hooks/water';
@@ -72,12 +70,6 @@ export default function TodayScreen() {
   const portionsForDate = usePortionsForDate(household?.id, today);
   const shoppingItems = useShoppingItems(household?.id);
   const shoppingRemaining = shoppingItems.filter((item) => !item.checked).length;
-  const pantryItems = usePantryItems(household?.id);
-  const pantryGrouped = useMemo(
-    () => groupPantryItems(pantryItems, foodById, today),
-    [pantryItems, foodById, today],
-  );
-  const pantryExpiringSoon = pantryGrouped.expiringSoon.length;
 
   const streakSinceDate = useMemo(() => addDays(today, -180), [today]);
   const mealCompletionDates = useMealCompletionDates(household?.id, activeProfile?.id, streakSinceDate);
@@ -157,17 +149,18 @@ export default function TodayScreen() {
                   }
                 : undefined
             }
-            mealStreak={mealStreak}
-            waterStreak={waterStreak}
-            mealCompletionDates={mealCompletionDates}
-            waterGoalDates={waterGoalDates}
-            todayMealCount={todayMealCount}
-            todayMealTotal={todayMealTotal}
-            onAddMeal={() => router.push('/plan')}
           />
         ) : null}
 
-        <TodayCard eatenCount={todayMealCount} plannedTotal={todayMealTotal} />
+        <StreakRow
+          mealStreak={mealStreak}
+          waterStreak={waterStreak}
+          mealCompletionDates={mealCompletionDates}
+          waterGoalDates={waterGoalDates}
+          todayMealCount={todayMealCount}
+          todayMealTotal={todayMealTotal}
+          onAddMeal={() => router.push('/plan')}
+        />
 
         <View style={styles.quickRow}>
           <Pressable
@@ -180,7 +173,6 @@ export default function TodayScreen() {
             </View>
             <Text style={styles.quickLabel}>{t('today.shoppingRemaining')}</Text>
           </Pressable>
-          <PantryUseSoonCard count={pantryExpiringSoon} onPress={() => router.push('/pantry')} />
           <Pressable
             accessibilityRole="button"
             style={styles.quickCard}
@@ -241,11 +233,11 @@ function createStyles(colors: ColorTokens) {
     },
     quickRow: {
       flexDirection: 'row',
-      justifyContent: 'center',
       gap: spacing.sm,
       marginTop: spacing.sm,
     },
     quickCard: {
+      flex: 1,
       minHeight: 72,
       backgroundColor: colors.surface,
       borderRadius: radius.card,
