@@ -41,10 +41,17 @@ const TANK_WIDTH_FALLBACK = 208;
 const TANK_HEIGHT = 148;
 const TANK_RADIUS = radius.card;
 
-const FRONT_WAVE_HEIGHT = 16;
-const FRONT_WAVE_AMPLITUDE = FRONT_WAVE_HEIGHT / 2;
-const BACK_WAVE_HEIGHT = 16;
-const BACK_WAVE_AMPLITUDE = BACK_WAVE_HEIGHT / 4; // flatter/more subtle than the front layer
+// Wave layer "belly" depth - how far below the crest line each layer's fill
+// extends. Deliberately much taller than the crest's own amplitude: at 16px
+// (the original value) only ~11% of the 148px tank was ever tinted, leaving
+// most of the visible water as an untextured flat fill below it (Martin's
+// "nehybná plocha modré" note). 44px covers roughly the top third of the
+// tank, which is the portion of the water that's actually near the surface
+// at most fill levels.
+const FRONT_WAVE_HEIGHT = 44;
+const FRONT_WAVE_AMPLITUDE = 8; // crest swing stays subtle even though the belly got deeper
+const BACK_WAVE_HEIGHT = 44;
+const BACK_WAVE_AMPLITUDE = 5; // flatter/more subtle than the front layer
 
 const BUBBLE_COUNT = 14; // fixed pool, kept within the 10-20 range (task-10 brief point 4/9)
 
@@ -136,8 +143,12 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
       -1,
       false,
     );
+    // Exactly one full period, same as the front wave below - the path is
+    // only drawn 2 periods wide (buildWavePath's seamless-tiling contract),
+    // so translating further than one period runs the visible window past
+    // the end of the drawn geometry, exposing the path's literal edge.
     backPhase.value = withRepeat(
-      withTiming(-backWavePeriod * 1.5, { duration: 6000, easing: Easing.linear }),
+      withTiming(-backWavePeriod, { duration: 6000, easing: Easing.linear }),
       -1,
       false,
     );
