@@ -41,8 +41,7 @@ const TANK_WIDTH_FALLBACK = 208;
 const TANK_HEIGHT = 148;
 const TANK_RADIUS = radius.card;
 
-const FRONT_WAVE_AMPLITUDE = 6;
-const BACK_WAVE_AMPLITUDE = 4; // flatter/more subtle than the front layer
+const WAVE_AMPLITUDE = 6;
 
 const BUBBLE_COUNT = 14; // fixed pool, kept within the 10-20 range (task-10 brief point 4/9)
 
@@ -51,20 +50,27 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 /**
- * A filled "belly" region with a gradient fade (the previous approach) kept
- * reading as a separate tinted block sitting below the true surface rather
- * than a ripple on it, no matter how shallow the belly or how soft the
- * gradient (Martin, repeatedly, at 82% fill). Replaced with an OPEN,
- * unfilled, stroked line traced directly along the wave curve itself - it
- * IS the surface, not a region near it, so there's no depth/offset left to
- * misjudge. Oscillates between y=0 (crest) and y=2*amplitude (trough), two
- * periods wide for the same seamless-tiling contract the scroll math relies
- * on (see the driver/modulo comment below).
+ * Both the "filled belly with a gradient fade" and the "open stroked line"
+ * attempts were still fundamentally a decoration drawn NEAR the water's top
+ * edge (a flat-topped Rect underneath it), not the water's edge itself -
+ * that separation from the actual fill boundary is what kept reading as
+ * "the wave is below/separate from the surface," no matter how the
+ * decoration itself was tuned (Martin, repeatedly; confirmed by his
+ * reference image - a single wavy-topped fill, not a line on a flat one).
+ *
+ * This builds the water body's OWN top edge as the wave curve - closes all
+ * the way down to `bodyHeight` (the tank's full height), so the shape IS
+ * the water, full stop. Oscillates between y=0 (crest) and y=2*amplitude
+ * (trough); two periods wide for the seamless-tiling scroll (driver %
+ * period, see below).
  */
-function buildWaveLinePath(period: number, amplitude: number): string {
+function buildWaterBodyPath(period: number, bodyHeight: number, amplitude: number): string {
   const baseline = amplitude;
   const crest = 0;
-  return `M0 ${baseline} Q${period / 4} ${crest} ${period / 2} ${baseline} T${period} ${baseline} T${period * 1.5} ${baseline} T${period * 2} ${baseline}`;
+  return (
+    `M0 ${baseline} Q${period / 4} ${crest} ${period / 2} ${baseline} T${period} ${baseline} T${period * 1.5} ${baseline} T${period * 2} ${baseline} ` +
+    `V${bodyHeight} H0 Z`
+  );
 }
 
 type BubbleConfig = {
@@ -117,8 +123,7 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
     const width = event.nativeEvent.layout.width;
     if (Math.abs(width - tankWidth) > 1) setTankWidth(width);
   };
-  const frontWavePeriod = tankWidth;
-  const backWavePeriod = tankWidth * 1.3;
+  const wavePeriod = tankWidth;
 
   // Water level: absolute y (in tank coordinates) of the water surface.
   // 0 = full tank (top), TANK_HEIGHT = empty (fully below the visible area).
@@ -140,7 +145,7 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   // the math) was the problem - likely a frame landing exactly on the
   // boundary getting composited oddly on this renderer.
   //
-  // Removed the reset entirely instead of continuing to chase it: each
+  // Removed the reset entirely instead of continuing to chase it: the
   // driver counts down smoothly and WITHOUT ever resetting (one very long
   // `withTiming`, well past any real session length), and the actual
   // on-screen offset is derived every frame via `% period` inside the
@@ -149,21 +154,15 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   // across each wrap (there's no discrete "start over" instant to land a
   // frame on), there's nothing left to be visible.
   const LOOP_DURATION_MS = 2 * 60 * 60 * 1000; // 2h - far longer than any real session, so it never actually completes
-  const frontDriver = useSharedValue(0);
-  const backDriver = useSharedValue(-backWavePeriod * 0.5); // offset start so the two layers never sync up
+  const waveDriver = useSharedValue(0);
   useEffect(() => {
     if (reducedMotion) return;
-    const frontSpeed = frontWavePeriod / 7000; // px/ms, matches the previous 7000ms-per-period pace
-    const backSpeed = backWavePeriod / 12000;
-    frontDriver.value = withTiming(frontDriver.value - frontSpeed * LOOP_DURATION_MS, {
+    const speed = wavePeriod / 7000; // px/ms
+    waveDriver.value = withTiming(waveDriver.value - speed * LOOP_DURATION_MS, {
       duration: LOOP_DURATION_MS,
       easing: Easing.linear,
     });
-    backDriver.value = withTiming(backDriver.value - backSpeed * LOOP_DURATION_MS, {
-      duration: LOOP_DURATION_MS,
-      easing: Easing.linear,
-    });
-  }, [reducedMotion, frontDriver, backDriver, frontWavePeriod, backWavePeriod]);
+  }, [reducedMotion, waveDriver, wavePeriod]);
 
   // Brief fill-level "pulse" when a glass is logged - a separate micro-
   // interaction from Button's own press-scale (that one's on the buttons).
@@ -179,25 +178,17 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   const levelGroupProps = useAnimatedProps(() => ({
     transform: [{ translateY: levelY.value }],
   }));
-  // Wave layers fade out as the tank tops off (levelY -> 0) - a topped-off
-  // tank has no headroom for a surface ripple, so showing wave texture
-  // right at 100% read as wrong (Martin: "i když by teď vlnění vidět
-  // nemělo být"). Fully faded by the time levelY is within 10 tank-units
-  // of the top; unchanged (opacity 1) everywhere else.
-  const frontWaveProps = useAnimatedProps(() => ({
-    transform: [{ translateX: frontDriver.value % frontWavePeriod }],
-    opacity: interpolate(levelY.value, [0, 10], [0, 1], Extrapolation.CLAMP),
-  }));
-  const backWaveProps = useAnimatedProps(() => ({
-    transform: [{ translateX: backDriver.value % backWavePeriod }],
-    opacity: interpolate(levelY.value, [0, 10], [0, 1], Extrapolation.CLAMP),
+  // No opacity fade here anymore - this shape IS the water body now (its
+  // own top edge is the wave), not a decoration layered over a separate
+  // always-visible fill, so fading it would fade the water itself away.
+  const waveProps = useAnimatedProps(() => ({
+    transform: [{ translateX: waveDriver.value % wavePeriod }],
   }));
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
   }));
 
-  const frontWavePath = useMemo(() => buildWaveLinePath(frontWavePeriod, FRONT_WAVE_AMPLITUDE), [frontWavePeriod]);
-  const backWavePath = useMemo(() => buildWaveLinePath(backWavePeriod, BACK_WAVE_AMPLITUDE), [backWavePeriod]);
+  const waterBodyPath = useMemo(() => buildWaterBodyPath(wavePeriod, TANK_HEIGHT, WAVE_AMPLITUDE), [wavePeriod]);
 
   // Randomize each bubble's look/timing once at mount (plain JS on the JS
   // thread - never Math.random() inside a worklet). Regenerates if the
@@ -259,27 +250,12 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                   />
                 ) : (
                   <AnimatedG animatedProps={levelGroupProps}>
-                    <Rect x={0} y={0} width={tankWidth} height={TANK_HEIGHT} fill={colors.water} />
                     {/*
-                      Open, unfilled strokes traced directly on the wave
-                      curve - this line IS the surface, not a filled region
-                      near it, so there's no "belly" depth left to read as
-                      offset below the water line (see buildWaveLinePath).
+                      The water body's own top edge IS the wave (see
+                      buildWaterBodyPath) - no separate flat-topped fill
+                      underneath it to read as a mismatched "surface".
                     */}
-                    <AnimatedPath
-                      d={backWavePath}
-                      stroke={WAVE_SHADOW_COLOR}
-                      strokeWidth={3}
-                      fill="none"
-                      animatedProps={backWaveProps}
-                    />
-                    <AnimatedPath
-                      d={frontWavePath}
-                      stroke={WAVE_HIGHLIGHT_COLOR}
-                      strokeWidth={2.5}
-                      fill="none"
-                      animatedProps={frontWaveProps}
-                    />
+                    <AnimatedPath d={waterBodyPath} fill={colors.water} animatedProps={waveProps} />
                   </AnimatedG>
                 )}
                 {!reducedMotion &&
@@ -407,20 +383,11 @@ function WaterBubble({
 const ON_WATER_FILL_COLOR = '#FFFFFF';
 
 /**
- * Same sanctioned-exception rationale as ON_WATER_FILL_COLOR above, for the
- * wave crests and bubbles: these MUST be visually distinct from the base
- * `colors.water` fill they're layered on top of. The wave layers used to be
- * `colors.water` at reduced opacity - which composites to exactly the same
- * solid color as the fully-opaque base fill directly behind them (alpha-
- * blending a color with itself never changes the result), so the "two-tone
- * wave + rising bubbles" were rendering correctly but were completely
- * invisible. White/black overlays instead of a second theme color, since
- * this needs to read as "lighter/darker water," not a distinct hue.
+ * Same sanctioned-exception rationale as ON_WATER_FILL_COLOR above: bubbles
+ * must be visually distinct from the `colors.water` fill they rise through,
+ * and a second theme hue would misread as a second liquid rather than
+ * "lighter water" - white at partial opacity instead.
  */
-// Now a stroke color on a thin open line (not a fill under a fade), so this
-// can sit at a clearly visible strength without needing a gradient to soften it.
-const WAVE_HIGHLIGHT_COLOR = 'rgba(255, 255, 255, 0.85)'; // front wave - lighter
-const WAVE_SHADOW_COLOR = 'rgba(0, 0, 0, 0.22)'; // back wave - darker
 const BUBBLE_COLOR = 'rgba(255, 255, 255, 0.8)';
 
 function createStyles(colors: ColorTokens) {
