@@ -229,10 +229,10 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                   <AnimatedG animatedProps={levelGroupProps}>
                     <Rect x={0} y={0} width={tankWidth} height={TANK_HEIGHT} fill={colors.water} />
                     <AnimatedG animatedProps={backWaveProps}>
-                      <Path d={backWavePath} fill={colors.water} fillOpacity={0.4} />
+                      <Path d={backWavePath} fill={WAVE_SHADOW_COLOR} />
                     </AnimatedG>
                     <AnimatedG animatedProps={frontWaveProps}>
-                      <Path d={frontWavePath} fill={colors.water} fillOpacity={0.9} />
+                      <Path d={frontWavePath} fill={WAVE_HIGHLIGHT_COLOR} />
                     </AnimatedG>
                   </AnimatedG>
                 )}
@@ -243,7 +243,7 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                       config={bubble}
                       levelY={levelY}
                       tankHeight={TANK_HEIGHT}
-                      color={colors.water}
+                      color={BUBBLE_COLOR}
                     />
                   ))}
               </G>
@@ -371,6 +371,21 @@ function WaterBubble({
  * in-tank controls, and do not hardcode another hex anywhere else in this file.
  */
 const ON_WATER_FILL_COLOR = '#FFFFFF';
+
+/**
+ * Same sanctioned-exception rationale as ON_WATER_FILL_COLOR above, for the
+ * wave crests and bubbles: these MUST be visually distinct from the base
+ * `colors.water` fill they're layered on top of. The wave layers used to be
+ * `colors.water` at reduced opacity - which composites to exactly the same
+ * solid color as the fully-opaque base fill directly behind them (alpha-
+ * blending a color with itself never changes the result), so the "two-tone
+ * wave + rising bubbles" were rendering correctly but were completely
+ * invisible. White/black overlays instead of a second theme color, since
+ * this needs to read as "lighter/darker water," not a distinct hue.
+ */
+const WAVE_HIGHLIGHT_COLOR = 'rgba(255, 255, 255, 0.32)'; // front wave - lighter
+const WAVE_SHADOW_COLOR = 'rgba(0, 0, 0, 0.22)'; // back wave - darker
+const BUBBLE_COLOR = 'rgba(255, 255, 255, 0.8)';
 
 function createStyles(colors: ColorTokens) {
   return StyleSheet.create({

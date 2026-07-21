@@ -44,12 +44,12 @@ export function StreakRow({
     <>
       <View style={styles.row}>
         <Pressable accessibilityRole="button" style={styles.card} onPress={() => setOpenStreak('meal')}>
-          <Ionicons name="flame" size={22} color={colors.attention} />
+          <Ionicons name="flame" size={16} color={colors.attention} />
           <Text style={styles.value}>{mealStreak}</Text>
           <Text style={styles.label}>{t('today.mealStreak')}</Text>
         </Pressable>
         <Pressable accessibilityRole="button" style={styles.card} onPress={() => setOpenStreak('water')}>
-          <Ionicons name="water" size={22} color={colors.water} />
+          <Ionicons name="water" size={16} color={colors.water} />
           <Text style={styles.value}>{waterStreak}</Text>
           <Text style={styles.label}>{t('today.waterStreak')}</Text>
         </Pressable>
@@ -86,12 +86,12 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.card,
       borderWidth: 1,
       borderColor: colors.border,
-      paddingVertical: spacing.md,
-      gap: 2,
+      paddingVertical: spacing.sm,
+      gap: 1,
     },
     value: {
       color: colors.text,
-      fontSize: typography.subtitle,
+      fontSize: typography.body,
       fontWeight: '800',
     },
     label: {
