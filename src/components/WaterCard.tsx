@@ -135,22 +135,23 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
 
   // Horizontal drift, one shared value per wave layer (transform-only).
   // One-directional (reverse:false) per Martin's ask - a ping-pong read as
-  // "sloshing back and forth" which he didn't want. The earlier "drift/snap"
-  // complaint this was fixing turned out to be the gradient rendering bug
-  // below, not the reset itself - with that fixed, a hard reset from
-  // -period back to 0 is seamless again (the frame at -period is pixel-
-  // identical to the frame at 0, since the path is exactly periodic).
+  // "sloshing back and forth" which he didn't want. The reset from -period
+  // back to 0 is mathematically seamless (the path is exactly periodic,
+  // so that frame is pixel-identical to frame 0), but any single dropped
+  // frame right at that instant is more noticeable the faster the constant-
+  // speed drift is - slowed both layers down considerably so a loop
+  // boundary (much less frequent now) reads as calm water, not a glitch.
   const frontPhase = useSharedValue(0);
   const backPhase = useSharedValue(-backWavePeriod * 0.5); // offset start so the two layers never sync up
   useEffect(() => {
     if (reducedMotion) return;
     frontPhase.value = withRepeat(
-      withTiming(-frontWavePeriod, { duration: 3500, easing: Easing.linear }),
+      withTiming(-frontWavePeriod, { duration: 7000, easing: Easing.linear }),
       -1,
       false,
     );
     backPhase.value = withRepeat(
-      withTiming(-backWavePeriod, { duration: 6000, easing: Easing.linear }),
+      withTiming(-backWavePeriod, { duration: 12000, easing: Easing.linear }),
       -1,
       false,
     );
