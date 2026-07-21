@@ -6,11 +6,15 @@ import { Alert, Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView,
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HintedScrollView } from '@/components/HintedScrollView';
-import { HouseholdPreferencesCarousel, type HouseholdPreferencesValue } from '@/components/householdWizard/HouseholdPreferencesCarousel';
+import {
+  HouseholdPreferencesCarousel,
+  type HouseholdPreferencesValue,
+  type PreferencesCarouselHandle,
+} from '@/components/householdWizard/HouseholdPreferencesCarousel';
 import type { ProfileFormValue } from '@/components/ProfileForm';
-import { ProfileSetupCarousel } from '@/components/profileWizard/ProfileSetupCarousel';
-import { Button } from '@/components/ui/Button';
+import { ProfileSetupCarousel, type ProfileCarouselHandle } from '@/components/profileWizard/ProfileSetupCarousel';
 import { Stepper } from '@/components/ui/Stepper';
+import { StepFooter, useStepFooterPadding } from '@/components/ui/StepFooter';
 import { AVOID_FOOD_GROUPS } from '@/constants/options';
 import { db } from '@/db/client';
 import { createHouseholdWithDefaults, saveHouseholdPreferences, updateHouseholdSettings } from '@/db/repositories/households';
@@ -30,6 +34,7 @@ export default function WizardScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const setActiveProfileId = useAppStore((state) => state.setActiveProfileId);
+  const footerPadding = useStepFooterPadding();
   const foodRows = useFoods();
   const foodIdBySeedKey = useMemo(() => {
     const map = new Map<string, string>();
@@ -44,9 +49,30 @@ export default function WizardScreen() {
   const [children, setChildren] = useState(0);
   const [householdId, setHouseholdId] = useState<string | null>(null);
 
+  // Once a step has been reached, its content stays mounted (see the
+  // `display: none` render below) so navigating Back never discards
+  // in-progress carousel state - these only ever flip false -> true.
+  const [reachedPreferences, setReachedPreferences] = useState(false);
+  const [reachedProfile, setReachedProfile] = useState(false);
+  useEffect(() => {
+    if (step === 'preferences') setReachedPreferences(true);
+    if (step === 'profile') setReachedProfile(true);
+  }, [step]);
+
   const [profileIndex, setProfileIndex] = useState(0);
   const [createdProfileTypes, setCreatedProfileTypes] = useState<Array<'adult' | 'child'>>([]);
   const totalMembers = adults + children;
+
+  // The preferences/profile steps delegate their own Back/Next to a carousel
+  // sub-component; this screen drives them imperatively so their buttons can
+  // render in ITS fixed StepFooter (pinned to the bottom) instead of
+  // scrolling inline inside the carousel's own content.
+  const preferencesRef = useRef<PreferencesCarouselHandle>(null);
+  const profileRef = useRef<ProfileCarouselHandle>(null);
+  const [carouselNav, setCarouselNav] = useState<{ nextLabel: string; showBack: boolean }>({
+    nextLabel: '',
+    showBack: false,
+  });
 
   const scrollRef = useRef<ScrollView>(null);
   useEffect(() => {
@@ -170,7 +196,12 @@ export default function WizardScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <HintedScrollView
           ref={scrollRef}
-          contentContainerStyle={[styles.content, step === 'done' && styles.contentCentered]}
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.content,
+            step === 'done' && styles.contentCentered,
+            { paddingBottom: footerPadding },
+          ]}
           keyboardShouldPersistTaps="handled">
           {stepLabel ? <Text style={styles.stepLabel}>{stepLabel}</Text> : null}
 
@@ -188,38 +219,45 @@ export default function WizardScreen() {
                 <Text style={styles.subtitle}>{t('wizard.compositionSubtitle')}</Text>
                 <Stepper label={t('wizard.adults')} value={adults} onChange={setAdults} min={0} max={8} />
                 <Stepper label={t('wizard.children')} value={children} onChange={setChildren} min={0} max={8} />
-                <Button
-                  label={t('common.continue')}
-                  onPress={goComposition}
-                  disabled={totalMembers < 1}
-                  style={styles.cta}
-                />
               </View>
             ) : null}
 
-            {step === 'preferences' ? (
-              <View>
+            {/*
+              'preferences'/'profile' stay MOUNTED (via `display: none` instead
+              of unmounting) once first reached, so Back doesn't wipe whatever
+              the user already typed/picked and doesn't reset the carousel
+              back to its first card - both carousels keep their own internal
+              state, which used to get thrown away on every remount.
+            */}
+            {reachedPreferences ? (
+              <View style={step !== 'preferences' ? styles.hiddenStep : undefined}>
                 <Text style={styles.title}>{t('wizard.preferencesTitle')}</Text>
                 <Text style={styles.subtitle}>{t('wizard.preferencesSubtitle')}</Text>
                 <HouseholdPreferencesCarousel
+                  ref={preferencesRef}
+                  active={step === 'preferences'}
                   submitLabel={t('common.continue')}
                   onSubmit={handlePreferencesSubmit}
                   onBack={backStep}
+                  onNavStateChange={setCarouselNav}
                 />
               </View>
             ) : null}
 
-            {step === 'profile' && householdId ? (
-              <View>
+            {reachedProfile && householdId ? (
+              <View style={step !== 'profile' ? styles.hiddenStep : undefined}>
                 <Text style={styles.title}>{t('wizard.profileTitle', { current: profileIndex + 1, total: totalMembers })}</Text>
                 <Text style={styles.subtitle}>{t('wizard.profileSubtitle')}</Text>
                 <ProfileSetupCarousel
                   key={profileIndex}
+                  ref={profileRef}
+                  active={step === 'profile'}
                   householdId={householdId}
                   submitLabel={profileIndex + 1 >= totalMembers ? t('wizard.finishProfiles') : t('wizard.nextProfile')}
                   onSubmit={handleCreateProfile}
                   onBack={backStep}
                   initialProfileType={profileIndex < adults ? 'adult' : 'child'}
+                  onNavStateChange={setCarouselNav}
                 />
               </View>
             ) : null}
@@ -228,11 +266,33 @@ export default function WizardScreen() {
               <View style={styles.centered}>
                 <Text style={styles.title}>{t('wizard.doneTitle')}</Text>
                 <Text style={styles.subtitle}>{t('wizard.doneSubtitle')}</Text>
-                <Button label={t('wizard.enterApp')} onPress={() => router.replace('/(tabs)')} style={styles.cta} />
               </View>
             ) : null}
           </Animated.View>
         </HintedScrollView>
+        {step === 'composition' ? (
+          <StepFooter
+            onNext={goComposition}
+            nextLabel={t('common.continue')}
+            nextDisabled={totalMembers < 1}
+            hideBack
+          />
+        ) : null}
+        {step === 'preferences' || step === 'profile' ? (
+          <StepFooter
+            onNext={() => (step === 'preferences' ? preferencesRef.current?.pressNext() : profileRef.current?.pressNext())}
+            nextLabel={carouselNav.nextLabel}
+            onBack={() => (step === 'preferences' ? preferencesRef.current?.pressBack() : profileRef.current?.pressBack())}
+            hideBack={!carouselNav.showBack}
+          />
+        ) : null}
+        {step === 'done' ? (
+          <StepFooter
+            onNext={() => router.replace('/(tabs)')}
+            nextLabel={t('wizard.enterApp')}
+            hideBack
+          />
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -257,6 +317,11 @@ function createStyles(colors: ColorTokens) {
     },
     centered: {
       alignItems: 'stretch',
+    },
+    // `display: 'none'` (not conditional unmounting) so the hidden carousel
+    // keeps its React state alive instead of losing it on the next Back/Next.
+    hiddenStep: {
+      display: 'none',
     },
     stepLabel: {
       color: colors.textSecondary,

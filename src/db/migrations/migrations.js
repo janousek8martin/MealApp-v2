@@ -22,6 +22,7 @@ import m0017 from './0017_windy_rhodey.sql';
 import m0018 from './0018_groovy_the_hand.sql';
 import m0019 from './0019_nasty_carnage.sql';
 import m0020 from './0020_flippant_lilith.sql';
+import m0021 from './0021_ordinary_barracuda.sql';
 
   export default {
     journal,
@@ -46,7 +47,8 @@ m0016,
 m0017,
 m0018,
 m0019,
-m0020
+m0020,
+m0021
     }
   }
   

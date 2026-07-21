@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "MealApp",
+    "back": "Back",
     "continue": "Continue",
     "cancel": "Cancel",
     "save": "Save",
@@ -21,6 +22,9 @@
     "progress": "Progress",
     "settings": "Settings"
   },
+  "nav": {
+    "moreHint": "Tip: you can reorder items in Settings → Navigation."
+  },
   "today": {
     "title": "Today",
     "mealsComingTitle": "Today's meals",
@@ -32,7 +36,6 @@
     "generating": "Generating…",
     "editProfile": "Edit profile",
     "shoppingRemaining": "items to buy",
-    "pantryExpiring": "expiring soon",
     "logWeight": "Log weight",
     "nextMealTitle": "Next meal today",
     "nextMealNone": "Nothing else planned for today",
@@ -45,8 +48,11 @@
     "waterTitle": "Water streak",
     "current": "Current",
     "best": "Best",
-    "mealsLoggedToday": "{{count}} of {{total}} meals logged today",
-    "addMeal": "Add meal"
+    "freezesLeft": "Freezes",
+    "freezesResetMonthly": "Resets every month",
+    "timeLeft": "Hours left",
+    "freeze": "Freeze today",
+    "mealsLoggedToday": "{{count}} of {{total}} meals logged today"
   },
   "planScreen": {
     "generate": "Generate",
@@ -99,7 +105,8 @@
       "reset": "Reset filters",
       "apply": "Show results"
     },
-    "noResults": "Nothing found. Try adjusting your search or filters."
+    "noResults": "Nothing found. Try adjusting your search or filters.",
+    "pantryOnlyFilter": "Recipes from what's in my pantry"
   },
   "shopping": {
     "list": "List",
@@ -117,7 +124,13 @@
     "prefillStapleResult": "Added {{added}} staples to the shopping list ({{skipped}} already stocked or listed)",
     "purchasedTitle": "How much did you buy?",
     "purchasedConfirm": "Add to pantry",
-    "purchasedJustNeeded": "Just the needed amount"
+    "purchasedJustNeeded": "Just the needed amount",
+    "sectionExpiringSoon": "Use up soon",
+    "sectionFresh": "Fresh / fridge",
+    "sectionFreezer": "Freezer",
+    "sectionStaples": "Shelf-stable (pantry)",
+    "sectionOther": "Other",
+    "cookWithPantry": "Cook with what I have"
   },
   "progress": {
     "logWeight": "Log weight",
@@ -293,11 +306,12 @@
     "female": "Women",
     "age": "Age",
     "band": {
-      "ideal": "Ideal",
-      "average": "Average",
-      "overweight": "Above average"
+      "low": "Lower range",
+      "mid": "Mid range",
+      "high": "Upper range"
     },
-    "hint": "Approximate ranges (ACE classification). For a more precise value, use calipers or a DEXA scan."
+    "hint": "Approximate ranges (ACE classification). For a more precise value, use calipers or a DEXA scan.",
+    "currentValue": "• Your current value"
   },
   "goal": {
     "lose": "Lose fat",
@@ -713,7 +727,30 @@
     "carbsComputed": "Carbs (computed)",
     "snackPresets": "Quick presets",
     "useDefault": "Use default",
-    "savePortions": "Save portions"
+    "savePortions": "Save portions",
+    "category": {
+      "app": {
+        "title": "App & device",
+        "hint": "Units, language, appearance, notifications, navigation and scroll memory."
+      },
+      "household": {
+        "title": "Household",
+        "hint": "Household name, diet, cuisines, foods to avoid, members and planning rules."
+      },
+      "profile": {
+        "title": "Profile",
+        "hint": "Personal details, goals, calories & macros, slot portions and water intake."
+      },
+      "about": {
+        "title": "About",
+        "hint": "App version, onboarding replay and licence information."
+      }
+    }
+  },
+  "settingsAbout": {
+    "version": "App version",
+    "replayOnboarding": "Show onboarding again",
+    "licencePlaceholder": "Licence to be finalized."
   },
   "carousel": {
     "back": "Back",
@@ -721,6 +758,7 @@
     "cardBasics": "Basics",
     "cardBody": "Body",
     "cardGoal": "Goal",
+    "cardGoalDetails": "Goal weight and composition",
     "cardTempo": "Tempo",
     "cardLifestyle": "Lifestyle",
     "cardTraining": "Training",
@@ -861,5 +899,55 @@
     "legendActive": "Active phase",
     "legendMaintenance": "Maintenance week",
     "timelineSummary": "~{{weeks}} weeks · around {{date}}"
+  },
+  "tooltip": {
+    "pantry": {
+      "title": "What is Pantry?",
+      "body": "Pantry keeps track of what your household already has at home, so meal planning and the shopping list take it into account."
+    },
+    "pantryExpiring": {
+      "title": "Use up soon",
+      "body": "These items are getting close to their use-by date - a gentle nudge to use them before anything else, not a warning."
+    },
+    "prefillStaples": {
+      "title": "Stock up on staples",
+      "body": "Adds long-lasting basics (rice, oil, canned goods…) to your shopping list for a batch purchase, based on what you don't already have."
+    },
+    "settingsApp": {
+      "title": "App & device settings",
+      "body": "Units, language, appearance, notifications, navigation layout and scroll memory - anything about how the app itself behaves."
+    },
+    "settingsHousehold": {
+      "title": "Household settings",
+      "body": "Shared preferences for everyone in the household: diet, cuisines, foods to avoid, members and meal-planning rules."
+    },
+    "settingsProfile": {
+      "title": "Profile settings",
+      "body": "Personal details for this profile - goals, calories and macros, slot portions and water intake."
+    },
+    "profileChip": {
+      "title": "Switch profile",
+      "body": "Tap the pill to switch whose calories, macros and plan you're viewing - everyone still shares the same meal plan, pantry and shopping list."
+    },
+    "macros": {
+      "title": "Your daily target",
+      "body": "This is your daily calorie and macronutrient target, computed from your profile - it updates automatically whenever your details change."
+    },
+    "toleranceStatus": {
+      "title": "How close to target",
+      "body": "Shows how closely today's planned meals match your calorie and macro target. Some day-to-day variation is normal - this isn't a pass or fail grade."
+    },
+    "streak": {
+      "title": "Your streak",
+      "body": "Counts consecutive days you logged this. A missed day just pauses the streak - it doesn't erase your progress, so there's no need to start over."
+    },
+    "bodyFat": {
+      "title": "Reference ranges",
+      "body": "These bands show a typical range for a given age and sex, based on population data - not an \"ideal\" or a goal to hit."
+    },
+    "waterGoal": {
+      "title": "How the goal is set",
+      "body": "Your daily water goal is estimated from your weight. You can set your own number anytime in Settings → Profile."
+    }
   }
 }

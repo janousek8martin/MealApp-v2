@@ -7,9 +7,11 @@ import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
 const TIER_COLOR_KEY: Record<GoalReviewTier, keyof ColorTokens> = {
-  realistic: 'success',
-  ambitious: 'secondary',
-  challenging: 'danger',
+  realistic: 'interactive',
+  ambitious: 'primary',
+  // Never `danger` here — this is a goal-pace judgment, not a system error;
+  // see the tokens.ts header note on nutrition/goal states.
+  challenging: 'attention',
 };
 
 type Props = {
@@ -38,7 +40,7 @@ export function GoalReviewCard({ currentWeightKg, goalWeightKg, rateKgPerWeek }:
         <Text style={styles.durationLabel}>{t('goalReview.duration', { weeks: review.estimatedWeeks })}</Text>
       ) : null}
       {review.paceExceedsSafeBand ? (
-        <Text style={[styles.paceWarning, { color: colors.danger }]}>{t('goalReview.paceWarning')}</Text>
+        <Text style={[styles.paceWarning, { color: colors.attention }]}>{t('goalReview.paceWarning')}</Text>
       ) : null}
     </View>
   );

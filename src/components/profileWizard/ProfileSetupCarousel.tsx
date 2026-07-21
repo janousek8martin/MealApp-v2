@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -32,6 +32,7 @@ const CARD_KEYS = [
   'basics',
   'body',
   'goal',
+  'goalDetails',
   'tempo',
   'lifestyle',
   'training',
@@ -64,6 +65,11 @@ function weekdayOptions(language: string): { value: string; label: string }[] {
   });
 }
 
+export type ProfileCarouselHandle = {
+  pressNext: () => void;
+  pressBack: () => void;
+};
+
 type Props = {
   householdId: string;
   submitLabel: string;
@@ -71,6 +77,20 @@ type Props = {
   /** Called when Back is pressed on the FIRST card - steps back to the previous wizard step. */
   onBack?: () => void;
   initialProfileType?: 'adult' | 'child';
+  /**
+   * Whether this carousel is the one currently visible in the wizard - the
+   * parent keeps both step carousels mounted (see wizard.tsx) so Back/Next
+   * don't wipe their state, so this tells the hidden one not to report its
+   * footer state over the visible one's, and makes the visible one re-report
+   * its own state the moment it becomes visible again.
+   */
+  active?: boolean;
+  /**
+   * Reports the current Next label and whether Back is currently available,
+   * so a parent-rendered fixed `StepFooter` can reflect the carousel's state
+   * without the footer living inside this component's own scrolling content.
+   */
+  onNavStateChange?: (state: { nextLabel: string; showBack: boolean }) => void;
 };
 
 /**
@@ -79,8 +99,17 @@ type Props = {
  * (ProfileForm) still exists for editing an existing profile. Navigation is
  * Next/Back-button-driven (animated slide) rather than a raw swipe gesture,
  * so each card's validity can gate progression.
+ *
+ * Back/Next themselves are NOT rendered inline here - a parent screen renders
+ * a fixed `StepFooter` outside this component's scroll container and drives
+ * it via the imperative handle (`pressNext`/`pressBack`), reading label/back-
+ * visibility from `onNavStateChange`. This keeps the buttons pinned to the
+ * bottom of the screen instead of scrolling with the card content.
  */
-export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBack, initialProfileType }: Props) {
+export const ProfileSetupCarousel = forwardRef<ProfileCarouselHandle, Props>(function ProfileSetupCarousel(
+  { householdId, submitLabel, onSubmit, onBack, initialProfileType, active = true, onNavStateChange },
+  ref,
+) {
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -134,7 +163,8 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
 
   const cardKeys = useMemo<CardKey[]>(() => {
     return CARD_KEYS.filter((key) => {
-      if (isChild && (key === 'goal' || key === 'tempo' || key === 'training')) return false;
+      if (isChild && (key === 'goal' || key === 'goalDetails' || key === 'tempo' || key === 'training')) return false;
+      if (!isChild && key === 'goalDetails' && goal === 'maintain') return false;
       if (!isChild && key === 'tempo' && goal === 'maintain') return false;
       if (key === 'diet' && sharesMainMeals) return false;
       return true;
@@ -293,6 +323,23 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
   }, [weightKg, isChild, goal, goalWeightKg, rateKgPerWeek, sex, bodyFatPct]);
 
   const isLastCard = currentKey === 'summary';
+  const showBack = index > 0 || !!onBack;
+
+  const pressNext = () => {
+    if (isLastCard) handleSubmit();
+    else goNext();
+  };
+  const pressBack = () => {
+    if (index > 0) goBack();
+    else onBack?.();
+  };
+  useImperativeHandle(ref, () => ({ pressNext, pressBack }));
+
+  useEffect(() => {
+    if (!active) return;
+    onNavStateChange?.({ nextLabel: isLastCard ? submitLabel : t('carousel.next'), showBack });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, isLastCard, submitLabel, showBack, t]);
 
   return (
     <View>
@@ -375,26 +422,28 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
           <View>
             <Text style={styles.cardTitle}>{t('carousel.cardGoal')}</Text>
             <GoalPicker value={goal} onChange={setGoal} />
-            {goal !== 'maintain' ? (
-              <>
-                <TextField label={t('form.goalWeight')} value={goalWeight} onChangeText={setGoalWeight} keyboardType="decimal-pad" suffix="kg" />
-                <TextField
-                  label={t('form.goalBodyFat')}
-                  value={goalBodyFat}
-                  onChangeText={setGoalBodyFat}
-                  keyboardType="decimal-pad"
-                  suffix="%"
-                  labelRight={
-                    <Pressable accessibilityRole="button" onPress={() => setBodyFatChartVisible(true)} hitSlop={8}>
-                      <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
-                    </Pressable>
-                  }
-                />
-                {sex ? <BodyFatCarousel sex={sex} value={goalBodyFatPct} onSelect={(v) => setGoalBodyFat(String(v))} /> : null}
-                {goal === 'gain' && bodyFatPct === null ? (
-                  <Text style={styles.hintText}>{t('form.recompositionHint')}</Text>
-                ) : null}
-              </>
+          </View>
+        ) : null}
+
+        {currentKey === 'goalDetails' ? (
+          <View>
+            <Text style={styles.cardTitle}>{t('carousel.cardGoalDetails')}</Text>
+            <TextField label={t('form.goalWeight')} value={goalWeight} onChangeText={setGoalWeight} keyboardType="decimal-pad" suffix="kg" />
+            <TextField
+              label={t('form.goalBodyFat')}
+              value={goalBodyFat}
+              onChangeText={setGoalBodyFat}
+              keyboardType="decimal-pad"
+              suffix="%"
+              labelRight={
+                <Pressable accessibilityRole="button" onPress={() => setBodyFatChartVisible(true)} hitSlop={8}>
+                  <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+                </Pressable>
+              }
+            />
+            {sex ? <BodyFatCarousel sex={sex} value={goalBodyFatPct} onSelect={(v) => setGoalBodyFat(String(v))} /> : null}
+            {goal === 'gain' && bodyFatPct === null ? (
+              <Text style={styles.hintText}>{t('form.recompositionHint')}</Text>
             ) : null}
           </View>
         ) : null}
@@ -589,21 +638,6 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
         ) : null}
       </Animated.View>
 
-      <View style={styles.navRow}>
-        {index > 0 ? (
-          <Button label={t('carousel.back')} variant="secondary" onPress={goBack} style={styles.navButton} />
-        ) : onBack ? (
-          <Button label={t('carousel.back')} variant="secondary" onPress={onBack} style={styles.navButton} />
-        ) : (
-          <View style={styles.navButton} />
-        )}
-        <Button
-          label={isLastCard ? submitLabel : t('carousel.next')}
-          onPress={isLastCard ? handleSubmit : goNext}
-          style={styles.navButton}
-        />
-      </View>
-
       <BodyFatChartModal visible={bodyFatChartVisible} sex={sex ?? 'male'} onClose={() => setBodyFatChartVisible(false)} />
       <NavyCalculatorModal
         visible={navyVisible}
@@ -617,7 +651,7 @@ export function ProfileSetupCarousel({ householdId, submitLabel, onSubmit, onBac
       />
     </View>
   );
-}
+});
 
 function createStyles(colors: ColorTokens) {
   return StyleSheet.create({
@@ -635,9 +669,14 @@ function createStyles(colors: ColorTokens) {
     controlGap: {
       marginBottom: spacing.lg,
     },
+    // Fixed minHeight reserves room for the longest pro/con copy (the
+    // fast-lose "con" is a 2-3 line safety note) so switching presets
+    // doesn't reflow the rate stepper/review card below it up and down.
     proConBox: {
       marginTop: spacing.sm,
       marginBottom: spacing.md,
+      minHeight: 96,
+      justifyContent: 'center',
     },
     proConLine: {
       color: colors.textSecondary,
@@ -792,14 +831,6 @@ function createStyles(colors: ColorTokens) {
       color: colors.text,
       fontSize: typography.small,
       fontWeight: '600',
-    },
-    navRow: {
-      flexDirection: 'row',
-      gap: spacing.md,
-      marginTop: spacing.md,
-    },
-    navButton: {
-      flex: 1,
     },
   });
 }

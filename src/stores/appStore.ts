@@ -7,8 +7,8 @@ export type NavKey = 'index' | 'plan' | 'library' | 'shopping' | 'pantry' | 'pro
 
 export const ALL_NAV_KEYS: NavKey[] = ['index', 'plan', 'library', 'shopping', 'pantry', 'progress', 'settings'];
 
-/** Default main bar per the redesign brief: Home, Meal plan, Shopping, Settings. */
-export const DEFAULT_MAIN_NAV_KEYS: NavKey[] = ['index', 'plan', 'shopping', 'settings'];
+/** Default main bar per the redesign brief: Home, Plan, Shopping, Library — the everyday cook-and-shop loop. */
+export const DEFAULT_MAIN_NAV_KEYS: NavKey[] = ['index', 'plan', 'shopping', 'library'];
 
 export const MAX_MAIN_NAV_ITEMS = 4;
 
@@ -35,6 +35,9 @@ type AppState = {
   /** Set only once the user swipes through the walkthrough and taps a final CTA. */
   walkthroughSeen: boolean;
   setWalkthroughSeen: (seen: boolean) => void;
+  /** Set only once the user has seen the one-time "more nav items" coach-mark. */
+  hasSeenMoreHint: boolean;
+  setHasSeenMoreHint: (seen: boolean) => void;
   /** Light/dark theme; defaults to light so existing installs don't flip unexpectedly. */
   themeMode: 'light' | 'dark';
   setThemeMode: (mode: 'light' | 'dark') => void;
@@ -58,6 +61,8 @@ export const useAppStore = create<AppState>()(
       setNavOrder: (order) => set({ navOrder: order }),
       walkthroughSeen: false,
       setWalkthroughSeen: (seen) => set({ walkthroughSeen: seen }),
+      hasSeenMoreHint: false,
+      setHasSeenMoreHint: (seen) => set({ hasSeenMoreHint: seen }),
       themeMode: 'light',
       setThemeMode: (mode) => set({ themeMode: mode }),
       restoreScrollEnabled: false,
@@ -68,7 +73,7 @@ export const useAppStore = create<AppState>()(
     {
       name: 'mealapp-app-state',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 5,
+      version: 6,
       migrate: (persistedState, version) => {
         const state = persistedState as { mainNavKeys?: NavKey[] } & Record<string, unknown>;
         if (version < 2) {

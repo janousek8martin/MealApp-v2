@@ -77,7 +77,7 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.card,
     },
     placeholder: {
-      backgroundColor: colors.lime,
+      backgroundColor: colors.accentSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },

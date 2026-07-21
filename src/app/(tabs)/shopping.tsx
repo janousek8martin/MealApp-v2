@@ -37,7 +37,7 @@ function ShoppingRow({ item, onToggle, onRemove }: { item: ShoppingItemRow; onTo
       <Ionicons
         name={item.checked ? 'checkbox' : 'square-outline'}
         size={22}
-        color={item.checked ? colors.success : colors.textSecondary}
+        color={item.checked ? colors.interactive : colors.textSecondary}
       />
       <View style={styles.rowText}>
         <Text style={[styles.rowName, item.checked && styles.rowNameChecked]} numberOfLines={1}>

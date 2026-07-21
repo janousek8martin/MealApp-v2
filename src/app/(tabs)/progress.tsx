@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NavyCalculatorModal } from '@/components/NavyCalculatorModal';
-import { ProfileSwitcher } from '@/components/ProfileSwitcher';
+import { ProfileChip } from '@/components/ProfileChip';
 import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { TdciCard } from '@/components/TdciCard';
 import { Button } from '@/components/ui/Button';
@@ -29,6 +29,7 @@ import {
 } from '@/hooks/data';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
+import { useAppStore } from '@/stores/appStore';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
 
@@ -56,6 +57,8 @@ export default function ProgressScreen() {
   const scrollHint = useScrollDownHint(scrollRef);
   const { household } = useHousehold();
   const activeProfile = useActiveProfile(household?.id);
+  const activeProfileId = useAppStore((s) => s.activeProfileId);
+  const setActiveProfileId = useAppStore((s) => s.setActiveProfileId);
   const targets = useProfileTargets(activeProfile);
   const latestMetric = useLatestBodyMetric(activeProfile?.id);
   const history = useBodyMetricHistory(activeProfile?.id);
@@ -150,7 +153,13 @@ export default function ProgressScreen() {
         scrollEventThrottle={scrollEventThrottle}>
         <Text style={styles.heading}>{t('tabs.progress')}</Text>
 
-        {household ? <ProfileSwitcher householdId={household.id} /> : null}
+        {household ? (
+          <ProfileChip
+            householdId={household.id}
+            selectedProfileId={activeProfileId ?? undefined}
+            onSelect={setActiveProfileId}
+          />
+        ) : null}
 
         {activeProfile && targets ? <TdciCard name={activeProfile.name} targets={targets} /> : null}
 
@@ -297,7 +306,7 @@ function createStyles(colors: ColorTokens) {
       marginBottom: spacing.sm,
     },
     banner: {
-      backgroundColor: colors.lime,
+      backgroundColor: colors.accentSoft,
       borderRadius: radius.card,
       padding: spacing.md,
       marginTop: spacing.md,

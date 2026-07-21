@@ -1,108 +1,104 @@
 /**
  * Design tokens – UI/UX brief (2026-07-19), "klidná důvěryhodnost" direction.
- * Dark Spruce (brand) + Olive Leaf (interactive) on Beige/Ink Black, with a
- * SEPARATE tolerance-status palette (toleranceOk/toleranceOff) that must
- * never be conflated with brand green or reused as a red/green semaphore —
- * see the brief's section 2.4. `danger` is reserved for real system errors
- * (network, form validation) only, never for a nutrition/body-metric state.
- * Shape (`ColorTokens`) is identical across modes so every consumer can stay
- * mode-agnostic and just read `colors.*` from `useTheme()`.
+ * Dark Spruce (`primary`, brand/nav) + Olive Leaf (`interactive`, buttons/
+ * controls/positive-state) on Beige/Ink Black. `attention` (warm amber) is
+ * the ONLY color for a nutrition/goal/food-freshness state that needs to
+ * stand out — never `danger`/red and never a red-green semaphore pairing,
+ * see the brief's section 2.4: that measurably increases anxiety for
+ * disordered-eating-prone users, and this app is used by a household with
+ * children. `danger` is reserved for real system errors (network, form
+ * validation, delete confirmation) only, never for a nutrition or
+ * body-metric state. Shape (`ColorTokens`) is identical across modes so
+ * every consumer can stay mode-agnostic and just read `colors.*` from
+ * `useTheme()`.
  */
 
 export type ColorTokens = {
   background: string;
-  heroGradientStart: string;
-  heroGradientEnd: string;
-  primary: string;
-  primaryLight: string;
-  onPrimary: string;
-  /** Muted alt accent – decorative highlights, charts, alt CTAs. Same color family as primary (brief: no second independent palette). */
-  secondary: string;
-  secondaryLight: string;
-  /** Water/hydration accent (sky blue) – used by WaterCard, deliberately distinct from the green primary. */
-  water: string;
-  /** @deprecated Use `toleranceOk` for nutrition/goal state, or `primary` for generic brand success. Kept for un-migrated call sites. */
-  success: string;
-  /** Kept for API compatibility with older call sites; same as `success`. */
-  teal: string;
-  mint: string;
-  lime: string;
-  tealTint: string;
-  /** "Within tolerance" / goal-met state. Deliberately its own token, not aliased to `primary` — the brief warns that reusing brand green here makes its *absence* silently read as failure. */
-  toleranceOk: string;
-  /** "Outside tolerance" state. Warm amber, never red — see brief 2.4 (semaphore red/green measurably increases anxiety for disordered-eating-prone users, and this app is used by a household with children). */
-  toleranceOff: string;
-  /** Real system errors only (network, form validation, delete confirmation) – never a nutrition or body-metric state. */
-  danger: string;
-  text: string;
-  textSecondary: string;
-  border: string;
   surface: string;
   /** A second, slightly-raised surface for nested cards / rows. */
   surfaceAlt: string;
+  border: string;
+  text: string;
+  textSecondary: string;
+  /** Brand/nav accent — hero gradient family, chips that represent the app itself (e.g. the profile pill). */
+  primary: string;
+  onPrimary: string;
+  /** Interactive accent — buttons, active controls, switches, and positive/confirmed states (eaten, checked, within-tolerance). */
+  interactive: string;
+  onInteractive: string;
+  /** Soft decorative fill for chip/tile backgrounds and placeholders — no semantic meaning of its own. */
+  accentSoft: string;
+  /** Water/hydration accent (sky blue) – used by WaterCard, deliberately distinct from the green primary. */
+  water: string;
+  /** The only color for a nutrition/goal/food-freshness state that needs to stand out (expiring pantry item, skipped meal, needs-review data, aggressive goal pace). Warm amber, never red. */
+  attention: string;
+  /** Text/icon color for content rendered on a solid `attention` fill. Unlike `onPrimary`/`onInteractive`, this is the SAME dark-ink value in both light and dark mode — `attention` is a light-ish amber in both palettes (it never flips light-on-dark like primary/interactive do), so it always needs dark ink, never white. Verified ≥4.5:1 (WCAG AA) against both palettes' `attention`. */
+  onAttention: string;
+  /** Real system errors only (network, form validation, delete confirmation) – never a nutrition or body-metric state. */
+  danger: string;
+  heroGradientStart: string;
+  heroGradientEnd: string;
 };
 
 export const lightColors: ColorTokens = {
   background: '#EFF6E0',
-  heroGradientStart: '#28502E',
-  heroGradientEnd: '#152A18',
-  primary: '#28502E',
-  primaryLight: '#47682C',
-  onPrimary: '#FFFFFF',
-  secondary: '#47682C',
-  secondaryLight: '#6B8F4C',
-  water: '#0EA5E9',
-  success: '#47682C',
-  teal: '#47682C',
-  mint: '#D5E2CD',
-  lime: '#D6E1C5',
-  tealTint: '#DFE9D4',
-  toleranceOk: '#47682C',
-  toleranceOff: '#B08D57',
-  danger: '#B3453D',
-  text: '#1C2A1E',
-  textSecondary: '#5B6B5A',
-  border: '#DCE3D1',
   surface: '#F7FAEF',
   surfaceAlt: '#E9F0DA',
+  border: '#DCE3D1',
+  text: '#1C2A1E',
+  textSecondary: '#5B6B5A',
+  primary: '#28502E',
+  onPrimary: '#FFFFFF',
+  interactive: '#47682C',
+  onInteractive: '#FFFFFF',
+  accentSoft: '#DCE7D2',
+  water: '#0EA5E9',
+  attention: '#B08D57',
+  onAttention: '#16241A',
+  danger: '#B3453D',
+  heroGradientStart: '#28502E',
+  heroGradientEnd: '#152A18',
 };
 
 export const darkColors: ColorTokens = {
   background: '#011627',
-  heroGradientStart: '#28502E',
-  heroGradientEnd: '#011A0F',
-  primary: '#AEC3B0',
-  primaryLight: '#C6D6C7',
-  onPrimary: '#011627',
-  secondary: '#AEC3B0',
-  secondaryLight: '#C6D6C7',
-  water: '#38BDF8',
-  success: '#AEC3B0',
-  teal: '#AEC3B0',
-  mint: '#24393A',
-  lime: '#0F2628',
-  tealTint: '#1B303B',
-  toleranceOk: '#AEC3B0',
-  toleranceOff: '#C7A06B',
-  danger: '#D3675F',
+  surface: '#0F1B17',
+  surfaceAlt: '#152520',
+  border: '#22322C',
   text: '#EFF6E0',
   textSecondary: '#9BB09C',
-  border: '#0F2836',
-  surface: '#04202F',
-  surfaceAlt: '#0A2B3A',
+  primary: '#AEC3B0',
+  onPrimary: '#16241A',
+  interactive: '#8FAE7A',
+  onInteractive: '#12200F',
+  accentSoft: '#25352A',
+  water: '#38BDF8',
+  attention: '#C9A876',
+  onAttention: '#16241A',
+  danger: '#E08079',
+  heroGradientStart: '#28502E',
+  heroGradientEnd: '#011A0F',
 };
 
-/** Body-fat chart severity bands (Profile overview), per theme mode. No red — see the tolerance-color rule above; "overweight" uses the same amber as toleranceOff, not danger. */
+/**
+ * Body-fat reference chart columns (Profile overview), per theme mode.
+ * These are POSITIONAL (lower/mid/upper range), not a good→bad judgment
+ * ramp – deliberately a single hue family (derived from `accentSoft`) with
+ * only 2–3 lightness/saturation steps and no hue shift, so the table never
+ * reads as a red/yellow/green semaphore. See the no-color-coded-judgment
+ * rule on `ColorTokens` above.
+ */
 export const bodyFatBandLight = {
-  ideal: '#E3ECD6',
-  average: '#F1EBD8',
-  overweight: '#F0E2C9',
+  low: '#DCE7D2',
+  mid: '#CBDBBC',
+  high: '#B9CFA6',
 } as const;
 
 export const bodyFatBandDark = {
-  ideal: '#1B2E1D',
-  average: '#2B2718',
-  overweight: '#33291A',
+  low: '#25352A',
+  mid: '#2E4234',
+  high: '#3A5040',
 } as const;
 
 export const radius = {
@@ -113,11 +109,15 @@ export const radius = {
 } as const;
 
 export const spacing = {
+  xxs: 2,
   xs: 4,
   sm: 8,
+  ms: 12,
   md: 16,
   lg: 24,
   xl: 32,
+  xxl: 48,
+  xxxl: 64,
 } as const;
 
 export const typography = {
@@ -126,6 +126,8 @@ export const typography = {
   title: 24,
   subtitle: 18,
   body: 16,
+  /** Chip/pill labels, list-row primary text at a slightly denser size than `body`. */
+  label: 15,
   small: 13,
 } as const;
 
@@ -147,13 +149,3 @@ export const fontFamily = {
 
 /** Apply to any Text showing kcal/macro/weight numbers so digits align in columns. */
 export const tabularNums = { fontVariant: ['tabular-nums'] as const };
-
-/**
- * @deprecated Static light-mode colors, kept only so any not-yet-migrated
- * call site still compiles. New code must use `useTheme()` from
- * `@/theme/ThemeContext` instead of importing `colors` directly.
- */
-export const colors = lightColors;
-/** @deprecated use `useTheme().bodyFatBand` instead. */
-export const bodyFatBand = bodyFatBandLight;
-export const heroGradient = [lightColors.heroGradientStart, lightColors.heroGradientEnd] as const;

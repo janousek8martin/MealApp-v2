@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,20 +11,24 @@ import { ScrollDownHintButton } from '@/components/ScrollDownHintButton';
 import { LibraryFilterModal, type FilterSection } from '@/components/LibraryFilterModal';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
+import { getFoodCategoryIcon } from '@/constants/pantryCategoryIcons';
 import { db } from '@/db/client';
 import { softDeleteFood, softDeleteRecipe } from '@/db/repositories/library';
 import type { foods, recipes } from '@/db/schema';
 import { isLowCarbRecipe } from '@/domain/generator/filters';
+import { rankRecipesByPantryOverlap } from '@/domain/pantryRecipeMatch';
 import { useActiveProfile, useHousehold } from '@/hooks/data';
 import {
   useFoodAllergensMap,
   useFoods,
   usePhotoMap,
   useRatingsMap,
+  useRecipeIngredientFoodIdsMap,
   useRecipes,
   useRecipeTagsMap,
 } from '@/hooks/library';
 import { useRecipeNutritionMap } from '@/hooks/plan';
+import { usePantryItems } from '@/hooks/shopping';
 import { useScrollDownHint } from '@/hooks/useScrollDownHint';
 import { useTabScrollRestore } from '@/hooks/useTabScrollRestore';
 import { useTheme } from '@/theme/ThemeContext';
@@ -46,18 +50,24 @@ function toggleValue(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 }
 
+/** Recipes have no `foods.category` value to key off of, so their photo-less
+ * placeholder gets one generic plate icon rather than per-category ones. */
+const RECIPE_PLACEHOLDER_ICON = require('../../assets/icons/library/kitchen-misc/072-plate.png');
+
 export default function LibraryScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const ACCENTS = useMemo(() => [colors.mint, colors.lime, colors.tealTint], [colors]);
+  const ACCENTS = useMemo(() => [colors.accentSoft], [colors]);
   const listRef = useRef<FlatList>(null);
   const { onScroll: onRestoreScroll, scrollEventThrottle } = useTabScrollRestore(listRef);
   const scrollHint = useScrollDownHint(listRef);
+  const params = useLocalSearchParams<{ pantryOnly?: string }>();
   const [segment, setSegment] = useState<Segment>('recipes');
   const [search, setSearch] = useState('');
   const [recipeFilter, setRecipeFilter] = useState<RecipeFilter>('all');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [pantryFilterActive, setPantryFilterActive] = useState(false);
 
   const [recipeCuisines, setRecipeCuisines] = useState<string[]>([]);
   const [recipeTags, setRecipeTags] = useState<string[]>([]);
@@ -80,6 +90,27 @@ export default function LibraryScreen() {
   const recipeTagsMap = useRecipeTagsMap();
   const foodAllergensMap = useFoodAllergensMap();
   const recipeNutritionMap = useRecipeNutritionMap();
+  const recipeIngredientFoodIdsMap = useRecipeIngredientFoodIdsMap();
+  const pantryItems = usePantryItems(household?.id);
+
+  useEffect(() => {
+    if (params.pantryOnly === '1') {
+      setPantryFilterActive(true);
+      setSegment('recipes');
+    }
+  }, [params.pantryOnly]);
+
+  const inStockFoodIds = useMemo(() => new Set(pantryItems.map((item) => item.foodId)), [pantryItems]);
+
+  /** Recipe ids qualifying for the "Uvař z toho, co mám" cross-link filter (see src/domain/pantryRecipeMatch.ts) – null when the filter isn't active. */
+  const pantryMatchIds = useMemo(() => {
+    if (!pantryFilterActive) return null;
+    const candidates = recipeRows.map((recipe) => ({
+      id: recipe.id,
+      ingredientFoodIds: recipeIngredientFoodIdsMap.get(recipe.id) ?? [],
+    }));
+    return new Set(rankRecipesByPantryOverlap(candidates, inStockFoodIds).map((c) => c.id));
+  }, [pantryFilterActive, recipeRows, recipeIngredientFoodIdsMap, inStockFoodIds]);
 
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -166,6 +197,7 @@ export default function LibraryScreen() {
             recipe.nameCs.toLowerCase().includes(normalizedSearch) ||
             recipe.nameEn.toLowerCase().includes(normalizedSearch),
         )
+        .filter((recipe) => !pantryMatchIds || pantryMatchIds.has(recipe.id))
         .sort((a, b) => localizedName(a).localeCompare(localizedName(b), 'cs')),
     [
       recipeRows,
@@ -179,6 +211,7 @@ export default function LibraryScreen() {
       recipeTagsMap,
       recipeNutritionMap,
       recipeTagsById,
+      pantryMatchIds,
     ],
   );
 
@@ -379,6 +412,18 @@ export default function LibraryScreen() {
         </Pressable>
       </View>
 
+      {segment === 'recipes' && pantryFilterActive ? (
+        <View style={styles.pantryFilterRow}>
+          <View style={styles.pantryFilterChip}>
+            <Ionicons name="basket-outline" size={14} color={colors.onInteractive} />
+            <Text style={styles.pantryFilterLabel}>{t('library.pantryOnlyFilter')}</Text>
+            <Pressable accessibilityRole="button" onPress={() => setPantryFilterActive(false)} hitSlop={8}>
+              <Ionicons name="close" size={14} color={colors.onInteractive} />
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       {segment === 'recipes' ? (
         <View style={styles.filterRow}>
           {recipeFilters.map((value) => (
@@ -433,6 +478,7 @@ export default function LibraryScreen() {
                 subtitle={nutrition ? `${categoryLabel} · ${Math.round(nutrition.kcal)} kcal` : categoryLabel}
                 photoUri={photoMap.get(`recipe:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
+                categoryIcon={RECIPE_PLACEHOLDER_ICON}
                 rating={recipeRatings.get(item.id) ?? null}
                 tags={[
                   { label: t(`budget.${item.budget}`) },
@@ -480,6 +526,7 @@ export default function LibraryScreen() {
                 subtitle={`${Math.round(item.kcalPer100)} kcal / 100 ${item.baseUnit === 'piece' ? 'g' : item.baseUnit}`}
                 photoUri={photoMap.get(`food:${item.id}`)}
                 accent={ACCENTS[index % ACCENTS.length]}
+                categoryIcon={getFoodCategoryIcon(item.category)}
                 rating={foodRatings.get(item.id) ?? null}
                 tags={[
                   { label: t(`budget.${item.budget}`) },
@@ -628,6 +675,24 @@ function createStyles(colors: ColorTokens) {
       gap: spacing.xs + 2,
       marginTop: spacing.sm,
     },
+    pantryFilterRow: {
+      flexDirection: 'row',
+      marginTop: spacing.sm,
+    },
+    pantryFilterChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: colors.interactive,
+      borderRadius: radius.chip,
+      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.sm + 2,
+    },
+    pantryFilterLabel: {
+      color: colors.onInteractive,
+      fontSize: typography.small,
+      fontWeight: '600',
+    },
     filterChip: {
       borderRadius: radius.chip,
       borderWidth: 1,
@@ -637,15 +702,15 @@ function createStyles(colors: ColorTokens) {
       paddingHorizontal: spacing.sm + 2,
     },
     filterChipActive: {
-      backgroundColor: colors.primaryLight,
-      borderColor: colors.primaryLight,
+      backgroundColor: colors.interactive,
+      borderColor: colors.interactive,
     },
     filterLabel: {
       color: colors.text,
       fontSize: typography.small,
     },
     filterLabelActive: {
-      color: colors.onPrimary,
+      color: colors.onInteractive,
       fontWeight: '600',
     },
     list: {

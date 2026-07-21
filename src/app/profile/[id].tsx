@@ -1,14 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HintedScrollView } from '@/components/HintedScrollView';
-import { ProfileForm, type ProfileFormValue } from '@/components/ProfileForm';
+import { ProfileForm, type ProfileFormHandle, type ProfileFormValue } from '@/components/ProfileForm';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ManualAdjustmentCard, MacroOverridesCard } from '@/components/ProfileNutritionCards';
 import { Button } from '@/components/ui/Button';
+import { StepFooter, useStepFooterPadding } from '@/components/ui/StepFooter';
 import { db } from '@/db/client';
 import { updateProfile } from '@/db/repositories/profiles';
 import { useLatestBodyMetric, useProfile, useProfileRestrictions, useProfileTargets } from '@/hooks/data';
@@ -25,6 +26,9 @@ export default function ProfileOverviewScreen() {
   const targets = useProfileTargets(profile);
   const latestMetric = useLatestBodyMetric(profile?.id);
   const restrictions = useProfileRestrictions(profile?.id);
+  const footerPadding = useStepFooterPadding();
+  const formRef = useRef<ProfileFormHandle>(null);
+  const [canSubmit, setCanSubmit] = useState(false);
 
   if (!profile || !latestMetric) {
     return <SafeAreaView style={styles.safeArea} />;
@@ -75,40 +79,54 @@ export default function ProfileOverviewScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <HintedScrollView contentContainerStyle={styles.content}>
-        <ScreenHeader />
+      <View style={styles.flex}>
+        <HintedScrollView
+          style={styles.flex}
+          contentContainerStyle={[styles.content, { paddingBottom: footerPadding }]}>
+          <ScreenHeader />
 
-        {targets ? <TdciCard name={profile.name} targets={targets} /> : null}
+          {targets ? <TdciCard name={profile.name} targets={targets} /> : null}
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('profile.weightComposition')}</Text>
-          <View style={styles.weightRow}>
-            <Text style={styles.weightValue}>
-              {latestMetric ? `${latestMetric.weightKg} kg` : '–'}
-            </Text>
-            {latestMetric?.bodyFatPct != null ? (
-              <Text style={styles.weightMeta}>{latestMetric.bodyFatPct} % {t('profile.bodyFat')}</Text>
-            ) : null}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t('profile.weightComposition')}</Text>
+            <View style={styles.weightRow}>
+              <Text style={styles.weightValue}>
+                {latestMetric ? `${latestMetric.weightKg} kg` : '–'}
+              </Text>
+              {latestMetric?.bodyFatPct != null ? (
+                <Text style={styles.weightMeta}>{latestMetric.bodyFatPct} % {t('profile.bodyFat')}</Text>
+              ) : null}
+            </View>
+            <Button
+              label={t('profile.viewProgress')}
+              variant="secondary"
+              onPress={() => router.push('/progress')}
+            />
           </View>
-          <Button
-            label={t('profile.viewProgress')}
-            variant="secondary"
-            onPress={() => router.push('/progress')}
+
+          {targets ? <ManualAdjustmentCard profileId={profile.id} kcal={profile.tdciManualAdjustmentKcal} /> : null}
+
+          <MacroOverridesCard profileId={profile.id} macroOverridesJson={profile.macroOverridesJson} />
+
+          <Text style={styles.sectionHeading}>{t('profile.personalAndGoals')}</Text>
+          <ProfileForm
+            key={profile.id}
+            ref={formRef}
+            submitLabel={t('common.save')}
+            initialValue={initialValue}
+            onSubmit={save}
+            hideInlineSubmit
+            onValidityChange={setCanSubmit}
           />
-        </View>
-
-        {targets ? <ManualAdjustmentCard profileId={profile.id} kcal={profile.tdciManualAdjustmentKcal} /> : null}
-
-        <MacroOverridesCard profileId={profile.id} macroOverridesJson={profile.macroOverridesJson} />
-
-        <Text style={styles.sectionHeading}>{t('profile.personalAndGoals')}</Text>
-        <ProfileForm
-          key={profile.id}
-          submitLabel={t('common.save')}
-          initialValue={initialValue}
-          onSubmit={save}
+        </HintedScrollView>
+        <StepFooter
+          onBack={() => router.back()}
+          backLabel={t('common.back')}
+          onNext={() => formRef.current?.submit()}
+          nextLabel={t('common.save')}
+          nextDisabled={!canSubmit}
         />
-      </HintedScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -119,9 +137,11 @@ function createStyles(colors: ColorTokens) {
       flex: 1,
       backgroundColor: colors.background,
     },
+    flex: {
+      flex: 1,
+    },
     content: {
       padding: spacing.md,
-      paddingBottom: spacing.xl,
     },
     card: {
       backgroundColor: colors.surface,

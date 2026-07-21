@@ -345,6 +345,26 @@ export const waterLogs = sqliteTable(
   (table) => [index('water_logs_profile_date_idx').on(table.profileId, table.date)],
 );
 
+/**
+ * One row = one day manually protected from breaking a streak ("freeze").
+ * The monthly allowance (3) resets implicitly - it's derived by counting
+ * rows whose `date` falls in the current calendar month, not by a stored
+ * counter, so there's nothing to reset on month rollover.
+ */
+export const streakFreezes = sqliteTable(
+  'streak_freezes',
+  {
+    ...meta,
+    profileId: text('profile_id')
+      .notNull()
+      .references(() => profiles.id),
+    kind: text('kind', { enum: ['meal', 'water'] }).notNull(),
+    /** 'YYYY-MM-DD' - the date this freeze protects. */
+    date: text('date').notNull(),
+  },
+  (table) => [index('streak_freezes_profile_kind_date_idx').on(table.profileId, table.kind, table.date)],
+);
+
 // ---------------------------------------------------------------------------
 // Foods & recipes
 // ---------------------------------------------------------------------------

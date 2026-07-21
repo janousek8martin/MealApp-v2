@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -56,11 +56,30 @@ export type HouseholdPreferencesValue = {
 
 const ANY_TIME_KEY = 'any';
 
+export type PreferencesCarouselHandle = {
+  pressNext: () => void;
+  pressBack: () => void;
+};
+
 type Props = {
   submitLabel: string;
   onSubmit: (value: HouseholdPreferencesValue) => void;
   /** Called when Back is pressed on the FIRST card - steps back to the previous wizard step. */
   onBack?: () => void;
+  /**
+   * Whether this carousel is the one currently visible in the wizard - the
+   * parent keeps both step carousels mounted (see wizard.tsx) so Back/Next
+   * don't wipe their state, so this tells the hidden one not to report its
+   * footer state over the visible one's, and makes the visible one re-report
+   * its own state the moment it becomes visible again.
+   */
+  active?: boolean;
+  /**
+   * Reports the current Next label and whether Back is currently available,
+   * so a parent-rendered fixed `StepFooter` can reflect the carousel's state
+   * without the footer living inside this component's own scrolling content.
+   */
+  onNavStateChange?: (state: { nextLabel: string; showBack: boolean }) => void;
 };
 
 /**
@@ -69,8 +88,14 @@ type Props = {
  * see the approved plan's "wizard preferences redesign" spec. No card has a
  * required field: every setting has a sensible schema-matching default, so
  * canProceed is always true and Back/Next never blocks.
+ *
+ * Back/Next themselves are NOT rendered inline here - a parent screen renders
+ * a fixed `StepFooter` outside this component's scroll container and drives
+ * it via the imperative handle (`pressNext`/`pressBack`), reading label/back-
+ * visibility from `onNavStateChange`.
  */
-export function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack }: Props) {
+export const HouseholdPreferencesCarousel = forwardRef<PreferencesCarouselHandle, Props>(
+  function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack, active = true, onNavStateChange }, ref) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -157,6 +182,24 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack }: 
       planningTime: TIME_RE.test(planningTime) ? planningTime : defaultNotificationSettings.planningTime,
     });
   };
+
+  const showBack = index > 0 || !!onBack;
+
+  const pressNext = () => {
+    if (isLastCard) handleSubmit();
+    else goNext();
+  };
+  const pressBack = () => {
+    if (index > 0) goBack();
+    else onBack?.();
+  };
+  useImperativeHandle(ref, () => ({ pressNext, pressBack }));
+
+  useEffect(() => {
+    if (!active) return;
+    onNavStateChange?.({ nextLabel: isLastCard ? submitLabel : t('carousel.next'), showBack });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, isLastCard, submitLabel, showBack, t]);
 
   return (
     <View>
@@ -355,24 +398,9 @@ export function HouseholdPreferencesCarousel({ submitLabel, onSubmit, onBack }: 
           </View>
         ) : null}
       </Animated.View>
-
-      <View style={styles.navRow}>
-        {index > 0 ? (
-          <Button label={t('carousel.back')} variant="secondary" onPress={goBack} style={styles.navButton} />
-        ) : onBack ? (
-          <Button label={t('carousel.back')} variant="secondary" onPress={onBack} style={styles.navButton} />
-        ) : (
-          <View style={styles.navButton} />
-        )}
-        <Button
-          label={isLastCard ? submitLabel : t('carousel.next')}
-          onPress={isLastCard ? handleSubmit : goNext}
-          style={styles.navButton}
-        />
-      </View>
     </View>
   );
-}
+});
 
 /** Single-select row for the three-option cards (cooking experience / time / budget) – a radio-style list reads clearer than chips when each option also needs a subtitle. */
 function SelectableRow({
@@ -482,14 +510,6 @@ function createStyles(colors: ColorTokens) {
       height: 12,
       borderRadius: 6,
       backgroundColor: colors.primary,
-    },
-    navRow: {
-      flexDirection: 'row',
-      gap: spacing.md,
-      marginTop: spacing.md,
-    },
-    navButton: {
-      flex: 1,
     },
   });
 }

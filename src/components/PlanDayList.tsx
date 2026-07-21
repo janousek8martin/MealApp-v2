@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { MealSlotCard } from '@/components/MealSlotCard';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { db } from '@/db/client';
 import { regenerateSlot, removeMealExtra, setPortionStatus } from '@/db/repositories/plan';
 import { todayIsoDate } from '@/db/time';
@@ -28,7 +29,6 @@ import {
   type MealRow,
   type SlotRow,
 } from '@/hooks/plan';
-import { confirmDeleteMeal } from '@/utils/mealActions';
 import { slotDisplayLabel } from '@/utils/mealSlots';
 import { useTheme } from '@/theme/ThemeContext';
 import { radius, spacing, typography, type ColorTokens } from '@/theme/tokens';
@@ -140,6 +140,7 @@ export function PlanDayList({
           <Text style={[styles.fitBadgeText, withinTolerance ? styles.fitBadgeTextOk : styles.fitBadgeTextOff]}>
             {withinTolerance ? t('planScreen.fitWithinTolerance') : t('planScreen.fitOutsideTolerance')}
           </Text>
+          <InfoTooltip titleKey="tooltip.toleranceStatus.title" bodyKey="tooltip.toleranceStatus.body" />
         </View>
       ) : null}
 
@@ -158,10 +159,6 @@ export function PlanDayList({
             onToggleExpand={() => onToggleExpand(slot.id)}
             onSwap={() => void regenerateSlot(db, householdId, date, slot.slotKey, trackProfileId)}
             onAddMeal={() => onPickMeal(slot)}
-            onDeleteMeal={() => {
-              if (!meal) return;
-              void confirmDeleteMeal(t, householdId, meal);
-            }}
             onAddExtra={() => meal && onAddExtra(meal.id)}
             onRemoveExtra={(extraId) => void removeMealExtra(db, extraId)}
             onOpenMenu={!isPast ? () => meal && onOpenMenu(meal, slot) : undefined}
@@ -185,6 +182,9 @@ function createStyles(colors: ColorTokens) {
       marginBottom: spacing.md,
     },
     fitBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
       alignSelf: 'flex-start',
       borderRadius: radius.chip,
       paddingVertical: spacing.xs,
@@ -192,20 +192,20 @@ function createStyles(colors: ColorTokens) {
       marginBottom: spacing.md,
     },
     fitBadgeOk: {
-      backgroundColor: colors.toleranceOk + '22',
+      backgroundColor: colors.interactive + '22',
     },
     fitBadgeOff: {
-      backgroundColor: colors.toleranceOff + '22',
+      backgroundColor: colors.attention + '22',
     },
     fitBadgeText: {
       fontSize: typography.small,
       fontWeight: '600',
     },
     fitBadgeTextOk: {
-      color: colors.toleranceOk,
+      color: colors.interactive,
     },
     fitBadgeTextOff: {
-      color: colors.toleranceOff,
+      color: colors.attention,
     },
   });
 }

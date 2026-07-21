@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -14,6 +14,7 @@ import { TextField } from '@/components/ui/TextField';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, DIET_KEYS } from '@/constants/options';
 import type { CreateProfileInput } from '@/db/repositories/profiles';
+import { ageYears } from '@/domain/age';
 import type { ActivityLevel } from '@/domain/constants';
 import { validateGoals } from '@/domain/goals';
 import { cmToFeetInches, feetInchesToCm, kgToLbs, lbsToKg } from '@/domain/units';
@@ -83,7 +84,13 @@ type Props = {
   initialProfileType?: 'adult' | 'child';
   /** Prefills the form for editing an existing profile; omitted when creating a new one. */
   initialValue?: ProfileFormValue;
+  /** When true, ProfileForm does not render its own inline submit button - the parent renders a StepFooter instead and calls submit() via ref. */
+  hideInlineSubmit?: boolean;
+  /** Called whenever the form's overall validity changes, so a parent-rendered StepFooter can disable its Next button correctly. */
+  onValidityChange?: (canSubmit: boolean) => void;
 };
+
+export type ProfileFormHandle = { submit: () => void };
 
 function parseNumber(value: string): number | null {
   const parsed = Number(value.replace(',', '.'));
@@ -103,7 +110,10 @@ function weekdayOptions(language: string): { value: string; label: string }[] {
   });
 }
 
-export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initialValue }: Props) {
+export const ProfileForm = forwardRef<ProfileFormHandle, Props>(function ProfileForm(
+  { submitLabel, onSubmit, initialProfileType, initialValue, hideInlineSubmit, onValidityChange },
+  ref,
+) {
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -214,6 +224,12 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
       diets,
     });
   };
+
+  useImperativeHandle(ref, () => ({ submit: handleSubmit }));
+
+  useEffect(() => {
+    onValidityChange?.(canSubmit);
+  }, [canSubmit, onValidityChange]);
 
   const fieldError = (key: string) => (submitted ? errors[key] : undefined);
 
@@ -482,12 +498,12 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
         <Switch
           value={sharesMainMeals}
           onValueChange={setSharesMainMeals}
-          trackColor={{ true: colors.primaryLight, false: colors.border }}
+          trackColor={{ true: colors.interactive, false: colors.border }}
           thumbColor={colors.surface}
         />
       </View>
 
-      <Button label={submitLabel} onPress={handleSubmit} style={styles.submit} />
+      {!hideInlineSubmit ? <Button label={submitLabel} onPress={handleSubmit} style={styles.submit} /> : null}
 
       <NavyCalculatorModal
         visible={navyVisible}
@@ -503,10 +519,12 @@ export function ProfileForm({ submitLabel, onSubmit, initialProfileType, initial
         visible={bodyFatChartVisible}
         sex={sex ?? 'male'}
         onClose={() => setBodyFatChartVisible(false)}
+        currentValuePct={bodyFatPct ?? undefined}
+        currentAge={BIRTH_DATE_RE.test(birthDate) ? ageYears(birthDate) : undefined}
       />
     </View>
   );
-}
+});
 
 function createStyles(colors: ColorTokens) {
   return StyleSheet.create({

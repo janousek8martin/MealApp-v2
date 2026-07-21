@@ -12,6 +12,7 @@ import { PhotoPicker } from '@/components/PhotoPicker';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
+import { StepFooter, useStepFooterPadding } from '@/components/ui/StepFooter';
 import { TextField } from '@/components/ui/TextField';
 import { ALLERGEN_ICONS, DIET_ICONS } from '@/constants/chipIcons';
 import { ALLERGEN_KEYS, MANUAL_DIET_KEYS } from '@/constants/options';
@@ -41,6 +42,7 @@ export default function FoodEditScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const footerPadding = useStepFooterPadding();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const existing = useFood(id);
   const existingAllergens = useFoodAllergens(id);
@@ -206,13 +208,17 @@ export default function FoodEditScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <HintedScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <View style={styles.flex}>
+      <HintedScrollView
+        style={styles.flex}
+        contentContainerStyle={[styles.content, { paddingBottom: footerPadding }]}
+        keyboardShouldPersistTaps="handled">
         <ScreenHeader />
         <Text style={styles.title}>{id ? t('foodEdit.editTitle') : t('foodEdit.newTitle')}</Text>
 
         {existing?.needsReview ? (
           <View style={styles.reviewBanner}>
-            <Ionicons name="alert-circle-outline" size={20} color={colors.danger} />
+            <Ionicons name="alert-circle-outline" size={20} color={colors.attention} />
             <Text style={styles.reviewBannerText}>{t('foodDetail.needsReviewBannerEdit')}</Text>
           </View>
         ) : null}
@@ -308,7 +314,7 @@ export default function FoodEditScreen() {
           <Switch
             value={snackSuitable}
             onValueChange={setSnackSuitable}
-            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            trackColor={{ true: colors.interactive, false: colors.border }}
             thumbColor={colors.surface}
           />
         </View>
@@ -318,7 +324,7 @@ export default function FoodEditScreen() {
           <Switch
             value={canServeCold}
             onValueChange={setCanServeCold}
-            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            trackColor={{ true: colors.interactive, false: colors.border }}
             thumbColor={colors.surface}
           />
         </View>
@@ -328,7 +334,7 @@ export default function FoodEditScreen() {
           <Switch
             value={mealPrepFriendly}
             onValueChange={setMealPrepFriendly}
-            trackColor={{ true: colors.primaryLight, false: colors.border }}
+            trackColor={{ true: colors.interactive, false: colors.border }}
             thumbColor={colors.surface}
           />
         </View>
@@ -365,11 +371,15 @@ export default function FoodEditScreen() {
           ))}
         </AdvancedExpander>
 
-        <View style={styles.actions}>
-          <Button label={t('common.cancel')} variant="secondary" onPress={() => router.back()} style={styles.action} />
-          <Button label={t('common.save')} onPress={save} disabled={!canSave} style={styles.action} />
-        </View>
       </HintedScrollView>
+      <StepFooter
+        onBack={() => router.back()}
+        backLabel={t('common.back')}
+        onNext={save}
+        nextLabel={t('common.save')}
+        nextDisabled={!canSave}
+      />
+      </View>
 
       <BarcodeScannerModal
         visible={scannerVisible}
@@ -386,9 +396,11 @@ function createStyles(colors: ColorTokens) {
       flex: 1,
       backgroundColor: colors.background,
     },
+    flex: {
+      flex: 1,
+    },
     content: {
       padding: spacing.md,
-      paddingBottom: spacing.xl,
     },
     title: {
       color: colors.text,
@@ -402,7 +414,7 @@ function createStyles(colors: ColorTokens) {
       gap: spacing.sm,
       backgroundColor: colors.surface,
       borderWidth: 1,
-      borderColor: colors.danger,
+      borderColor: colors.attention,
       borderRadius: radius.input,
       padding: spacing.sm + 2,
       marginBottom: spacing.md,
@@ -444,14 +456,6 @@ function createStyles(colors: ColorTokens) {
       color: colors.text,
       fontSize: typography.body,
       fontWeight: '600',
-    },
-    actions: {
-      flexDirection: 'row',
-      gap: spacing.sm,
-      marginTop: spacing.md,
-    },
-    action: {
-      flex: 1,
     },
   });
 }

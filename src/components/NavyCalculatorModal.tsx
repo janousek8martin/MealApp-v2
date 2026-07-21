@@ -124,7 +124,7 @@ function createStyles(colors: ColorTokens) {
       marginBottom: spacing.md,
     },
     resultBox: {
-      backgroundColor: colors.mint,
+      backgroundColor: colors.accentSoft,
       borderRadius: radius.input,
       padding: spacing.md,
       flexDirection: 'row',

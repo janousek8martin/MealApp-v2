@@ -31,7 +31,7 @@ export function MealPickerModal({ visible, category, onClose, onPick, restricted
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const ACCENTS = useMemo(() => [colors.mint, colors.lime, colors.tealTint], [colors]);
+  const ACCENTS = useMemo(() => [colors.accentSoft], [colors]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<CategoryFilter>('slot');
   const recipeRows = useRecipes();
@@ -174,15 +174,15 @@ function createStyles(colors: ColorTokens) {
       paddingHorizontal: spacing.sm + 2,
     },
     filterChipActive: {
-      backgroundColor: colors.primaryLight,
-      borderColor: colors.primaryLight,
+      backgroundColor: colors.interactive,
+      borderColor: colors.interactive,
     },
     filterLabel: {
       color: colors.text,
       fontSize: typography.small,
     },
     filterLabelActive: {
-      color: colors.onPrimary,
+      color: colors.onInteractive,
       fontWeight: '600',
     },
     list: {

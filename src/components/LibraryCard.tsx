@@ -14,6 +14,8 @@ type Props = {
   photoUri?: string | null;
   /** Fallback block color when there is no photo yet. */
   accent?: string;
+  /** Icon shown centered on the fallback block when there is no photo yet. */
+  categoryIcon?: ImageSourcePropType;
   /** Active profile's current like/dislike on this item; null/undefined = unrated. Display-only – change it from the detail screen. */
   rating?: 'like' | 'dislike' | null;
   /** All tags shown in one wrapping row at the bottom of the card (budget included). */
@@ -31,6 +33,7 @@ export function LibraryCard({
   subtitle,
   photoUri,
   accent,
+  categoryIcon,
   rating,
   tags,
   allergenTags,
@@ -50,15 +53,17 @@ export function LibraryCard({
       {photoUri ? (
         <Image source={{ uri: photoUri }} style={styles.thumb} contentFit="cover" />
       ) : (
-        <View style={[styles.thumb, { backgroundColor: accent ?? colors.mint }]} />
+        <View style={[styles.thumb, styles.thumbPlaceholder, { backgroundColor: accent ?? colors.accentSoft }]}>
+          {categoryIcon ? <RNImage source={categoryIcon} style={styles.thumbIcon} /> : null}
+        </View>
       )}
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>
             {title}
           </Text>
-          {rating === 'like' ? <Ionicons name="thumbs-up" size={15} color={colors.success} /> : null}
-          {rating === 'dislike' ? <Ionicons name="thumbs-down" size={15} color={colors.danger} /> : null}
+          {rating === 'like' ? <Ionicons name="thumbs-up" size={15} color={colors.interactive} /> : null}
+          {rating === 'dislike' ? <Ionicons name="thumbs-down" size={15} color={colors.attention} /> : null}
         </View>
         <Text style={styles.subtitle} numberOfLines={1}>
           {subtitle}
@@ -68,7 +73,7 @@ export function LibraryCard({
             {allergenTags?.map((tag) => (
               <View key={`allergen:${tag.label}`} style={[styles.tag, styles.allergenTag]}>
                 {tag.icon ? <RNImage source={tag.icon} style={styles.tagIcon} /> : null}
-                <Text style={styles.tagLabel} numberOfLines={1}>
+                <Text style={[styles.tagLabel, styles.allergenTagLabel]} numberOfLines={1}>
                   {tag.label}
                 </Text>
               </View>
@@ -118,6 +123,15 @@ function createStyles(colors: ColorTokens) {
       height: 56,
       borderRadius: radius.card - 8,
     },
+    thumbPlaceholder: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    thumbIcon: {
+      width: 28,
+      height: 28,
+      resizeMode: 'contain',
+    },
     body: {
       flex: 1,
     },
@@ -146,14 +160,22 @@ function createStyles(colors: ColorTokens) {
     tag: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.tealTint,
+      backgroundColor: colors.accentSoft,
       borderRadius: radius.chip,
       paddingVertical: 1,
       paddingHorizontal: spacing.xs + 2,
       gap: 3,
     },
+    // Allergens are safety-relevant, not just another descriptive tag — give
+    // them `attention`'s outline treatment so they read distinctly from the
+    // plain `accentSoft` tags (budget, diet, cuisine) in the same row.
     allergenTag: {
-      backgroundColor: colors.lime,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.attention,
+    },
+    allergenTagLabel: {
+      color: colors.attention,
     },
     tagIcon: {
       width: 12,

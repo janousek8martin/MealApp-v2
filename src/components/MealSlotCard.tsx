@@ -30,7 +30,6 @@ type Props = {
   variant?: 'full' | 'compact';
   onSwap?: () => void;
   onAddMeal?: () => void;
-  onDeleteMeal?: () => void;
   onAddExtra?: () => void;
   onRemoveExtra?: (extraId: string) => void;
   /** Compact variant only: jumps to the Plan screen for this slot. */
@@ -72,7 +71,6 @@ export function MealSlotCard({
   variant = 'full',
   onSwap,
   onAddMeal,
-  onDeleteMeal,
   onAddExtra,
   onRemoveExtra,
   onEdit,
@@ -152,8 +150,8 @@ export function MealSlotCard({
             <Text style={styles.name} numberOfLines={1}>
               {name}
             </Text>
-            {rating === 'like' ? <Ionicons name="thumbs-up" size={13} color={colors.success} /> : null}
-            {rating === 'dislike' ? <Ionicons name="thumbs-down" size={13} color={colors.danger} /> : null}
+            {rating === 'like' ? <Ionicons name="thumbs-up" size={13} color={colors.interactive} /> : null}
+            {rating === 'dislike' ? <Ionicons name="thumbs-down" size={13} color={colors.attention} /> : null}
           </View>
           {scaled ? (
             <Text style={styles.kcal}>
@@ -182,14 +180,6 @@ export function MealSlotCard({
 
       {expanded ? (
         <View style={styles.expandedArea}>
-          {scaled ? (
-            <View style={styles.macroRow}>
-              <MacroBadge label={t('macros.protein')} value={scaled.proteinG} />
-              <MacroBadge label={t('macros.carbs')} value={scaled.carbsG} />
-              <MacroBadge label={t('macros.fat')} value={scaled.fatG} />
-            </View>
-          ) : null}
-
           {!isCompact && extras.length > 0 ? (
             <View style={styles.extrasList}>
               {extras.map((extra) => (
@@ -223,45 +213,30 @@ export function MealSlotCard({
           </View>
 
           {myPortion ? (
-            <View style={styles.statusRow}>
+            <View style={styles.statusToggle}>
               <Pressable
                 accessibilityRole="button"
-                style={[styles.statusButton, isEaten && styles.statusButtonActiveEaten]}
+                style={[styles.statusSegment, isEaten && styles.statusSegmentActiveEaten]}
                 onPress={() => onSetStatus(myPortion.id, isEaten ? 'planned' : 'eaten')}>
-                <Ionicons name="checkmark" size={16} color={isEaten ? colors.onPrimary : colors.success} />
-                <Text style={[styles.statusLabel, isEaten && styles.statusLabelActive]}>
+                <Ionicons name="checkmark" size={16} color={isEaten ? colors.onPrimary : colors.interactive} />
+                <Text style={[styles.statusLabel, isEaten && styles.statusLabelActiveEaten]}>
                   {t('todayMeal.eaten')}
                 </Text>
               </Pressable>
+              <View style={styles.statusDivider} />
               <Pressable
                 accessibilityRole="button"
-                style={[styles.statusButton, isSkipped && styles.statusButtonActiveSkipped]}
+                style={[styles.statusSegment, isSkipped && styles.statusSegmentActiveSkipped]}
                 onPress={() => onSetStatus(myPortion.id, isSkipped ? 'planned' : 'skipped')}>
-                <Ionicons name="close" size={16} color={isSkipped ? colors.onPrimary : colors.danger} />
-                <Text style={[styles.statusLabel, isSkipped && styles.statusLabelActive]}>
+                <Ionicons name="close" size={16} color={isSkipped ? colors.onAttention : colors.attention} />
+                <Text style={[styles.statusLabel, isSkipped && styles.statusLabelActiveSkipped]}>
                   {t('todayMeal.notEaten')}
                 </Text>
               </Pressable>
-              {!isCompact && !disabled ? (
-                <Pressable accessibilityRole="button" style={styles.deleteButton} onPress={onDeleteMeal} hitSlop={8}>
-                  <Ionicons name="trash-outline" size={16} color={colors.danger} />
-                </Pressable>
-              ) : null}
             </View>
           ) : null}
         </View>
       ) : null}
-    </View>
-  );
-}
-
-function MacroBadge({ label, value }: { label: string; value: number }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  return (
-    <View style={styles.macroBadge}>
-      <Text style={styles.macroValue}>{value} g</Text>
-      <Text style={styles.macroLabel}>{label}</Text>
     </View>
   );
 }
@@ -274,7 +249,7 @@ function createStyles(colors: ColorTokens) {
       borderWidth: 1,
       borderColor: colors.border,
       borderLeftWidth: 4,
-      borderLeftColor: colors.success,
+      borderLeftColor: colors.primary,
       marginBottom: spacing.sm,
       overflow: 'hidden',
     },
@@ -294,7 +269,7 @@ function createStyles(colors: ColorTokens) {
       borderRadius: radius.card - 8,
     },
     thumbPlaceholder: {
-      backgroundColor: colors.mint,
+      backgroundColor: colors.accentSoft,
     },
     headerText: {
       flex: 1,
@@ -352,23 +327,6 @@ function createStyles(colors: ColorTokens) {
       borderTopColor: colors.border,
       paddingTop: spacing.sm,
     },
-    macroRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      marginBottom: spacing.sm,
-    },
-    macroBadge: {
-      alignItems: 'center',
-    },
-    macroValue: {
-      color: colors.text,
-      fontSize: typography.body,
-      fontWeight: '700',
-    },
-    macroLabel: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
-    },
     extrasList: {
       marginBottom: spacing.sm,
       gap: spacing.xs,
@@ -416,40 +374,51 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small,
       fontWeight: '600',
     },
-    statusRow: {
+    // One shared-border pill with two segments, instead of two separate
+    // free-floating buttons — eaten/not-eaten is a single either/or choice,
+    // not two independent actions (deleting the slot lives in the ⋯ menu's
+    // "Clear", not here — see MealActionsMenu).
+    statusToggle: {
       flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    statusButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
+      alignItems: 'stretch',
+      alignSelf: 'flex-start',
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: radius.chip,
+      overflow: 'hidden',
+    },
+    statusSegment: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
       paddingVertical: spacing.xs + 2,
       paddingHorizontal: spacing.sm + 2,
     },
-    statusButtonActiveEaten: {
-      backgroundColor: colors.success,
-      borderColor: colors.success,
+    statusDivider: {
+      width: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
     },
-    statusButtonActiveSkipped: {
-      backgroundColor: colors.danger,
-      borderColor: colors.danger,
+    statusSegmentActiveEaten: {
+      backgroundColor: colors.interactive,
+    },
+    statusSegmentActiveSkipped: {
+      backgroundColor: colors.attention,
     },
     statusLabel: {
       color: colors.text,
       fontSize: typography.small,
       fontWeight: '600',
     },
-    statusLabelActive: {
+    // `interactive` (eaten) flips dark-on-light <-> light-on-dark with the
+    // theme, same as `primary`, so `onPrimary` contrasts fine against it in
+    // both modes. `attention` (skipped) is light-ish amber in BOTH modes, so
+    // it needs its own always-dark-ink pair, `onAttention` — never
+    // `onPrimary`/white here, see tokens.ts.
+    statusLabelActiveEaten: {
       color: colors.onPrimary,
     },
-    deleteButton: {
-      marginLeft: 'auto',
-      padding: spacing.xs,
+    statusLabelActiveSkipped: {
+      color: colors.onAttention,
     },
   });
 }
