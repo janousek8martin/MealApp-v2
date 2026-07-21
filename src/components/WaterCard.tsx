@@ -216,6 +216,15 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
       <View style={styles.headerRow}>
         <Ionicons name="water" size={16} color={colors.water} />
         <Text style={styles.title}>{t('water.cardTitle')}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('water.settingsLink')}
+          onPress={() => setSettingsVisible(true)}
+          hitSlop={8}
+          style={styles.settingsButton}>
+          <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
+        </Pressable>
+        <InfoTooltip titleKey="tooltip.waterGoal.title" bodyKey="tooltip.waterGoal.body" />
       </View>
 
       <View style={styles.contentRow}>
@@ -270,13 +279,6 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                 )}
               </View>
               <View style={styles.buttonsRow}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('water.removeGlass')}
-                  style={styles.glassButton}
-                  onPress={handleRemove}>
-                  <Ionicons name="remove" size={20} color={ON_WATER_FILL_COLOR} />
-                </Pressable>
                 <View style={styles.glassIconWrap}>
                   <MaterialCommunityIcons name="cup-water" size={22} color={ON_WATER_FILL_COLOR} />
                   <Text style={styles.glassIconLabel}>
@@ -300,13 +302,11 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
         <View style={styles.sideCol}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t('water.settingsLink')}
-            onPress={() => setSettingsVisible(true)}
-            hitSlop={8}
-            style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
+            accessibilityLabel={t('water.removeGlass')}
+            style={styles.removeButton}
+            onPress={handleRemove}>
+            <Ionicons name="remove" size={20} color={colors.text} />
           </Pressable>
-          <InfoTooltip titleKey="tooltip.waterGoal.title" bodyKey="tooltip.waterGoal.body" />
         </View>
       </View>
 
@@ -491,11 +491,22 @@ function createStyles(colors: ColorTokens) {
       fontSize: typography.small - 1,
       fontWeight: '600',
     },
+    // Now holds only the remove-glass button, on the card's own white/light
+    // background instead of overlaid on the tank - Martin's ask, so it
+    // doesn't compete visually with the in-tank add button.
     sideCol: {
-      alignSelf: 'flex-start',
       alignItems: 'center',
-      gap: spacing.sm,
-      paddingTop: spacing.xxs,
+      justifyContent: 'center',
+    },
+    removeButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     settingsButton: {
       width: 28,
