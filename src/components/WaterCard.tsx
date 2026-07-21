@@ -293,7 +293,7 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                     <AnimatedPath
                       d={shadowWavePath}
                       stroke={WAVE_SHADOW_COLOR}
-                      strokeWidth={5}
+                      strokeWidth={2}
                       fill="none"
                       animatedProps={shadowWaveProps}
                     />
@@ -431,7 +431,7 @@ const ON_WATER_FILL_COLOR = '#FFFFFF';
  */
 const BUBBLE_COLOR = 'rgba(255, 255, 255, 0.8)';
 /** Same rationale - a stroke color for the shadow ripple, distinct from the water fill it rides on. */
-const WAVE_SHADOW_COLOR = 'rgba(0, 0, 0, 0.3)';
+const WAVE_SHADOW_COLOR = 'rgba(0, 0, 0, 0.2)';
 
 function createStyles(colors: ColorTokens) {
   return StyleSheet.create({
