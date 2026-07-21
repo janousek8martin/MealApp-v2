@@ -48,8 +48,11 @@
     "waterTitle": "Šňůra pitného režimu",
     "current": "Aktuální",
     "best": "Nejlepší",
-    "mealsLoggedToday": "{{count}} z {{total}} jídel dnes zaznamenáno",
-    "addMeal": "Přidat jídlo"
+    "freezesLeft": "Zmrazení",
+    "freezesResetMonthly": "Obnoví se každý měsíc",
+    "timeLeft": "Zbývá hodin",
+    "freeze": "Zmrazit dnešek",
+    "mealsLoggedToday": "{{count}} z {{total}} jídel dnes zaznamenáno"
   },
   "planScreen": {
     "generate": "Generovat",

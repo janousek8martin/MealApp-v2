@@ -133,24 +133,27 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
       : withTiming(target, { duration: 450, easing: Easing.out(Easing.cubic) });
   }, [progress, reducedMotion, levelY]);
 
-  // Endless horizontal drift, one shared value per wave layer (transform-only).
+  // Horizontal drift, one shared value per wave layer (transform-only).
+  // Ping-pongs (reverse:true) instead of jumping back to 0 at the end of
+  // each cycle - a hard reset is only truly seamless if the rendered frame
+  // at -period is pixel-identical to the frame at 0, and on a software
+  // renderer a dropped frame right at that boundary reads as a visible
+  // "snap"/drift (Martin's "vodní widget ujíždí" note). Reversing removes
+  // the discontinuity entirely - the wave just slows to a stop and slides
+  // back, which also reads more like real water sloshing than a conveyor belt.
   const frontPhase = useSharedValue(0);
   const backPhase = useSharedValue(-backWavePeriod * 0.5); // offset start so the two layers never sync up
   useEffect(() => {
     if (reducedMotion) return;
     frontPhase.value = withRepeat(
-      withTiming(-frontWavePeriod, { duration: 3500, easing: Easing.linear }),
+      withTiming(-frontWavePeriod, { duration: 3500, easing: Easing.inOut(Easing.sin) }),
       -1,
-      false,
+      true,
     );
-    // Exactly one full period, same as the front wave below - the path is
-    // only drawn 2 periods wide (buildWavePath's seamless-tiling contract),
-    // so translating further than one period runs the visible window past
-    // the end of the drawn geometry, exposing the path's literal edge.
     backPhase.value = withRepeat(
-      withTiming(-backWavePeriod, { duration: 6000, easing: Easing.linear }),
+      withTiming(-backWavePeriod, { duration: 6000, easing: Easing.inOut(Easing.sin) }),
       -1,
-      false,
+      true,
     );
   }, [reducedMotion, frontPhase, backPhase, frontWavePeriod, backWavePeriod]);
 

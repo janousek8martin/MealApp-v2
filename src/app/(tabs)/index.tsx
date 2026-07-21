@@ -11,7 +11,6 @@ import { StreakRow } from '@/components/StreakRow';
 import { WaterCard } from '@/components/WaterCard';
 import { Button } from '@/components/ui/Button';
 import { todayIsoDate } from '@/db/time';
-import { countConsecutiveDays } from '@/domain/streak';
 import { addDays } from '@/domain/week';
 import {
   useActiveProfile,
@@ -25,9 +24,9 @@ import { useFoods } from '@/hooks/library';
 import {
   findMealForProfileInSlot,
   nutritionForMeal,
-  useMealCompletionDates,
   useMealSlots,
   useMealsForDate,
+  useMealStreakDates,
   usePortionsForDate,
   useRecipeNutritionMap,
 } from '@/hooks/plan';
@@ -72,7 +71,7 @@ export default function TodayScreen() {
   const shoppingRemaining = shoppingItems.filter((item) => !item.checked).length;
 
   const streakSinceDate = useMemo(() => addDays(today, -180), [today]);
-  const mealCompletionDates = useMealCompletionDates(household?.id, activeProfile?.id, streakSinceDate);
+  const { anyEatenDates, allEatenDates } = useMealStreakDates(household?.id, activeProfile?.id, streakSinceDate);
   const waterGoalDates = useWaterGoalDates(
     activeProfile?.id,
     latestMetric?.weightKg,
@@ -80,8 +79,6 @@ export default function TodayScreen() {
     activeProfile?.waterGoalMl,
     streakSinceDate,
   );
-  const mealStreak = countConsecutiveDays(mealCompletionDates, today);
-  const waterStreak = countConsecutiveDays(waterGoalDates, today);
 
   const sumNutrition = (rows: typeof portionsForDate) =>
     rows.reduce(
@@ -153,13 +150,13 @@ export default function TodayScreen() {
         ) : null}
 
         <StreakRow
-          mealStreak={mealStreak}
-          waterStreak={waterStreak}
-          mealCompletionDates={mealCompletionDates}
+          profileId={activeProfile?.id}
+          today={today}
+          anyEatenDates={anyEatenDates}
+          allEatenDates={allEatenDates}
           waterGoalDates={waterGoalDates}
           todayMealCount={todayMealCount}
           todayMealTotal={todayMealTotal}
-          onAddMeal={() => router.push('/plan')}
         />
 
         <View style={styles.quickRow}>

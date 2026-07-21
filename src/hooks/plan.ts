@@ -194,15 +194,19 @@ export function useRecipeNutritionMap(): Map<string, RecipeNutrition> {
 }
 
 /**
- * Dates (>= `sinceDateIso`) where every one of this profile's planned
- * portions is `eaten` – a `planned` or `skipped` portion excludes that date.
- * Used for the "meals" streak on the home hero card.
+ * Two date sets (>= `sinceDateIso`) driving the Home screen's dual meal-
+ * streak flames:
+ * - `anyEatenDates`: at least one portion `eaten` that day (the orange
+ *   flame - "you logged something today, you're eating regularly").
+ * - `allEatenDates`: every planned portion is `eaten` that day - a
+ *   `planned` or `skipped` portion excludes it (the blue flame - "you ate
+ *   everything that was planned").
  */
-export function useMealCompletionDates(
+export function useMealStreakDates(
   householdId: string | undefined,
   profileId: string | undefined,
   sinceDateIso: string,
-): Set<string> {
+): { anyEatenDates: Set<string>; allEatenDates: Set<string> } {
   const { data: rows } = useLiveQuery(
     db
       .select({ date: plannedMeals.date, status: plannedMealPortions.status })
@@ -222,13 +226,15 @@ export function useMealCompletionDates(
 
   return useMemo(() => {
     const allEatenByDate = new Map<string, boolean>();
+    const anyEatenDates = new Set<string>();
     for (const row of rows ?? []) {
       const current = allEatenByDate.get(row.date) ?? true;
       allEatenByDate.set(row.date, current && row.status === 'eaten');
+      if (row.status === 'eaten') anyEatenDates.add(row.date);
     }
-    const result = new Set<string>();
-    for (const [date, allEaten] of allEatenByDate) if (allEaten) result.add(date);
-    return result;
+    const allEatenDates = new Set<string>();
+    for (const [date, allEaten] of allEatenByDate) if (allEaten) allEatenDates.add(date);
+    return { anyEatenDates, allEatenDates };
   }, [rows]);
 }
 

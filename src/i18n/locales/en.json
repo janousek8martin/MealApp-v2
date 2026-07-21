@@ -48,8 +48,11 @@
     "waterTitle": "Water streak",
     "current": "Current",
     "best": "Best",
-    "mealsLoggedToday": "{{count}} of {{total}} meals logged today",
-    "addMeal": "Add meal"
+    "freezesLeft": "Freezes",
+    "freezesResetMonthly": "Resets every month",
+    "timeLeft": "Hours left",
+    "freeze": "Freeze today",
+    "mealsLoggedToday": "{{count}} of {{total}} meals logged today"
   },
   "planScreen": {
     "generate": "Generate",

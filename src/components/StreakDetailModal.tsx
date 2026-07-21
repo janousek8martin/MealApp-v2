@@ -18,15 +18,25 @@ type Props = {
   kind: 'meal' | 'water';
   current: number;
   best: number;
-  /** ISO date strings ('YYYY-MM-DD') on which this streak's goal was hit - the same `mealCompletionDates`/`waterGoalDates` set already flowing through HomeHeroCard. Used to render the day-history strip. */
+  /** ISO date strings ('YYYY-MM-DD') on which this streak's goal was hit (frozen days included) - the same set used to compute `current`/`best`. */
   historyDates: Set<string>;
   /** For kind: 'meal' only - e.g. "3 of 5 meals logged today"; ignored for 'water'. */
   todayCount?: number;
   todayTotal?: number;
-  onAddMeal?: () => void;
+  freezesUsed: number;
+  freezesMax: number;
+  /** false once today already qualifies on its own, or the monthly allowance is used up. */
+  canFreeze: boolean;
+  onFreeze: () => void;
 };
 
-/** Tap-to-open detail behind the Home hero card's streak pills - shows current vs. best streak, a day-by-day history strip, and (meal streak only) today's logged-meal count. */
+function hoursLeftToday(): number {
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return Math.max(0, Math.round((midnight.getTime() - now.getTime()) / (1000 * 60 * 60)));
+}
+
+/** Tap-to-open detail behind the Home hero card's streak pills - current vs. best, a day-history strip, a Freeze action, and (meal streak only) today's logged-meal count. */
 export function StreakDetailModal({
   visible,
   onClose,
@@ -36,7 +46,10 @@ export function StreakDetailModal({
   historyDates,
   todayCount,
   todayTotal,
-  onAddMeal,
+  freezesUsed,
+  freezesMax,
+  canFreeze,
+  onFreeze,
 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -50,23 +63,39 @@ export function StreakDetailModal({
     });
   }, [historyDates]);
 
+  const iconColor = kind === 'meal' ? colors.attention : colors.water;
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
           <View style={styles.header}>
-            <Ionicons name={kind === 'meal' ? 'flame' : 'water'} size={22} color={colors.primary} />
-            <Text style={styles.title}>{t(kind === 'meal' ? 'streakDetail.mealTitle' : 'streakDetail.waterTitle')}</Text>
+            <View style={styles.headerTitleRow}>
+              <Ionicons name={kind === 'meal' ? 'flame' : 'water'} size={22} color={iconColor} />
+              <Text style={styles.title}>{t(kind === 'meal' ? 'streakDetail.mealTitle' : 'streakDetail.waterTitle')}</Text>
+            </View>
+            <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
+            </Pressable>
           </View>
 
-          <View style={styles.statsRow}>
+          <View style={styles.statsGrid}>
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{current}</Text>
               <Text style={styles.statLabel}>{t('streakDetail.current')}</Text>
+              <Text style={styles.statValue}>{current}</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{best}</Text>
               <Text style={styles.statLabel}>{t('streakDetail.best')}</Text>
+              <Text style={styles.statValue}>{best}</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={styles.statLabel}>{t('streakDetail.freezesLeft')}</Text>
+              <Text style={styles.statValue}>{Math.max(0, freezesMax - freezesUsed)}</Text>
+              <Text style={styles.statHint}>{t('streakDetail.freezesResetMonthly')}</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={styles.statLabel}>{t('streakDetail.timeLeft')}</Text>
+              <Text style={styles.statValue}>{hoursLeftToday()}</Text>
             </View>
           </View>
 
@@ -83,10 +112,14 @@ export function StreakDetailModal({
           ) : null}
 
           <View style={styles.actions}>
-            {kind === 'meal' && onAddMeal ? (
-              <Button label={t('streakDetail.addMeal')} onPress={onAddMeal} style={styles.actionButton} />
-            ) : null}
-            <Button label={t('common.close')} variant="secondary" onPress={onClose} style={styles.actionButton} />
+            <Button
+              label={t('streakDetail.freeze')}
+              variant="secondary"
+              disabled={!canFreeze}
+              onPress={onFreeze}
+              style={styles.actionButton}
+            />
+            <Button label={t('common.close')} onPress={onClose} style={styles.actionButton} />
           </View>
         </Pressable>
       </Pressable>
@@ -110,34 +143,48 @@ function createStyles(colors: ColorTokens) {
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
+      justifyContent: 'space-between',
       marginBottom: spacing.md,
+    },
+    headerTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
     },
     title: {
       color: colors.text,
       fontSize: typography.subtitle,
       fontWeight: '800',
     },
-    statsRow: {
+    statsGrid: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: spacing.sm,
     },
     stat: {
-      flex: 1,
-      alignItems: 'center',
+      flexBasis: '47%',
+      flexGrow: 1,
+      alignItems: 'flex-start',
       backgroundColor: colors.surfaceAlt,
       borderRadius: radius.input,
-      paddingVertical: spacing.md,
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
+    },
+    statLabel: {
+      color: colors.textSecondary,
+      fontSize: typography.small,
+      fontWeight: '600',
     },
     statValue: {
       color: colors.text,
       fontSize: typography.title,
       fontWeight: '800',
-    },
-    statLabel: {
-      color: colors.textSecondary,
-      fontSize: typography.small,
       marginTop: 2,
+    },
+    statHint: {
+      color: colors.textSecondary,
+      fontSize: typography.small - 2,
+      marginTop: 1,
     },
     historyStrip: {
       flexDirection: 'row',
