@@ -16,7 +16,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from 'react-native-svg';
 
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { WaterSettingsCard } from '@/components/WaterSettingsCard';
@@ -41,40 +41,30 @@ const TANK_WIDTH_FALLBACK = 208;
 const TANK_HEIGHT = 148;
 const TANK_RADIUS = radius.card;
 
-// Wave layer "belly" depth - how far below the crest line each layer's fill
-// extends. 16px (the original value) left most of the tank an untextured
-// flat fill (Martin's "nehybná plocha modré" note); 44px overcorrected -
-// the tinted zone got so tall it read as a separate block sitting below
-// the true surface rather than a thin ripple on it (Martin's "furt pod"
-// note, confirmed by pixel-sampling a live screenshot: the crest touches
-// y=0 correctly, but a 44px-tall belly is a large fraction of the tank at
-// typical fill levels). 24px is the middle ground.
-const FRONT_WAVE_HEIGHT = 24;
-const FRONT_WAVE_AMPLITUDE = 7;
-const BACK_WAVE_HEIGHT = 24;
+const FRONT_WAVE_AMPLITUDE = 6;
 const BACK_WAVE_AMPLITUDE = 4; // flatter/more subtle than the front layer
 
 const BUBBLE_COUNT = 14; // fixed pool, kept within the 10-20 range (task-10 brief point 4/9)
 
 const AnimatedG = Animated.createAnimatedComponent(G);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-/** Builds a seamless tiling wave path: two periods wide, wave crest of `amplitude` above the midline. */
 /**
- * The oscillation baseline sits at y=amplitude (not height/2) so the wave's
- * crest touches y=0 - the actual water surface (local y=0 in the level
- * group, see `levelGroupProps`). Centering the baseline at height/2 instead
- * left a solid, unrippled gap between the true surface and where the wave
- * pattern started, which read as "the wave is rippling somewhere inside the
- * water, not at the surface" (Martin, at 82% fill).
+ * A filled "belly" region with a gradient fade (the previous approach) kept
+ * reading as a separate tinted block sitting below the true surface rather
+ * than a ripple on it, no matter how shallow the belly or how soft the
+ * gradient (Martin, repeatedly, at 82% fill). Replaced with an OPEN,
+ * unfilled, stroked line traced directly along the wave curve itself - it
+ * IS the surface, not a region near it, so there's no depth/offset left to
+ * misjudge. Oscillates between y=0 (crest) and y=2*amplitude (trough), two
+ * periods wide for the same seamless-tiling contract the scroll math relies
+ * on (see the driver/modulo comment below).
  */
-function buildWavePath(period: number, height: number, amplitude: number): string {
+function buildWaveLinePath(period: number, amplitude: number): string {
   const baseline = amplitude;
   const crest = 0;
-  return (
-    `M0 ${baseline} Q${period / 4} ${crest} ${period / 2} ${baseline} T${period} ${baseline} T${period * 1.5} ${baseline} T${period * 2} ${baseline} ` +
-    `V${height} H0 Z`
-  );
+  return `M0 ${baseline} Q${period / 4} ${crest} ${period / 2} ${baseline} T${period} ${baseline} T${period * 1.5} ${baseline} T${period * 2} ${baseline}`;
 }
 
 type BubbleConfig = {
@@ -206,14 +196,8 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
     transform: [{ scale: pulseScale.value }],
   }));
 
-  const frontWavePath = useMemo(
-    () => buildWavePath(frontWavePeriod, FRONT_WAVE_HEIGHT, FRONT_WAVE_AMPLITUDE),
-    [frontWavePeriod],
-  );
-  const backWavePath = useMemo(
-    () => buildWavePath(backWavePeriod, BACK_WAVE_HEIGHT, BACK_WAVE_AMPLITUDE),
-    [backWavePeriod],
-  );
+  const frontWavePath = useMemo(() => buildWaveLinePath(frontWavePeriod, FRONT_WAVE_AMPLITUDE), [frontWavePeriod]);
+  const backWavePath = useMemo(() => buildWaveLinePath(backWavePeriod, BACK_WAVE_AMPLITUDE), [backWavePeriod]);
 
   // Randomize each bubble's look/timing once at mount (plain JS on the JS
   // thread - never Math.random() inside a worklet). Regenerates if the
@@ -263,42 +247,6 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                 <ClipPath id="waterTankClip">
                   <Rect x={0} y={0} width={tankWidth} height={TANK_HEIGHT} rx={TANK_RADIUS} ry={TANK_RADIUS} />
                 </ClipPath>
-                {/*
-                  Fades each wave layer's tint out to fully transparent by its
-                  own bottom edge, instead of a flat-opacity fill that just
-                  stops dead at y=height - a flat fill reads as a hard seam
-                  between "tinted water" and "plain water" right at that
-                  boundary (Martin: "vlnění je tak divně uprostřed" - looked
-                  like two stacked blocks, not one body of water).
-
-                  userSpaceOnUse with explicit y1/y2 in the path's own local
-                  units (0..height), not the default objectBoundingBox - a
-                  bounding-box-relative gradient on a shape sitting inside an
-                  animated (Reanimated UI-thread) transform rendered wrong on
-                  Android (the fade collapsed into a near-solid line instead
-                  of spreading across the full height), so this pins the
-                  gradient to fixed, transform-independent coordinates.
-                */}
-                <LinearGradient
-                  id="frontWaveGradient"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2={FRONT_WAVE_HEIGHT}
-                  gradientUnits="userSpaceOnUse">
-                  <Stop offset="0" stopColor={WAVE_HIGHLIGHT_COLOR} stopOpacity={1} />
-                  <Stop offset="1" stopColor={WAVE_HIGHLIGHT_COLOR} stopOpacity={0} />
-                </LinearGradient>
-                <LinearGradient
-                  id="backWaveGradient"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2={BACK_WAVE_HEIGHT}
-                  gradientUnits="userSpaceOnUse">
-                  <Stop offset="0" stopColor={WAVE_SHADOW_COLOR} stopOpacity={1} />
-                  <Stop offset="1" stopColor={WAVE_SHADOW_COLOR} stopOpacity={0} />
-                </LinearGradient>
               </Defs>
               <G clipPath="url(#waterTankClip)">
                 {reducedMotion ? (
@@ -312,12 +260,26 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                 ) : (
                   <AnimatedG animatedProps={levelGroupProps}>
                     <Rect x={0} y={0} width={tankWidth} height={TANK_HEIGHT} fill={colors.water} />
-                    <AnimatedG animatedProps={backWaveProps}>
-                      <Path d={backWavePath} fill="url(#backWaveGradient)" />
-                    </AnimatedG>
-                    <AnimatedG animatedProps={frontWaveProps}>
-                      <Path d={frontWavePath} fill="url(#frontWaveGradient)" />
-                    </AnimatedG>
+                    {/*
+                      Open, unfilled strokes traced directly on the wave
+                      curve - this line IS the surface, not a filled region
+                      near it, so there's no "belly" depth left to read as
+                      offset below the water line (see buildWaveLinePath).
+                    */}
+                    <AnimatedPath
+                      d={backWavePath}
+                      stroke={WAVE_SHADOW_COLOR}
+                      strokeWidth={3}
+                      fill="none"
+                      animatedProps={backWaveProps}
+                    />
+                    <AnimatedPath
+                      d={frontWavePath}
+                      stroke={WAVE_HIGHLIGHT_COLOR}
+                      strokeWidth={2.5}
+                      fill="none"
+                      animatedProps={frontWaveProps}
+                    />
                   </AnimatedG>
                 )}
                 {!reducedMotion &&
@@ -455,11 +417,10 @@ const ON_WATER_FILL_COLOR = '#FFFFFF';
  * invisible. White/black overlays instead of a second theme color, since
  * this needs to read as "lighter/darker water," not a distinct hue.
  */
-// Toned down from 0.32/0.22 - at full gradient-stop opacity (right at each
-// wave's own crest) those read as near-solid white / near-black instead of
-// a subtle tint (Martin: "zadní vlna je černá a přední až moc bílá").
-const WAVE_HIGHLIGHT_COLOR = 'rgba(255, 255, 255, 0.16)'; // front wave - lighter
-const WAVE_SHADOW_COLOR = 'rgba(0, 0, 0, 0.10)'; // back wave - darker
+// Now a stroke color on a thin open line (not a fill under a fade), so this
+// can sit at a clearly visible strength without needing a gradient to soften it.
+const WAVE_HIGHLIGHT_COLOR = 'rgba(255, 255, 255, 0.85)'; // front wave - lighter
+const WAVE_SHADOW_COLOR = 'rgba(0, 0, 0, 0.22)'; // back wave - darker
 const BUBBLE_COLOR = 'rgba(255, 255, 255, 0.8)';
 
 function createStyles(colors: ColorTokens) {
