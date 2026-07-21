@@ -134,26 +134,25 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   }, [progress, reducedMotion, levelY]);
 
   // Horizontal drift, one shared value per wave layer (transform-only).
-  // Ping-pongs (reverse:true) instead of jumping back to 0 at the end of
-  // each cycle - a hard reset is only truly seamless if the rendered frame
-  // at -period is pixel-identical to the frame at 0, and on a software
-  // renderer a dropped frame right at that boundary reads as a visible
-  // "snap"/drift (Martin's "vodní widget ujíždí" note). Reversing removes
-  // the discontinuity entirely - the wave just slows to a stop and slides
-  // back, which also reads more like real water sloshing than a conveyor belt.
+  // One-directional (reverse:false) per Martin's ask - a ping-pong read as
+  // "sloshing back and forth" which he didn't want. The earlier "drift/snap"
+  // complaint this was fixing turned out to be the gradient rendering bug
+  // below, not the reset itself - with that fixed, a hard reset from
+  // -period back to 0 is seamless again (the frame at -period is pixel-
+  // identical to the frame at 0, since the path is exactly periodic).
   const frontPhase = useSharedValue(0);
   const backPhase = useSharedValue(-backWavePeriod * 0.5); // offset start so the two layers never sync up
   useEffect(() => {
     if (reducedMotion) return;
     frontPhase.value = withRepeat(
-      withTiming(-frontWavePeriod, { duration: 3500, easing: Easing.inOut(Easing.sin) }),
+      withTiming(-frontWavePeriod, { duration: 3500, easing: Easing.linear }),
       -1,
-      true,
+      false,
     );
     backPhase.value = withRepeat(
-      withTiming(-backWavePeriod, { duration: 6000, easing: Easing.inOut(Easing.sin) }),
+      withTiming(-backWavePeriod, { duration: 6000, easing: Easing.linear }),
       -1,
-      true,
+      false,
     );
   }, [reducedMotion, frontPhase, backPhase, frontWavePeriod, backWavePeriod]);
 
@@ -171,11 +170,18 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   const levelGroupProps = useAnimatedProps(() => ({
     transform: [{ translateY: levelY.value }],
   }));
+  // Wave layers fade out as the tank tops off (levelY -> 0) - a topped-off
+  // tank has no headroom for a surface ripple, so showing wave texture
+  // right at 100% read as wrong (Martin: "i když by teď vlnění vidět
+  // nemělo být"). Fully faded by the time levelY is within 10 tank-units
+  // of the top; unchanged (opacity 1) everywhere else.
   const frontWaveProps = useAnimatedProps(() => ({
     transform: [{ translateX: frontPhase.value }],
+    opacity: interpolate(levelY.value, [0, 10], [0, 1], Extrapolation.CLAMP),
   }));
   const backWaveProps = useAnimatedProps(() => ({
     transform: [{ translateX: backPhase.value }],
+    opacity: interpolate(levelY.value, [0, 10], [0, 1], Extrapolation.CLAMP),
   }));
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
