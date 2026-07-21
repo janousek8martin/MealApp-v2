@@ -42,6 +42,7 @@ const TANK_HEIGHT = 148;
 const TANK_RADIUS = radius.card;
 
 const WAVE_AMPLITUDE = 6;
+const SHADOW_WAVE_AMPLITUDE = 5;
 
 const BUBBLE_COUNT = 14; // fixed pool, kept within the 10-20 range (task-10 brief point 4/9)
 
@@ -71,6 +72,18 @@ function buildWaterBodyPath(period: number, bodyHeight: number, amplitude: numbe
     `M0 ${baseline} Q${period / 4} ${crest} ${period / 2} ${baseline} T${period} ${baseline} T${period * 1.5} ${baseline} T${period * 2} ${baseline} ` +
     `V${bodyHeight} H0 Z`
   );
+}
+
+/**
+ * Just the crest curve (no V/H/Z fill-close) - a second, subtler ripple
+ * riding ON the water body's own already-correct surface (stroked, not a
+ * second filled shape with its own depth), rather than a competing "is this
+ * below the water" element like the earlier standalone attempts.
+ */
+function buildWaveLinePath(period: number, amplitude: number): string {
+  const baseline = amplitude;
+  const crest = 0;
+  return `M0 ${baseline} Q${period / 4} ${crest} ${period / 2} ${baseline} T${period} ${baseline} T${period * 1.5} ${baseline} T${period * 2} ${baseline}`;
 }
 
 type BubbleConfig = {
@@ -124,6 +137,7 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
     if (Math.abs(width - tankWidth) > 1) setTankWidth(width);
   };
   const wavePeriod = tankWidth;
+  const shadowWavePeriod = tankWidth * 1.3; // different period so the two ripples never sync up
 
   // Water level: absolute y (in tank coordinates) of the water surface.
   // 0 = full tank (top), TANK_HEIGHT = empty (fully below the visible area).
@@ -155,14 +169,20 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   // frame on), there's nothing left to be visible.
   const LOOP_DURATION_MS = 2 * 60 * 60 * 1000; // 2h - far longer than any real session, so it never actually completes
   const waveDriver = useSharedValue(0);
+  const shadowWaveDriver = useSharedValue(-shadowWavePeriod * 0.5); // offset start so the two ripples never overlap identically
   useEffect(() => {
     if (reducedMotion) return;
     const speed = wavePeriod / 7000; // px/ms
+    const shadowSpeed = shadowWavePeriod / 12000; // slower - reads as a deeper, lazier layer
     waveDriver.value = withTiming(waveDriver.value - speed * LOOP_DURATION_MS, {
       duration: LOOP_DURATION_MS,
       easing: Easing.linear,
     });
-  }, [reducedMotion, waveDriver, wavePeriod]);
+    shadowWaveDriver.value = withTiming(shadowWaveDriver.value - shadowSpeed * LOOP_DURATION_MS, {
+      duration: LOOP_DURATION_MS,
+      easing: Easing.linear,
+    });
+  }, [reducedMotion, waveDriver, shadowWaveDriver, wavePeriod, shadowWavePeriod]);
 
   // Brief fill-level "pulse" when a glass is logged - a separate micro-
   // interaction from Button's own press-scale (that one's on the buttons).
@@ -184,11 +204,18 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
   const waveProps = useAnimatedProps(() => ({
     transform: [{ translateX: waveDriver.value % wavePeriod }],
   }));
+  const shadowWaveProps = useAnimatedProps(() => ({
+    transform: [{ translateX: shadowWaveDriver.value % shadowWavePeriod }],
+  }));
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
   }));
 
   const waterBodyPath = useMemo(() => buildWaterBodyPath(wavePeriod, TANK_HEIGHT, WAVE_AMPLITUDE), [wavePeriod]);
+  const shadowWavePath = useMemo(
+    () => buildWaveLinePath(shadowWavePeriod, SHADOW_WAVE_AMPLITUDE),
+    [shadowWavePeriod],
+  );
 
   // Randomize each bubble's look/timing once at mount (plain JS on the JS
   // thread - never Math.random() inside a worklet). Regenerates if the
@@ -256,6 +283,20 @@ export function WaterCard({ profileId, sex, weightKg, trackWater, waterGoalMl, w
                       underneath it to read as a mismatched "surface".
                     */}
                     <AnimatedPath d={waterBodyPath} fill={colors.water} animatedProps={waveProps} />
+                    {/*
+                      A second, subtler ripple stroked directly ON the body's
+                      own (already-correct) surface - not a separate filled
+                      shape with its own depth, so it can't read as "below
+                      the water" the way the earlier standalone shadow layer
+                      did.
+                    */}
+                    <AnimatedPath
+                      d={shadowWavePath}
+                      stroke={WAVE_SHADOW_COLOR}
+                      strokeWidth={2}
+                      fill="none"
+                      animatedProps={shadowWaveProps}
+                    />
                   </AnimatedG>
                 )}
                 {!reducedMotion &&
@@ -389,6 +430,8 @@ const ON_WATER_FILL_COLOR = '#FFFFFF';
  * "lighter water" - white at partial opacity instead.
  */
 const BUBBLE_COLOR = 'rgba(255, 255, 255, 0.8)';
+/** Same rationale - a stroke color for the shadow ripple, distinct from the water fill it rides on. */
+const WAVE_SHADOW_COLOR = 'rgba(0, 0, 0, 0.2)';
 
 function createStyles(colors: ColorTokens) {
   return StyleSheet.create({
